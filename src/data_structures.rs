@@ -1,11 +1,12 @@
 
-
-struct Version {
-    version: String,
-    code: String,
-    report: Report,
+#[derive(Debug, Clone, PartialEq)]
+pub struct Commit {
+    pub title: String,
+    pub code: String,
+    pub report: Option<Report>,
 }
 
-struct Report {
-    performance_gain: u32,
+#[derive(Debug, Clone, PartialEq)]
+pub struct Report {
+    pub performance_gain: u32,
 }

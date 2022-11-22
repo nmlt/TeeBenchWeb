@@ -1,51 +1,50 @@
 use yew::prelude::*;
+use yew_router::prelude::*;
 
-#[derive(Debug, Clone, PartialEq)]
-struct Report {
-    performance_gain: i32,
+mod data_structures;
+mod commits;
+mod navigation;
+mod profiling;
+
+use crate::commits::Commits;
+use crate::profiling::Profiling;
+
+#[derive(Clone, Routable, PartialEq)]
+pub enum Route {
+    #[at("/")]
+    Home,
+    #[at("/commits")]
+    Commits,
+    #[at("/profiling")]
+    Profiling,
+    #[not_found]
+    #[at("/404")]
+    NotFound,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-struct Version {
-    title: String,
-    code: String,
-    report: Report,
-}
-
-#[derive(Properties, PartialEq)]
-struct VersionsListProps {
-    versions: Vec<Version>,
-}
-
-#[function_component(VersionsList)]
-fn versions_list(VersionsListProps { versions }: &VersionsListProps) -> Html {
-    let list_items_html: Html = versions.iter().map(|version| html! {
-        <li class="list-group-item">{format!("Version: {}\n {:?}", version.title, version.report)}</li>
-    }).collect();
-    html! {
-        <ul class="list-group">
-            {list_items_html}
-        </ul>
+fn switch(routes: Route) -> Html {
+    match routes {
+        Route::Home => html! { <Redirect<Route> to={Route::Commits}/> },
+        Route::Commits => html! {
+            <Commits />
+        },
+        Route::Profiling => html! {
+            <Profiling />
+        },
+        Route::NotFound => html! { <h1>{ "404" }</h1> },
     }
 }
 
 #[function_component(App)]
 fn app() -> Html {
-    let versions = vec![Version {
-        title: "1.0".to_string(),
-        code: "auto a = 0;".to_string(),
-        report: Report {
-            performance_gain: -1,
-        },
-    }];
+    
     html! {
-        <>
-        <h1>{ "TeeBenchWeb" }</h1>
-        <VersionsList versions={versions} />
-        </>
+        <BrowserRouter>
+            <Switch<Route> render={switch} />
+        </BrowserRouter>
     }
 }
 
 fn main() {
-    yew::start_app::<App>();
+    yew::Renderer::<App>::new().render();
 }
