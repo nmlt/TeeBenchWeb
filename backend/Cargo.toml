@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 tokio = { version = "1.0", features = ["full"] }
 axum = "0.5"
+axum-extra = { version = "0.3", features = ["spa"]}
