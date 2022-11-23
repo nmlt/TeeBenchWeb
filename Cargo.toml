@@ -1,11 +1,2 @@
-[package]
-name = "yew-app"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-# you can check the latest version here: https://crates.io/crates/yew
-yew = { git = "https://github.com/yewstack/yew/", features = ["csr"] }
-yew-router = { git = "https://github.com/yewstack/yew.git" }
-yewdux = { git = "https://github.com/intendednull/yewdux.git" }
-yewdux-input = { git = "https://github.com/intendednull/yewdux.git" }
+[workspace]
+members = ["backend", "frontend"]
