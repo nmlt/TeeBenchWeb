@@ -5,8 +5,7 @@ use crate::Route;
 
 #[function_component(Navigation)]
 pub fn navivation() -> Html {
-
-    html!{
+    html! {
         <ul>
             <li><Link<Route> to={Route::Home}>{"Home"}</Link<Route>></li>
             <li><Link<Route> to={Route::Commits}>{"Commits"}</Link<Route>></li>

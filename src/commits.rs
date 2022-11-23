@@ -22,8 +22,7 @@ use crate::navigation::Navigation;
 
 #[function_component(Commits)]
 pub fn commits() -> Html {
-
-    html!{
+    html! {
         <div>
             <h2>{"Commits"}</h2>
             <Navigation />

@@ -1,8 +1,8 @@
 use yew::prelude::*;
 use yew_router::prelude::*;
 
-mod data_structures;
 mod commits;
+mod data_structures;
 mod navigation;
 mod profiling;
 
@@ -29,7 +29,7 @@ fn switch(routes: Route) -> Html {
             <Commits />
         },
         Route::Profiling => html! {
-            <Profiling />
+            <Profiling algs={vec!["NLJ".to_string(), "CHT".to_string(), "RHO".to_string()]} exps={vec!["EPC Paging".to_string(), "throughput".to_string()]} datasets={vec!["cache-fit".to_string(), "cache-exceed".to_string()]} platforms={vec!["native".to_string(), "sgx".to_string()]} />
         },
         Route::NotFound => html! { <h1>{ "404" }</h1> },
     }
@@ -37,7 +37,6 @@ fn switch(routes: Route) -> Html {
 
 #[function_component(App)]
 fn app() -> Html {
-    
     html! {
         <BrowserRouter>
             <Switch<Route> render={switch} />
