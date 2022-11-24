@@ -23,3 +23,15 @@ Running the server app with the web app
 ---------------------------------------
 
 First build the web app while in the `frontend` directory with `trunk build`. Then change to the `backend` directory and run the axum server: `cargo run`.
+
+Testing
+-------
+
+... is very lacking.
+Check the json extractor of the server with
+```sh
+curl --header "Content-Type:application/json" \
+--request POST \
+--data '{"title": "first commit", "datetime": "2020-03-28T16:29:04.644008111Z", "code": "auto a = 2", "report": null }' \
+http://localhost:3000/api/commit
+```
