@@ -2,6 +2,10 @@ use yew::prelude::*;
 use yewdux::prelude::*;
 use yewdux_input::{Checkbox, InputDispatch};
 use serde::{Deserialize, Serialize};
+use gloo_net::http::{Request, Method};
+use wasm_bindgen_futures::spawn_local;
+use gloo_console::log;
+use serde_json::json;
 
 use crate::navigation::Navigation;
 
@@ -116,11 +120,30 @@ pub fn profiling(
         // prevent_default
         // send some request to server
         let (store, _dispatch) = use_store::<Form>();
-        Callback::from(move |e: SubmitEvent| {
-            e.prevent_default();
-
+        Callback::from(move |_| {
+            //e.prevent_default(); // Doesn't seem to work with type="submit".
+            //let store = store.clone();
+            let data = json!({
+                "algorithm": "Nlj",
+                "experiment_type": "Scalability",
+                "dataset": "CacheExceed",
+                "platforms": "Sgx",
+                "sort_data": true,
+            });
+            spawn_local(async move {
+                let resp = Request::get("/api/profiling")
+                    .method(Method::POST)
+                    //.json(&store)
+                    .json(&data)
+                    .unwrap()
+                    .send()
+                    .await
+                    .unwrap();
+            });
+            log!("Why does this not run?");
         })
     };
+    log!("This is printed, though...");
     html! {
         <div>
             <h2>{"Profiling"}</h2>
@@ -131,7 +154,7 @@ pub fn profiling(
                         <InputCheckbox label={"Sort data"} onchange={sort_onchange} />
                         <InputRadio data={datasets} title={"Dataset"} onchange={datasets_onchange} />
                         <InputRadio data={platforms} title={"Platform"} onchange={platforms_onchange} />
-                        <button class="btn btn-primary" type="submit" {onsubmit}>{"Run experiment"}</button>
+                        <button class="btn btn-primary" type="button" onclick={onsubmit}>{"Run experiment"}</button>
                     </div>
                 </form>
             </main>

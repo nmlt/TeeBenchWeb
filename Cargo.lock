@@ -1518,7 +1518,11 @@ name = "yew-app"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "gloo-console",
+ "gloo-net",
  "serde",
+ "serde_json",
+ "wasm-bindgen-futures",
  "yew",
  "yew-router",
  "yewdux",
