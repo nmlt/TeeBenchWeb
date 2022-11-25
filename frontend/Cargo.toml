@@ -7,5 +7,7 @@ edition = "2021"
 # you can check the latest version here: https://crates.io/crates/yew
 yew = { git = "https://github.com/yewstack/yew/", features = ["csr"] }
 yew-router = { git = "https://github.com/yewstack/yew.git" }
-yewdux = { git = "https://github.com/intendednull/yewdux.git" }
-yewdux-input = { git = "https://github.com/intendednull/yewdux.git" }
+yewdux = { git = "https://github.com/nmlt/yewdux.git", branch = "patch-1" }
+yewdux-input = { git = "https://github.com/nmlt/yewdux.git", branch = "patch-1" }
+chrono = "0.4" # For Datetime in Commit
+serde = "1"

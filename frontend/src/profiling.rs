@@ -1,10 +1,11 @@
 use yew::prelude::*;
 use yewdux::prelude::*;
 use yewdux_input::{Checkbox, InputDispatch};
+use serde::{Deserialize, Serialize};
 
 use crate::navigation::Navigation;
 
-#[derive(Store, Default, PartialEq, Clone)]
+#[derive(Store, Default, PartialEq, Clone, Deserialize, Serialize)]
 struct Form {
     sort_data: Checkbox,
     dataset: Option<String>,
@@ -112,8 +113,13 @@ pub fn profiling(
         })
     };
     let onsubmit = {
-        // preventdefault
+        // prevent_default
         // send some request to server
+        let (store, _dispatch) = use_store::<Form>();
+        Callback::from(move |e: SubmitEvent| {
+            e.prevent_default();
+
+        })
     };
     html! {
         <div>
@@ -125,7 +131,7 @@ pub fn profiling(
                         <InputCheckbox label={"Sort data"} onchange={sort_onchange} />
                         <InputRadio data={datasets} title={"Dataset"} onchange={datasets_onchange} />
                         <InputRadio data={platforms} title={"Platform"} onchange={platforms_onchange} />
-                        <button class="btn btn-primary" type="submit">{"Run experiment"}</button>
+                        <button class="btn btn-primary" type="submit" {onsubmit}>{"Run experiment"}</button>
                     </div>
                 </form>
             </main>

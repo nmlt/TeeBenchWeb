@@ -1518,6 +1518,7 @@ name = "yew-app"
 version = "0.1.0"
 dependencies = [
  "chrono",
+ "serde",
  "yew",
  "yew-router",
  "yewdux",
@@ -1568,7 +1569,7 @@ dependencies = [
 [[package]]
 name = "yewdux"
 version = "0.8.2"
-source = "git+https://github.com/intendednull/yewdux.git#31e5ba8d309ddbe7832106638e79035ad63289cb"
+source = "git+https://github.com/nmlt/yewdux.git?branch=patch-1#ba9ce440ffbb7427161f5dceb6ad2ebfd3b0d289"
 dependencies = [
  "anymap",
  "async-trait",
@@ -1587,9 +1588,10 @@ dependencies = [
 [[package]]
 name = "yewdux-input"
 version = "0.1.0"
-source = "git+https://github.com/intendednull/yewdux.git#31e5ba8d309ddbe7832106638e79035ad63289cb"
+source = "git+https://github.com/nmlt/yewdux.git?branch=patch-1#ba9ce440ffbb7427161f5dceb6ad2ebfd3b0d289"
 dependencies = [
  "chrono",
+ "serde",
  "wasm-bindgen",
  "web-sys",
  "yew",
@@ -1599,7 +1601,7 @@ dependencies = [
 [[package]]
 name = "yewdux-macros"
 version = "0.8.2"
-source = "git+https://github.com/intendednull/yewdux.git#31e5ba8d309ddbe7832106638e79035ad63289cb"
+source = "git+https://github.com/nmlt/yewdux.git?branch=patch-1#ba9ce440ffbb7427161f5dceb6ad2ebfd3b0d289"
 dependencies = [
  "darling",
  "proc-macro-error",
