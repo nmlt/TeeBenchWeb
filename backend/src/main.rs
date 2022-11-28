@@ -8,6 +8,8 @@ use axum::{
 use axum_extra::routing::SpaRouter;
 use tracing::{info, warn, instrument};
 
+use tokio::sync::mpsc;
+
 use chrono::{DateTime, offset::Utc};
 use serde::{Serialize, Deserialize};
 use serde_json::{Value, json};
@@ -94,30 +96,45 @@ async fn get_commits(Extension(state): Extension<Arc<Mutex<ServerState>>>) -> Js
 }
 
 #[instrument]
-async fn run_experiment(Json(payload): Json<ProfilingConfiguration>) -> Result<(),StatusCode> {
+#[axum_macros::debug_handler]
+async fn run_experiment(Extension(state): Extension<Arc<ProfilingState>>, Json(payload): Json<ProfilingConfiguration>) -> Result<(), StatusCode> {
     info!("Received: {:?}", payload);
-    // TODO What I actually need to do here:
-    // - Start a new thread (probably some async task) for building and running the benchmark
-    // - Return 200 OK
-    // - Monitor the thread and send its progress/result to the webapp via a websocket
-    let Ok(output) = std::process::Command::new("pwd").output() else {
-        warn!("Failed to run command!");
-        return Err(StatusCode::INTERNAL_SERVER_ERROR);
-    };
-    info!("Output: {:?}", output);
+    state.channel_tx.send(payload).await.unwrap();
     Ok(())
+}
+
+#[instrument]
+async fn profiling_task(mut rx: mpsc::Receiver<ProfilingConfiguration>) {
+    while let Some(conf) = rx.recv().await {
+        info!("Starting work on {:?}...", conf);
+        let Ok(output) = std::process::Command::new("pwd").output() else {
+            warn!("Failed to run command!");
+            return;
+        };
+        info!("Output: {:?}", output);
+    }
 }
 
 #[derive(Debug, Clone, Default)]
 struct ServerState {
     commits: Vec<Commit>,
+
+}
+
+#[derive(Debug, Clone)]
+struct ProfilingState {
+    channel_tx: mpsc::Sender<ProfilingConfiguration>,
 }
 
 #[tokio::main]
 async fn main() {
     // If I use Level::DEBUG, I get lots of log messages from hyper/mio/etc.
     tracing_subscriber::fmt().with_max_level(tracing::Level::INFO).init();
+
+    let (profiling_tx, profiling_rx) = mpsc::channel(5);
+    tokio::spawn(profiling_task(profiling_rx));
     let state = Arc::new(Mutex::new(ServerState::default()));
+    let profiling_state = Arc::new(ProfilingState { channel_tx: profiling_tx.clone() });
 
     let spa = SpaRouter::new("/assets", "../dist");
     let app = Router::new()
@@ -126,8 +143,9 @@ async fn main() {
         .route("/api/commit", post(upload_commit))
         .layer(Extension(state.clone()))
         .route("/api/commit", get(get_commits))
-        .layer(Extension(state))
-        .route("/api/profiling/", post(run_experiment));
+        .layer(Extension(state.clone()))
+        .route("/api/profiling/", post(run_experiment))
+        .layer(Extension(profiling_state));
 
     info!("Listening on 0.0.0.0:3000");
     axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())
