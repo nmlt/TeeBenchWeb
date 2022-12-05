@@ -254,10 +254,14 @@ pub fn profiling() -> Html {
         })
     };
     html! {
-        <div>
-            <h2>{"Profiling"}</h2>
-            <Navigation />
-            <main class="g-3 container-md">
+        <div class="row g-3">
+            <div class="col-lg g-3 vh-100">
+                <Navigation active_nav_item={"Profiling"} />
+                {"text"}
+            </div>
+            <main class="g-3 container-md col-lg">
+                <h2 class="d-none d-md-inline">{"Profiling"}</h2>
+                <div class="g-3">
                 <form class="row g-3" method="get">
                     <div class="col-md">
                         <div class="row g-3">
@@ -292,6 +296,7 @@ pub fn profiling() -> Html {
                         <button class="btn btn-primary" type="button" onclick={onsubmit}>{"Run experiment"}</button>
                     </div>
                 </form>
+                </div>
             </main>
         </div>
     }
