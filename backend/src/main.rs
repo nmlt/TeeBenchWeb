@@ -33,9 +33,8 @@ pub struct Report {
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub enum Algorithm {
     #[default]
-    Nlj,
     Rho,
-    // TODO
+    Cht,
     Commit(u32), // TODO Uuid
 }
 
@@ -43,8 +42,8 @@ pub enum Algorithm {
 pub enum ExperimentType {
     #[default]
     EpcPaging,
-    Scalability,
-    // TODO
+    Throughput,
+    CpuCyclesTuple,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -66,7 +65,7 @@ pub struct ProfilingConfiguration {
     algorithm: Algorithm,
     experiment_type: ExperimentType,
     dataset: Dataset,
-    platforms: Platform,
+    platform: Platform,
     sort_data: bool,
 }
 #[derive(Debug, Clone, Default)]
@@ -130,7 +129,7 @@ async fn profiling_task(rx: mpsc::Receiver<ProfilingConfiguration>) {
         let mut rx_guard = rx.lock().await;
         match rx_guard.recv().await {
             Some(conf) => {
-                info!("New task came in while previous had not finished!");
+                info!("New task came in!");
                 let mut guard = queue.lock().unwrap();
                 guard.push_back(conf);
             },

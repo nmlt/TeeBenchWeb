@@ -1,4 +1,4 @@
-use chrono::{DateTime, offset::Utc};
+use chrono::{offset::Utc, DateTime};
 
 // TODO Add an ID that the server generates to uniquely identify a commit, indenpendently of the user supplied title.
 #[derive(Debug, Clone, PartialEq)]

@@ -29,7 +29,7 @@ fn switch(routes: Route) -> Html {
             <Commits />
         },
         Route::Profiling => html! {
-            <Profiling algs={vec!["NLJ".to_string(), "CHT".to_string(), "RHO".to_string()]} exps={vec!["EPC Paging".to_string(), "throughput".to_string()]} datasets={vec!["cache-fit".to_string(), "cache-exceed".to_string()]} platforms={vec!["native".to_string(), "sgx".to_string()]} />
+            <Profiling />
         },
         Route::NotFound => html! { <h1>{ "404" }</h1> },
     }
