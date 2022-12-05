@@ -45,16 +45,20 @@ impl SelectDataOption {
 struct InputSelectProps {
     options: Vec<SelectDataOption>,
     multiple: bool,
+    label: String,
     onchange: Callback<Event>,
 }
 
 #[function_component]
-fn InputSelect(InputSelectProps { options, multiple, onchange }: &InputSelectProps) -> Html {
+fn InputSelect(InputSelectProps { options, multiple, label, onchange }: &InputSelectProps) -> Html {
     let options = options.iter().map(|o| html! { <option value={o.value.clone()}>{o.label.clone()}</option> });
     html! {
-        <select class="form-select" type="select" multiple={*multiple} {onchange}>
-            {for options}
-        </select>
+        <div>
+            <label class="form-label" for={format!("select-{label}")}>{label.clone()}</label>
+            <select class="form-select" id={format!("select-{label}")} type="select" multiple={*multiple} {onchange}>
+                {for options}
+            </select>
+        </div>
     }
 }
 
@@ -131,8 +135,8 @@ struct InputNumberProps {
 fn InputNumber(InputNumberProps { label, onchange }: &InputNumberProps) -> Html {
     html! {
         <div>
-            <label for={format!("text-{label}")}>{label.clone()}</label>
-            <input {onchange} type="number" id={format!("text-{label}")} />
+            <label class="form-label" for={format!("number-{label}")}>{label.clone()}</label>
+            <input class="form-control" {onchange} type="number" id={format!("number-{label}")} />
         </div>
     }
 }
@@ -253,20 +257,38 @@ pub fn profiling() -> Html {
         <div>
             <h2>{"Profiling"}</h2>
             <Navigation />
-            <main>
+            <main class="g-3 container-md">
                 <form class="row g-3" method="get">
                     <div class="col-md">
-                        <InputSelect options={algs} onchange={algs_onchange} multiple={false} />
-                        <InputSelect options={exps} onchange={exps_onchange} multiple={true} />
-                        <InputSelect options={params} onchange={params_onchange} multiple={false} />
-                        <div>
-                            <InputNumber label={"min"} onchange={min_onchange} />
-                            <InputNumber label={"max"} onchange={max_onchange} />
-                            <InputNumber label={"step"} onchange={step_onchange} />
+                        <div class="row g-3">
+                            <div class="col-md">
+                                <InputSelect options={algs} onchange={algs_onchange} label={"Algorithm"} multiple={false} />
+                            </div>
+                            <div class="col-md">                            
+                                <InputSelect options={exps} onchange={exps_onchange} label={"Experiment (select multiple)"} multiple={true} />
+                            </div>
                         </div>
-                        <InputCheckbox label={"Pre-sort data"} onchange={sort_onchange} />
-                        <InputRadio data={datasets} title={"Dataset"} onchange={datasets_onchange} />
-                        <InputRadio data={platforms} title={"Platform"} onchange={platforms_onchange} />
+                        <div class="row g-3">
+                            <div class="col-md">
+                                <InputSelect options={params} onchange={params_onchange} label={"Parameter"} multiple={false} />
+                            </div>
+                            <div class="col-md">
+                                <InputNumber label={"min"} onchange={min_onchange} />
+                                <InputNumber label={"max"} onchange={max_onchange} />
+                                <InputNumber label={"step"} onchange={step_onchange} />
+                            </div>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md">
+                                <InputRadio data={datasets} title={"Dataset"} onchange={datasets_onchange} />
+                            </div>
+                            <div class="col-md">
+                                <InputRadio data={platforms} title={"Platform"} onchange={platforms_onchange} />
+                            </div>
+                            <div class="col-md">
+                                <InputCheckbox label={"Pre-sort data"} onchange={sort_onchange} />
+                            </div>
+                        </div>
                         <button class="btn btn-primary" type="button" onclick={onsubmit}>{"Run experiment"}</button>
                     </div>
                 </form>

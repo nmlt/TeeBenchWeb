@@ -3,45 +3,36 @@ use yew_router::components::Link;
 
 use crate::Route;
 
-#[function_component(Navigation)]
-pub fn navivation() -> Html {
+#[function_component]
+pub fn Navigation() -> Html {
     html! {
-        <ul>
-            <li><Link<Route> to={Route::Home}>{"Home"}</Link<Route>></li>
-            <li><Link<Route> to={Route::Commits}>{"Commits"}</Link<Route>></li>
-            <li><Link<Route> to={Route::Profiling}>{"Profiling"}</Link<Route>></li>
-        </ul>
+        <div>
+            <ul class="nav">
+                <li class="nav-item">
+                    <span class="nav-link">
+                        <Link<Route> to={Route::Home}>
+                            <i class="fs-5 bi-grid" aria-hidden="true"></i>
+                            <span class="ms-1 d-none d-sm-inline">{"TeeBenchWeb"}</span>
+                        </Link<Route>>
+                    </span>
+                </li>
+                <li class="nav-item">
+                    <span class="nav-link">
+                        <Link<Route> to={Route::Commits}>
+                            <i class="fs-5 bi-table" aria-hidden="true"></i>
+                            <span class="ms-1 d-none d-sm-inline">{"Commits"}</span>
+                        </Link<Route>>
+                    </span>
+                </li>
+                <li class="nav-item">
+                    <span class="nav-link">
+                        <Link<Route> to={Route::Profiling}>
+                            <i class="fs-5 bi-graph-up" aria-hidden="true"></i>
+                            <span class="ms-1 d-none d-sm-inline">{"Profiling"}</span>
+                        </Link<Route>>
+                    </span>
+                </li>
+            </ul>
+        </div>
     }
-    // let navigator = use_navigator().unwrap();
-
-    // let go_home_button = {
-    //     let navigator = navigator.clone();
-    //     let onclick = Callback::from(move |_| navigator.push(&Route::Home));
-    //     html! {
-    //         <button {onclick}>{"click to go home"}</button>
-    //     }
-    // };
-
-    // let go_to_first_post_button = {
-    //     let navigator = navigator.clone();
-    //     let onclick = Callback::from(move |_| navigator.push(&Route::Post { id: "first-post".to_string() }));
-    //     html! {
-    //         <button {onclick}>{"click to go the first post"}</button>
-    //     }
-    // };
-
-    // let go_to_secure_button = {
-    //     let onclick = Callback::from(move |_| navigator.push(&Route::Secure));
-    //     html! {
-    //         <button {onclick}>{"click to go to secure"}</button>
-    //     }
-    // };
-
-    // html! {
-    //     <>
-    //         {go_home_button}
-    //         {go_to_first_post_button}
-    //         {go_to_secure_button}
-    //     </>
-    // }
 }
