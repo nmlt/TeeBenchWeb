@@ -1,19 +1,23 @@
 use gloo_console::log;
 use gloo_net::http::{Method, Request};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use wasm_bindgen_futures::spawn_local;
-use web_sys::HtmlSelectElement;
+use web_sys::{HtmlSelectElement, HtmlOptionElement, HtmlInputElement};
 use yew::prelude::*;
 use yewdux::prelude::*;
 use yewdux_input::{Checkbox, InputDispatch};
+use wasm_bindgen::JsCast;
 
 use crate::navigation::Navigation;
 
 #[derive(Store, Default, PartialEq, Clone, Deserialize, Serialize)]
 struct Form {
     algorithm: Option<String>,
-    experiment_type: Option<String>,
+    experiment_type: Vec<String>,
+    parameter: Option<String>,
+    min: Option<i64>,
+    max: Option<i64>,
+    step: Option<i64>,
     dataset: Option<String>,
     platform: Option<String>,
     sort_data: Checkbox,
@@ -40,14 +44,15 @@ impl SelectDataOption {
 #[derive(Clone, Properties, PartialEq)]
 struct InputSelectProps {
     options: Vec<SelectDataOption>,
+    multiple: bool,
     onchange: Callback<Event>,
 }
 
 #[function_component]
-fn InputSelect(InputSelectProps { options, onchange }: &InputSelectProps) -> Html {
+fn InputSelect(InputSelectProps { options, multiple, onchange }: &InputSelectProps) -> Html {
     let options = options.iter().map(|o| html! { <option value={o.value.clone()}>{o.label.clone()}</option> });
     html! {
-        <select class="form-select" type="select" {onchange}>
+        <select class="form-select" type="select" multiple={*multiple} {onchange}>
             {for options}
         </select>
     }
@@ -116,6 +121,22 @@ fn InputRadio(
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Properties)]
+struct InputNumberProps {
+    label: String,
+    onchange: Callback<Event>,
+}
+
+#[function_component]
+fn InputNumber(InputNumberProps { label, onchange }: &InputNumberProps) -> Html {
+    html! {
+        <div>
+            <label for={format!("text-{label}")}>{label.clone()}</label>
+            <input {onchange} type="number" id={format!("text-{label}")} />
+        </div>
+    }
+}
+
 // #[derive(Debug, Properties, Clone, PartialEq)]
 // pub struct ProfilingMenuProps {
 //     pub algs: Vec<String>,
@@ -127,26 +148,69 @@ fn InputRadio(
 #[function_component(Profiling)]
 pub fn profiling() -> Html {
     let algs = vec!["Rho".to_owned(), "Cht".to_owned(),];
+    let exps = vec!["EpcPaging".to_owned(),"Throughput".to_owned(),"CpuCyclesTuple".to_owned(),];
+    let params = vec!["DataSkew".to_owned(), "JoinSelectivity".to_owned(), "Threads".to_owned()];
+    let platforms = vec!["Sgx".to_owned(), "Native".to_owned()];
+    let datasets = vec!["CacheExceed".to_owned(), "CacheFit".to_owned()];
     let algs = SelectDataOption::options_vec(&algs);
     let algs_onchange = {
-        let (store, dispatch) = use_store::<Form>();
+        let (_store, dispatch) = use_store::<Form>();
         dispatch.reduce_mut_callback_with(|store, e: Event| {
             let select_elem = e.target_unchecked_into::<HtmlSelectElement>();
             let value = select_elem.value();
             store.algorithm = Some(value);
         })
     };
-    let exps = vec!["EpcPaging".to_owned(),"Throughput".to_owned(),"CpuCyclesTuple".to_owned(),];
     let exps = SelectDataOption::options_vec(&exps);
     let exps_onchange = {
-        let (store, dispatch) = use_store::<Form>();
+        let (_store, dispatch) = use_store::<Form>();
+        dispatch.reduce_mut_callback_with(|store, e: Event| {
+            let select_elem = e.target_unchecked_into::<HtmlSelectElement>();
+            let html_collection = select_elem.selected_options();
+            let mut selected = vec![];
+            for i in 0..html_collection.length() {
+                let value = html_collection.item(i).unwrap().dyn_into::<HtmlOptionElement>().unwrap();
+                selected.push(value.value());
+            }
+            store.experiment_type = selected;
+        })
+    };
+    let params = SelectDataOption::options_vec(&params);
+    let params_onchange = {
+        let (_store, dispatch) = use_store::<Form>();
         dispatch.reduce_mut_callback_with(|store, e: Event| {
             let select_elem = e.target_unchecked_into::<HtmlSelectElement>();
             let value = select_elem.value();
-            store.experiment_type = Some(value);
+            store.parameter = Some(value);
         })
     };
-    let datasets = vec!["CacheExceed".to_owned(), "CacheFit".to_owned()];
+    let min_onchange = {
+        let (_store, dispatch) = use_store::<Form>();
+        dispatch.reduce_mut_callback_with(|store, e: Event| {
+            let input_num = e.target_unchecked_into::<HtmlInputElement>();
+            let value = input_num.value();
+            let value = i64::from_str_radix(&value, 10).unwrap();
+            store.min = Some(value);
+        })
+    };
+    let max_onchange = {
+        let (_store, dispatch) = use_store::<Form>();
+        dispatch.reduce_mut_callback_with(|store, e: Event| {
+            let input_num = e.target_unchecked_into::<HtmlInputElement>();
+            let value = input_num.value();
+            let value = i64::from_str_radix(&value, 10).unwrap();
+            store.max = Some(value);
+        })
+    };
+    let step_onchange = {
+        let (_store, dispatch) = use_store::<Form>();
+        dispatch.reduce_mut_callback_with(|store, e: Event| {
+            let input_num = e.target_unchecked_into::<HtmlInputElement>();
+            let value = input_num.value();
+            let value = i64::from_str_radix(&value, 10).unwrap();
+            store.step = Some(value);
+        })
+    };
     let datasets: Vec<RadioData> = datasets.iter().map(|d| RadioData::new(&d, &d)).collect();
     let datasets_onchange = {
         let (_store, dispatch) = use_store::<Form>();
@@ -154,7 +218,6 @@ pub fn profiling() -> Html {
             s.dataset = Some(value);
         })
     };
-    let platforms = vec!["Sgx".to_owned(), "Native".to_owned()];
     let platforms: Vec<RadioData> = platforms.iter().map(|p| RadioData::new(&p, &p)).collect();
     let platforms_onchange = {
         let (_store, dispatch) = use_store::<Form>();
@@ -182,6 +245,7 @@ pub fn profiling() -> Html {
                     .send()
                     .await
                     .unwrap();
+                log!("Sent request got: ", format!("{resp:?}"));
             });
         })
     };
@@ -192,8 +256,14 @@ pub fn profiling() -> Html {
             <main>
                 <form class="row g-3" method="get">
                     <div class="col-md">
-                        <InputSelect options={algs} onchange={algs_onchange} />
-                        <InputSelect options={exps} onchange={exps_onchange} />
+                        <InputSelect options={algs} onchange={algs_onchange} multiple={false} />
+                        <InputSelect options={exps} onchange={exps_onchange} multiple={true} />
+                        <InputSelect options={params} onchange={params_onchange} multiple={false} />
+                        <div>
+                            <InputNumber label={"min"} onchange={min_onchange} />
+                            <InputNumber label={"max"} onchange={max_onchange} />
+                            <InputNumber label={"step"} onchange={step_onchange} />
+                        </div>
                         <InputCheckbox label={"Pre-sort data"} onchange={sort_onchange} />
                         <InputRadio data={datasets} title={"Dataset"} onchange={datasets_onchange} />
                         <InputRadio data={platforms} title={"Platform"} onchange={platforms_onchange} />
