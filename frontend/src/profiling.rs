@@ -254,50 +254,53 @@ pub fn profiling() -> Html {
         })
     };
     html! {
-        <div class="row g-3">
-            <div class="col-lg g-3 vh-100">
-                <Navigation active_nav_item={"Profiling"} />
-                {"text"}
-            </div>
-            <main class="g-3 container-md col-lg">
-                <h2 class="d-none d-md-inline">{"Profiling"}</h2>
-                <div class="g-3">
-                <form class="row g-3" method="get">
-                    <div class="col-md">
-                        <div class="row g-3">
-                            <div class="col-md">
-                                <InputSelect options={algs} onchange={algs_onchange} label={"Algorithm"} multiple={false} />
-                            </div>
-                            <div class="col-md">                            
-                                <InputSelect options={exps} onchange={exps_onchange} label={"Experiment (select multiple)"} multiple={true} />
-                            </div>
-                        </div>
-                        <div class="row g-3">
-                            <div class="col-md">
-                                <InputSelect options={params} onchange={params_onchange} label={"Parameter"} multiple={false} />
-                            </div>
-                            <div class="col-md">
-                                <InputNumber label={"min"} onchange={min_onchange} />
-                                <InputNumber label={"max"} onchange={max_onchange} />
-                                <InputNumber label={"step"} onchange={step_onchange} />
-                            </div>
-                        </div>
-                        <div class="row g-3">
-                            <div class="col-md">
-                                <InputRadio data={datasets} title={"Dataset"} onchange={datasets_onchange} />
-                            </div>
-                            <div class="col-md">
-                                <InputRadio data={platforms} title={"Platform"} onchange={platforms_onchange} />
-                            </div>
-                            <div class="col-md">
-                                <InputCheckbox label={"Pre-sort data"} onchange={sort_onchange} />
-                            </div>
-                        </div>
-                        <button class="btn btn-primary" type="button" onclick={onsubmit}>{"Run experiment"}</button>
-                    </div>
-                </form>
+        <div class="container-fluid">
+            <div class="row vh-100">
+                <div class="col-12 col-sm-3 col-xl-2 px-sm-2 px-0 bg-dark d-flex sticky-top">
+                    <Navigation active_nav_item={"Profiling"} />
                 </div>
-            </main>
+                <div class="col d-flex flex-column h-sm-100">
+                    <main class="row">
+                        <div class="col pt-4 col-lg-8">
+                            <h2>{"Profiling"}</h2>
+                            <form class="row g-3" method="get">
+                                <div class="col-md">
+                                    <div class="row g-3">
+                                        <div class="col-md">
+                                            <InputSelect options={algs} onchange={algs_onchange} label={"Algorithm"} multiple={false} />
+                                        </div>
+                                        <div class="col-md">                            
+                                            <InputSelect options={exps} onchange={exps_onchange} label={"Experiment (select multiple)"} multiple={false} />
+                                        </div>
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-md">
+                                            <InputSelect options={params} onchange={params_onchange} label={"Parameter"} multiple={false} />
+                                        </div>
+                                        <div class="col-md">
+                                            <InputNumber label={"min"} onchange={min_onchange} />
+                                            <InputNumber label={"max"} onchange={max_onchange} />
+                                            <InputNumber label={"step"} onchange={step_onchange} />
+                                        </div>
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-md">
+                                            <InputRadio data={datasets} title={"Dataset"} onchange={datasets_onchange} />
+                                        </div>
+                                        <div class="col-md">
+                                            <InputRadio data={platforms} title={"Platform"} onchange={platforms_onchange} />
+                                        </div>
+                                        <div class="col-md">
+                                            <InputCheckbox label={"Pre-sort data"} onchange={sort_onchange} />
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-primary" type="button" onclick={onsubmit}>{"Run experiment"}</button>
+                                </div>
+                            </form>
+                        </div>
+                    </main>
+                </div>
+            </div>
         </div>
     }
 }

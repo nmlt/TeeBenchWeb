@@ -23,18 +23,22 @@ use crate::navigation::Navigation;
 #[function_component(Commits)]
 pub fn commits() -> Html {
     html! {
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-4 vh-100">
+        <div class="container-fluid">
+            <div class="row vh-100">
+                <div class="col-12 col-sm-3 col-xl-2 px-sm-2 px-0 bg-dark d-flex sticky-top">
                     <Navigation active_nav_item={"Commits"} />
                 </div>
-                <main class="col-lg">
-                    <h2>{"Commits"}</h2>
-                    <ul>
-                        <li>{"1.2 on 12.12.12"}</li>
-                        <li>{"1.3 on 13.12.12"}</li>
-                    </ul>
-                </main>
+                <div class="col d-flex flex-column h-sm-100">
+                    <main class="row">
+                        <div class="col pt-4 col-lg-8">
+                            <h2>{"Commits"}</h2>
+                            <ul>
+                                <li>{"1.2 on 12.12.12"}</li>
+                                <li>{"1.3 on 13.12.12"}</li>
+                            </ul>
+                        </div>
+                    </main>
+                </div>
             </div>
         </div>
     }
