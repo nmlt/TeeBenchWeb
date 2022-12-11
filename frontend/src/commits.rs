@@ -1,6 +1,5 @@
 use yew::prelude::*;
 
-//use crate::data_structures::*;
 use crate::navigation::Navigation;
 
 // #[derive(Properties, PartialEq)]

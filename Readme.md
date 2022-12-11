@@ -10,6 +10,15 @@ Requirements
 - Rust target `wasm32-unknown-unknown` (install via `rustup target add wasm32-unknown-unknown`)
 - Trunk (install as explained on their [website](https://trunkrs.dev/))
 
+Running the server app with the web app
+---------------------------------------
+
+First build the web app while in the `frontend` directory with `trunk build`. Then change to the `backend` directory and run the axum server: `cargo run`.
+
+Running the axum server from the workspace does not work, as the path to the `dist` directory that trunk created is then wrong. Just switch to the `backend` directory or use the `run.sh` script.
+
+==BUG:== There is a bug in trunk/cargo that makes any rebuild a full rebuild (ie. not reusing previous unchanged artifacts). The workaround I used is to change the artifact directory of the trunk build (via `frontend/.cargo/config.toml`). It still seems to happen sometimes, but not always.
+
 Testing the web app
 -------------------
 
@@ -18,11 +27,6 @@ For this the location of static assets needs to change. To prevent this from int
 ```
 trunk serve -d "dist" --public-url "/"
 ```
-
-Running the server app with the web app
----------------------------------------
-
-First build the web app while in the `frontend` directory with `trunk build`. Then change to the `backend` directory and run the axum server: `cargo run`.
 
 Testing
 -------

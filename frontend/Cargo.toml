@@ -1,15 +1,15 @@
 [package]
-name = "yew-app"
+name = "frontend"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-# you can check the latest version here: https://crates.io/crates/yew
+common = { path="../common" }
+
 yew = { git = "https://github.com/yewstack/yew/", features = ["csr"] }
 yew-router = { git = "https://github.com/yewstack/yew.git" }
 yewdux = { git = "https://github.com/nmlt/yewdux.git", branch = "patch-1" }
 yewdux-input = { git = "https://github.com/nmlt/yewdux.git", branch = "patch-1" }
-chrono = "0.4" # For Datetime in Commit
 serde = "1"
 serde_json = "1"
 gloo-net = "0.2"

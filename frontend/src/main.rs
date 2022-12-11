@@ -2,7 +2,6 @@ use yew::prelude::*;
 use yew_router::prelude::*;
 
 mod commits;
-mod data_structures;
 mod navigation;
 mod profiling;
 
