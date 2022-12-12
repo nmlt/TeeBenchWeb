@@ -13,10 +13,13 @@ use serde_json::{json, Value};
 use std::collections::VecDeque;
 use std::sync::Arc;
 use std::sync::Mutex;
-use tokio::sync::{mpsc, oneshot};
+use tokio::{
+    sync::{mpsc, oneshot},
+    time::{sleep, Duration},
+};
 use tracing::{info, instrument, warn};
 
-use common::data_types::{Commit, FinishedJob, ProfilingConfiguration, QueueMessage};
+use common::data_types::{Commit, Job, ProfilingConfiguration, QueueMessage};
 
 const DEFAULT_TASK_CHANNEL_SIZE: usize = 5;
 
@@ -45,7 +48,7 @@ async fn run_experiment(
 async fn profiling_task(
     rx: mpsc::Receiver<ProfilingConfiguration>,
     queue: Arc<Mutex<VecDeque<ProfilingConfiguration>>>,
-    queue_tx: mpsc::Sender<FinishedJob>,
+    queue_tx: mpsc::Sender<Job>,
 ) {
     // Using a tokio Mutex here to make it Send. Which is required...
     let rx = Arc::new(tokio::sync::Mutex::new(rx));
@@ -53,7 +56,7 @@ async fn profiling_task(
     async fn work_on_queue(
         queue: Arc<Mutex<VecDeque<ProfilingConfiguration>>>,
         oneshot_tx: oneshot::Sender<()>,
-        queue_tx: mpsc::Sender<FinishedJob>,
+        queue_tx: mpsc::Sender<Job>,
     ) {
         fn pop_queue(
             queue: Arc<Mutex<VecDeque<ProfilingConfiguration>>>,
@@ -70,7 +73,7 @@ async fn profiling_task(
                 .output()
                 .await;
             info!("Process completed with {out:?}.");
-            let finished_job = FinishedJob {
+            let finished_job = Job::Finished {
                 config: current_conf,
                 result: None,
             };
@@ -119,7 +122,7 @@ async fn ws_handler(
     ws.on_upgrade(|socket| handle_socket(socket, queue_state))
 }
 
-#[instrument]
+#[instrument(skip(socket))]
 async fn handle_socket(mut socket: WebSocket, queue_state: Arc<QueueState>) {
     loop {
         let mut guard = queue_state.queue_rx.lock().await;
@@ -129,17 +132,19 @@ async fn handle_socket(mut socket: WebSocket, queue_state: Arc<QueueState>) {
                 if let Ok(msg) = msg {
                     match msg {
                         Message::Text(t) => {
-                            warn!("client sent str: {:?}", t);
+                            warn!("Client sent str: {:?}.", t);
                         }
                         Message::Binary(b) => {
-                            info!("client sent binary data");
+                            info!("Client sent binary data.");
                             if let Ok(request) = serde_json::from_slice(&b) {
                                 match request {
                                     QueueMessage::RequestQueue => {
                                         let queue = {
                                             // TODO This is probably not required to immediately drop the read_guard.
+                                            info!("Locking queue_state...");
                                             queue_state.queue.lock().unwrap().clone()
                                         };
+                                        sleep(Duration::from_millis(100)).await;
                                         for item in queue {
                                             if socket
                                                 .send(Message::Binary(
@@ -155,6 +160,7 @@ async fn handle_socket(mut socket: WebSocket, queue_state: Arc<QueueState>) {
                                                 return;
                                             }
                                         }
+                                        info!("Sent queue to frontend!");
                                     }
                                     QueueMessage::RequestClear => {
                                         // Cancel current job and clear queue
@@ -188,10 +194,20 @@ async fn handle_socket(mut socket: WebSocket, queue_state: Arc<QueueState>) {
                     return;
                 }
             },
-            Some(finished_job) = guard.recv() => {
-                if socket.send(Message::Binary(serde_json::to_vec(&QueueMessage::RemoveQueueItem(finished_job)).unwrap())).await.is_err() {
-                    info!("Client disconnected.");
-                    return;
+            Some(job) = guard.recv() => {
+                match job {
+                    Job::Running(c) => {
+                        if socket.send(Message::Binary(serde_json::to_vec(&QueueMessage::AddQueueItem(c)).unwrap())).await.is_err() {
+                            info!("Client disconnected.");
+                            return;
+                        }
+                    },
+                    Job::Finished { config: _, result } => {
+                        if socket.send(Message::Binary(serde_json::to_vec(&QueueMessage::RemoveQueueItem(result)).unwrap())).await.is_err() {
+                            info!("Client disconnected.");
+                            return;
+                        }
+                    }
                 }
             }
         }
@@ -214,7 +230,7 @@ struct QueueState {
     queue: Arc<Mutex<VecDeque<ProfilingConfiguration>>>,
     /// Channel receiver to get notified if new items were queued or unqueued.
     // TODO There's only one receiver, right?
-    queue_rx: Arc<tokio::sync::Mutex<mpsc::Receiver<FinishedJob>>>,
+    queue_rx: Arc<tokio::sync::Mutex<mpsc::Receiver<Job>>>,
     // TODO Some kind of handle or channel that receives a handle to cancel the current queue item.
 }
 
@@ -258,7 +274,7 @@ async fn main() {
         .with_state(app_state.clone())
         .route("/api/commit", get(get_commits))
         .with_state(app_state.clone())
-        .route("/api/profiling/", post(run_experiment))
+        .route("/api/profiling", post(run_experiment))
         .with_state(app_state.clone())
         .route("/api/queue", get(ws_handler))
         .with_state(app_state);

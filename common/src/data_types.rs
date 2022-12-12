@@ -21,21 +21,14 @@ pub struct Report {
 
 pub type JobResult = Option<Report>; // TODO Maybe make this a Result in case the job failed.
 
-/// Represents a finished profiling run.
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct FinishedJob {
-    pub config: ProfilingConfiguration,
-    pub result: JobResult,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum Job {
+    Running(ProfilingConfiguration),
+    Finished {
+        config: ProfilingConfiguration, // TODO This doesn't even have to be here. We know it's the first item in the queue. Better to be sure, I guess.
+        result: JobResult,
+    },
 }
-
-// impl Job {
-//     fn with_config(config: ProfilingConfiguration) -> Self {
-//         Self {
-//             config,
-//             result: None,
-//         }
-//     }
-// }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum QueueMessage {
@@ -45,12 +38,13 @@ pub enum QueueMessage {
     RequestClear,
     // Frontend received message
     Acknowledge, // TODO Can I trust that transmission succeeds?
+    // TODO Either merge the next two messages and use the Job enum or remove that enum.
     /// Backend has a new job (or the frontend just requested the queue)
     /// This message gets send for each item in the queue.
     AddQueueItem(ProfilingConfiguration),
     /// Backend has finished the current top queue item and wants the frontend to remove it from the queue.
     /// Also the frontend should add the attached JobResult to that Job.
-    RemoveQueueItem(FinishedJob),
+    RemoveQueueItem(JobResult),
 }
 
 #[derive(

@@ -24,7 +24,7 @@ pub fn Navigation(NavigationProps { active_nav_item }: &NavigationProps) -> Html
                     <li class="nav-item">
                         <Link<Route> classes={add_active_class("Home", active_nav_item.clone())} to={Route::Home}>
                             <i class="fs-5 bi-grid"></i>
-                            <span class="ms-1 d-none d-sm-inline">{"TeeBenchWeb"}</span>
+                            <span class="ms-1 d-none d-sm-inline">{"TeeBenchWeb"}</span>// TODO Make this a heading.
                         </Link<Route>>
                     </li>
                     <li class="nav-item">
