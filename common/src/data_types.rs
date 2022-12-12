@@ -19,13 +19,13 @@ pub struct Report {
     pub performance_gain: u32,
 }
 
-type JobResult = Option<Report>; // TODO Maybe make this a Result in case the job failed.
+pub type JobResult = Option<Report>; // TODO Maybe make this a Result in case the job failed.
 
-/// This type is probably misnamed. It is a JobResult and the ProfilingConfiguration represents a job.
+/// Represents a finished profiling run.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct Job {
-    config: ProfilingConfiguration,
-    result: JobResult, 
+pub struct FinishedJob {
+    pub config: ProfilingConfiguration,
+    pub result: JobResult,
 }
 
 // impl Job {
@@ -47,10 +47,10 @@ pub enum QueueMessage {
     Acknowledge, // TODO Can I trust that transmission succeeds?
     /// Backend has a new job (or the frontend just requested the queue)
     /// This message gets send for each item in the queue.
-    AddQueueItem(Job),
+    AddQueueItem(ProfilingConfiguration),
     /// Backend has finished the current top queue item and wants the frontend to remove it from the queue.
     /// Also the frontend should add the attached JobResult to that Job.
-    RemoveQueueItem(JobResult),
+    RemoveQueueItem(FinishedJob),
 }
 
 #[derive(

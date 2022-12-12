@@ -1,7 +1,7 @@
 use yew::prelude::*;
 use yew_router::components::Link;
 
-use crate::{Route, queue::Queue};
+use crate::{queue::Queue, Route};
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct NavigationProps {

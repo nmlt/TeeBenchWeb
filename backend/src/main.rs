@@ -1,37 +1,31 @@
 use axum::{
     extract::{
         ws::{Message, WebSocket, WebSocketUpgrade},
-        Extension,
+        FromRef, State,
     },
     http::StatusCode,
+    response::IntoResponse,
     routing::{get, post},
     Json, Router,
-    response::IntoResponse,
 };
 use axum_extra::routing::SpaRouter;
-use tracing::{info, instrument, warn};
-
-use tokio::sync::{mpsc, oneshot, broadcast};
-
 use serde_json::{json, Value};
 use std::collections::VecDeque;
 use std::sync::Arc;
 use std::sync::Mutex;
-use std::sync::RwLock;
+use tokio::sync::{mpsc, oneshot};
+use tracing::{info, instrument, warn};
 
-use common::data_types::{Commit, ProfilingConfiguration, Report, Job};
+use common::data_types::{Commit, FinishedJob, ProfilingConfiguration, QueueMessage};
 
 const DEFAULT_TASK_CHANNEL_SIZE: usize = 5;
 
-async fn upload_commit(
-    Extension(state): Extension<Arc<Mutex<ServerState>>>,
-    Json(payload): Json<Commit>,
-) {
+async fn upload_commit(State(state): State<Arc<Mutex<ServerState>>>, Json(payload): Json<Commit>) {
     let mut s = state.lock().unwrap();
     s.commits.push(payload);
 }
 
-async fn get_commits(Extension(state): Extension<Arc<Mutex<ServerState>>>) -> Json<Value> {
+async fn get_commits(State(state): State<Arc<Mutex<ServerState>>>) -> Json<Value> {
     let s = state.lock().unwrap();
     Json(json!(s.commits))
 }
@@ -39,7 +33,7 @@ async fn get_commits(Extension(state): Extension<Arc<Mutex<ServerState>>>) -> Js
 #[instrument(skip(profiling_state, payload))]
 #[axum_macros::debug_handler]
 async fn run_experiment(
-    Extension(profiling_state): Extension<Arc<ProfilingState>>,
+    State(profiling_state): State<Arc<ProfilingState>>,
     Json(payload): Json<ProfilingConfiguration>,
 ) -> Result<(), StatusCode> {
     info!("Received: {:?}", payload);
@@ -48,18 +42,23 @@ async fn run_experiment(
 }
 
 #[instrument(skip(rx))]
-async fn profiling_task(rx: mpsc::Receiver<ProfilingConfiguration>, queue: Arc<RwLock<VecDeque<ProfilingConfiguration>>>, queue_tx: broadcast::Sender<bool>) {
+async fn profiling_task(
+    rx: mpsc::Receiver<ProfilingConfiguration>,
+    queue: Arc<Mutex<VecDeque<ProfilingConfiguration>>>,
+    queue_tx: mpsc::Sender<FinishedJob>,
+) {
     // Using a tokio Mutex here to make it Send. Which is required...
     let rx = Arc::new(tokio::sync::Mutex::new(rx));
     #[instrument(skip(queue, oneshot_tx))]
     async fn work_on_queue(
-        queue: Arc<RwLock<VecDeque<ProfilingConfiguration>>>,
+        queue: Arc<Mutex<VecDeque<ProfilingConfiguration>>>,
         oneshot_tx: oneshot::Sender<()>,
+        queue_tx: mpsc::Sender<FinishedJob>,
     ) {
         fn pop_queue(
-            queue: Arc<RwLock<VecDeque<ProfilingConfiguration>>>,
+            queue: Arc<Mutex<VecDeque<ProfilingConfiguration>>>,
         ) -> Option<ProfilingConfiguration> {
-            let mut guard = queue.write().unwrap();
+            let mut guard = queue.lock().unwrap();
             guard.pop_front()
         }
         // TODO Do not clone the queue. It should be always the same arc, but how to make it work with the borrow checker?
@@ -71,18 +70,23 @@ async fn profiling_task(rx: mpsc::Receiver<ProfilingConfiguration>, queue: Arc<R
                 .output()
                 .await;
             info!("Process completed with {out:?}.");
+            let finished_job = FinishedJob {
+                config: current_conf,
+                result: None,
+            };
+            queue_tx.send(finished_job).await.unwrap();
         }
         oneshot_tx.send(()).unwrap();
     }
     async fn receive_confs(
-        queue: Arc<RwLock<VecDeque<ProfilingConfiguration>>>,
+        queue: Arc<Mutex<VecDeque<ProfilingConfiguration>>>,
         rx: Arc<tokio::sync::Mutex<mpsc::Receiver<ProfilingConfiguration>>>,
     ) {
         let mut rx_guard = rx.lock().await;
         match rx_guard.recv().await {
             Some(conf) => {
                 info!("New task came in!");
-                let mut guard = queue.write().unwrap();
+                let mut guard = queue.lock().unwrap();
                 guard.push_back(conf);
             }
             None => warn!("Received None!"), // TODO Why would this happen?
@@ -91,7 +95,11 @@ async fn profiling_task(rx: mpsc::Receiver<ProfilingConfiguration>, queue: Arc<R
     loop {
         receive_confs(queue.clone(), rx.clone()).await;
         let (work_finished_tx, mut work_finished_rx) = oneshot::channel();
-        tokio::spawn(work_on_queue(queue.clone(), work_finished_tx));
+        tokio::spawn(work_on_queue(
+            queue.clone(),
+            work_finished_tx,
+            queue_tx.clone(),
+        ));
         loop {
             // Following the advice in the tokio::oneshot documentation to make the rx &mut.
             tokio::select! {
@@ -103,48 +111,90 @@ async fn profiling_task(rx: mpsc::Receiver<ProfilingConfiguration>, queue: Arc<R
 }
 
 #[instrument]
-async fn ws_handler(Extension(queue_state): Extension<QueueState>, ws: WebSocketUpgrade) -> impl IntoResponse {
+async fn ws_handler(
+    State(queue_state): State<Arc<QueueState>>,
+    ws: WebSocketUpgrade,
+) -> impl IntoResponse {
     info!("ws_handler running.");
-    ws.on_upgrade(handle_socket)
+    ws.on_upgrade(|socket| handle_socket(socket, queue_state))
 }
 
 #[instrument]
-async fn handle_socket(mut socket: WebSocket) {
+async fn handle_socket(mut socket: WebSocket, queue_state: Arc<QueueState>) {
     loop {
-        if let Some(msg) = socket.recv().await {
-            if let Ok(msg) = msg {
-                match msg {
-                    Message::Text(t) => {
-                        println!("client sent str: {:?}", t);
+        let mut guard = queue_state.queue_rx.lock().await;
+        // TODO Check if data loss could happen due to cancelation.
+        tokio::select! {
+            Some(msg) = socket.recv() => {
+                if let Ok(msg) = msg {
+                    match msg {
+                        Message::Text(t) => {
+                            warn!("client sent str: {:?}", t);
+                        }
+                        Message::Binary(b) => {
+                            info!("client sent binary data");
+                            if let Ok(request) = serde_json::from_slice(&b) {
+                                match request {
+                                    QueueMessage::RequestQueue => {
+                                        let queue = {
+                                            // TODO This is probably not required to immediately drop the read_guard.
+                                            queue_state.queue.lock().unwrap().clone()
+                                        };
+                                        for item in queue {
+                                            if socket
+                                                .send(Message::Binary(
+                                                    serde_json::to_vec(&QueueMessage::AddQueueItem(
+                                                        item,
+                                                    ))
+                                                    .unwrap(),
+                                                ))
+                                                .await
+                                                .is_err()
+                                            {
+                                                info!("Client disconnected while sending queue items.");
+                                                return;
+                                            }
+                                        }
+                                    }
+                                    QueueMessage::RequestClear => {
+                                        // Cancel current job and clear queue
+                                        warn!("Unimplemented clear queue request received.");
+                                    }
+                                    QueueMessage::Acknowledge => {
+                                        // TODO I don't think I need this.
+                                        warn!("Acknowledge received.");
+                                    }
+                                    QueueMessage::AddQueueItem(_)
+                                    | QueueMessage::RemoveQueueItem(_) => {
+                                        // TODO The frontend shouldn't sent those messages!
+                                        warn!("Currently not supported Message received.");
+                                    }
+                                }
+                            }
+                        }
+                        Message::Ping(_) => {
+                            info!("Socket ping.");
+                        }
+                        Message::Pong(_) => {
+                            info!("Socket pong.");
+                        }
+                        Message::Close(_) => {
+                            info!("Client disconnected.");
+                            return;
+                        }
                     }
-                    Message::Binary(_) => {
-                        println!("client sent binary data");
-                    }
-                    Message::Ping(_) => {
-                        println!("socket ping");
-                    }
-                    Message::Pong(_) => {
-                        println!("socket pong");
-                    }
-                    Message::Close(_) => {
-                        println!("client disconnected");
-                        return;
-                    }
+                } else {
+                    info!("Client disconnected.");
+                    return;
                 }
-            } else {
-                println!("client disconnected");
-                return;
+            },
+            Some(finished_job) = guard.recv() => {
+                if socket.send(Message::Binary(serde_json::to_vec(&QueueMessage::RemoveQueueItem(finished_job)).unwrap())).await.is_err() {
+                    info!("Client disconnected.");
+                    return;
+                }
             }
         }
-        if socket
-            .send(Message::Text(String::from("Hi!")))
-            .await
-            .is_err()
-        {
-            println!("client disconnected");
-            return;
-        }
-        tokio::time::sleep(std::time::Duration::from_secs(3)).await;
     }
 }
 
@@ -159,12 +209,20 @@ struct ProfilingState {
     channel_tx: mpsc::Sender<ProfilingConfiguration>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct QueueState {
-    queue: Arc<RwLock<VecDeque<ProfilingConfiguration>>>,
+    queue: Arc<Mutex<VecDeque<ProfilingConfiguration>>>,
     /// Channel receiver to get notified if new items were queued or unqueued.
-    queue_rx: Arc<broadcast::Receiver<bool>>,
+    // TODO There's only one receiver, right?
+    queue_rx: Arc<tokio::sync::Mutex<mpsc::Receiver<FinishedJob>>>,
     // TODO Some kind of handle or channel that receives a handle to cancel the current queue item.
+}
+
+#[derive(Debug, Clone, FromRef)]
+struct AppState {
+    state: Arc<Mutex<ServerState>>,
+    profiling_state: Arc<ProfilingState>,
+    queue_state: Arc<QueueState>,
 }
 
 #[tokio::main]
@@ -175,8 +233,8 @@ async fn main() {
         .init();
 
     let (profiling_tx, profiling_rx) = mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);
-    let queue = Arc::new(RwLock::new(VecDeque::new()));
-    let (queue_tx, queue_rx) = broadcast::channel(DEFAULT_TASK_CHANNEL_SIZE);
+    let queue = Arc::new(Mutex::new(VecDeque::new()));
+    let (queue_tx, queue_rx) = mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);
     tokio::spawn(profiling_task(profiling_rx, queue.clone(), queue_tx));
     let state = Arc::new(Mutex::new(ServerState::default()));
     let profiling_state = Arc::new(ProfilingState {
@@ -184,7 +242,12 @@ async fn main() {
     });
     let queue_state = QueueState {
         queue,
-        queue_rx: Arc::new(queue_rx),
+        queue_rx: Arc::new(tokio::sync::Mutex::new(queue_rx)),
+    };
+    let app_state = AppState {
+        state,
+        profiling_state,
+        queue_state: Arc::new(queue_state),
     };
 
     let spa = SpaRouter::new("/assets", "../dist");
@@ -192,13 +255,13 @@ async fn main() {
         .merge(spa)
         .route("/api/test", get(|| async { "Test successful!" }))
         .route("/api/commit", post(upload_commit))
-        .layer(Extension(state.clone()))
+        .with_state(app_state.clone())
         .route("/api/commit", get(get_commits))
-        .layer(Extension(state.clone()))
+        .with_state(app_state.clone())
         .route("/api/profiling/", post(run_experiment))
-        .layer(Extension(profiling_state))
+        .with_state(app_state.clone())
         .route("/api/queue", get(ws_handler))
-        .layer(Extension(queue_state));
+        .with_state(app_state);
 
     info!("Listening on 0.0.0.0:3000");
     axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())
