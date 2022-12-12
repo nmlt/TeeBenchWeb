@@ -4,6 +4,7 @@ use yew_router::prelude::*;
 mod commits;
 mod navigation;
 mod profiling;
+mod queue;
 
 use crate::commits::Commits;
 use crate::profiling::Profiling;

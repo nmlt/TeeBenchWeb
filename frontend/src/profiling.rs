@@ -1,9 +1,7 @@
 use gloo_console::log;
 use gloo_net::http::{Method, Request};
-use serde::{Deserialize, Serialize};
-use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::spawn_local;
-use web_sys::{HtmlInputElement, HtmlOptionElement, HtmlSelectElement};
+use web_sys::{HtmlInputElement, HtmlSelectElement};
 use yew::prelude::*;
 use yewdux::prelude::*;
 use yewdux_input::{Checkbox, InputDispatch};

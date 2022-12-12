@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 pub use strum::VariantNames;
 use strum_macros::{Display, EnumString, EnumVariantNames};
-use yewdux::prelude::*;
+use yewdux::prelude::Store;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Commit {
@@ -17,6 +17,40 @@ pub struct Commit {
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Report {
     pub performance_gain: u32,
+}
+
+type JobResult = Option<Report>; // TODO Maybe make this a Result in case the job failed.
+
+/// This type is probably misnamed. It is a JobResult and the ProfilingConfiguration represents a job.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct Job {
+    config: ProfilingConfiguration,
+    result: JobResult, 
+}
+
+// impl Job {
+//     fn with_config(config: ProfilingConfiguration) -> Self {
+//         Self {
+//             config,
+//             result: None,
+//         }
+//     }
+// }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum QueueMessage {
+    /// Frontend wants to get the current queue
+    RequestQueue, // TODO Do I even need that? Can the server just send its queue when the socket opens
+    /// Frontend wants to clear the queue
+    RequestClear,
+    // Frontend received message
+    Acknowledge, // TODO Can I trust that transmission succeeds?
+    /// Backend has a new job (or the frontend just requested the queue)
+    /// This message gets send for each item in the queue.
+    AddQueueItem(Job),
+    /// Backend has finished the current top queue item and wants the frontend to remove it from the queue.
+    /// Also the frontend should add the attached JobResult to that Job.
+    RemoveQueueItem(JobResult),
 }
 
 #[derive(
