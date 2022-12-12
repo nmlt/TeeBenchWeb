@@ -101,6 +101,11 @@ pub fn Queue() -> Html {
                 }
                 QueueMessage::RemoveQueueItem(finished_job) => {
                     // TODO Put the finished_job into another hook to enable viewing it somewhere else.
+                    dispatch.reduce_mut(|queue_state| {
+                        if queue_state.queue.pop_front().is_none() {
+                            log!("Error: Queue out of sync!");
+                        }
+                    });
                 }
                 _ => {
                     log!("Error: Unexpected websocket message received!");

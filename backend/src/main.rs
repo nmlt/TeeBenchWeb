@@ -84,11 +84,14 @@ async fn profiling_task(
     async fn receive_confs(
         queue: Arc<Mutex<VecDeque<ProfilingConfiguration>>>,
         rx: Arc<tokio::sync::Mutex<mpsc::Receiver<ProfilingConfiguration>>>,
+        queue_tx: mpsc::Sender<Job>,
     ) {
         let mut rx_guard = rx.lock().await;
         match rx_guard.recv().await {
             Some(conf) => {
                 info!("New task came in!");
+                let running_job = Job::Running(conf.clone());
+                queue_tx.send(running_job).await.unwrap();
                 let mut guard = queue.lock().unwrap();
                 guard.push_back(conf);
             }
@@ -96,7 +99,7 @@ async fn profiling_task(
         }
     }
     loop {
-        receive_confs(queue.clone(), rx.clone()).await;
+        receive_confs(queue.clone(), rx.clone(), queue_tx.clone()).await;
         let (work_finished_tx, mut work_finished_rx) = oneshot::channel();
         tokio::spawn(work_on_queue(
             queue.clone(),
@@ -106,7 +109,7 @@ async fn profiling_task(
         loop {
             // Following the advice in the tokio::oneshot documentation to make the rx &mut.
             tokio::select! {
-                _ = receive_confs(queue.clone(), rx.clone()) => {},
+                _ = receive_confs(queue.clone(), rx.clone(), queue_tx.clone()) => {},
                 _ = &mut work_finished_rx => { break; },
             }
         }
@@ -122,13 +125,14 @@ async fn ws_handler(
     ws.on_upgrade(|socket| handle_socket(socket, queue_state))
 }
 
-#[instrument(skip(socket))]
+#[instrument(skip(socket, queue_state))]
 async fn handle_socket(mut socket: WebSocket, queue_state: Arc<QueueState>) {
     loop {
         let mut guard = queue_state.queue_rx.lock().await;
         // TODO Check if data loss could happen due to cancelation.
         tokio::select! {
             Some(msg) = socket.recv() => {
+                info!("Socket received.");
                 if let Ok(msg) = msg {
                     match msg {
                         Message::Text(t) => {
@@ -195,6 +199,7 @@ async fn handle_socket(mut socket: WebSocket, queue_state: Arc<QueueState>) {
                 }
             },
             Some(job) = guard.recv() => {
+                info!("Queue receiver got a new running or finished job.");
                 match job {
                     Job::Running(c) => {
                         if socket.send(Message::Binary(serde_json::to_vec(&QueueMessage::AddQueueItem(c)).unwrap())).await.is_err() {
