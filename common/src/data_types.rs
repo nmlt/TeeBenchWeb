@@ -14,14 +14,14 @@ pub struct Commit {
     // TODO Add an ID that the server generates to uniquely identify a commit, indenpendently of the user supplied title.
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct Report {
     pub performance_gain: u32,
 }
 
 pub type JobResult = Option<Report>; // TODO Maybe make this a Result in case the job failed.
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Job {
     Running(ProfilingConfiguration),
     Finished {
@@ -44,7 +44,7 @@ pub enum QueueMessage {
     AddQueueItem(ProfilingConfiguration),
     /// Backend has finished the current top queue item and wants the frontend to remove it from the queue.
     /// Also the frontend should add the attached JobResult to that Job.
-    RemoveQueueItem(JobResult),
+    RemoveQueueItem(Job),
 }
 
 #[derive(

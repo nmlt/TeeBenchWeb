@@ -12,6 +12,7 @@ use common::data_types::{
 use std::str::FromStr;
 
 use crate::navigation::Navigation;
+use crate::job_results_view::JobResultsView;
 
 #[derive(Clone, Debug, PartialEq)]
 struct SelectDataOption {
@@ -300,6 +301,7 @@ pub fn profiling() -> Html {
                                     <button class="btn btn-primary" type="button" onclick={onsubmit}>{"Run experiment"}</button>
                                 </div>
                             </form>
+                            <JobResultsView />
                         </div>
                     </main>
                 </div>

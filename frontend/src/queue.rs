@@ -1,10 +1,10 @@
 use futures::{SinkExt, StreamExt};
 use gloo_console::log;
 use gloo_net::websocket::{futures::WebSocket, Message};
+use std::collections::VecDeque;
 use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
 use yewdux::prelude::*;
-use std::collections::VecDeque;
 
 use common::data_types::{
     //     Algorithm,
@@ -14,7 +14,10 @@ use common::data_types::{
     //     Platform,
     ProfilingConfiguration,
     QueueMessage,
+    Job,
 };
+
+use crate::job_results_view::FinishedJobState;
 
 #[derive(Debug, PartialEq, Properties)]
 struct QueueItemProps {
@@ -23,7 +26,7 @@ struct QueueItemProps {
 }
 
 #[function_component]
-fn QueueItem(QueueItemProps{ config, running }: &QueueItemProps) -> Html {
+fn QueueItem(QueueItemProps { config, running }: &QueueItemProps) -> Html {
     let spinner = if *running {
         html! {
             <div class="spinner-border" role="status">
@@ -85,23 +88,29 @@ pub fn Queue() -> Html {
     spawn_local(async move {
         log!("sending first...");
         write
-            .send(Message::Bytes(serde_json::to_vec(&QueueMessage::RequestQueue).unwrap()))
+            .send(Message::Bytes(
+                serde_json::to_vec(&QueueMessage::RequestQueue).unwrap(),
+            ))
             .await
             .unwrap();
         log!("Done!\nAwait-ing answer...");
-        let dispatch = Dispatch::<QueueState>::new();
+        let queue_state_dispatch = Dispatch::<QueueState>::new();
+        let finished_job_dispatch = Dispatch::<FinishedJobState>::new();
         while let Some(Ok(Message::Bytes(msg))) = read.next().await {
             let msg = serde_json::from_slice(&msg).unwrap();
             log!(format!("Got msg {msg:?}"));
             match msg {
                 QueueMessage::AddQueueItem(conf) => {
-                    dispatch.reduce_mut(|queue_state| {
+                    queue_state_dispatch.reduce_mut(|queue_state| {
                         queue_state.queue.push_back(conf);
                     });
                 }
                 QueueMessage::RemoveQueueItem(finished_job) => {
                     // TODO Put the finished_job into another hook to enable viewing it somewhere else.
-                    dispatch.reduce_mut(|queue_state| {
+                    finished_job_dispatch.reduce_mut(|finished_job_state| {
+                        finished_job_state.jobs.push(finished_job);
+                    });
+                    queue_state_dispatch.reduce_mut(|queue_state| {
                         if queue_state.queue.pop_front().is_none() {
                             log!("Error: Queue out of sync!");
                         }
@@ -116,7 +125,19 @@ pub fn Queue() -> Html {
     });
 
     let (queue_store, _dispatch) = use_store::<QueueState>();
-    let queue: Vec<Html> = queue_store.queue.iter().map(|c| html! { <QueueItem config={c.clone()} running={false} /> }).collect();
+    let queue: Vec<Html> = queue_store
+        .queue
+        .iter()
+        .enumerate()
+        .map(|(i, c)| {
+            let running = if i == 0 {
+                true
+            } else {
+                false
+            };
+            html! { <QueueItem config={c.clone()} running={running} /> }
+        })
+        .collect();
     html! {
         <div class="text-white">
             <h3>{"Queue"}</h3>

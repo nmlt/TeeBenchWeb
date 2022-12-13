@@ -207,8 +207,18 @@ async fn handle_socket(mut socket: WebSocket, queue_state: Arc<QueueState>) {
                             return;
                         }
                     },
-                    Job::Finished { config: _, result } => {
-                        if socket.send(Message::Binary(serde_json::to_vec(&QueueMessage::RemoveQueueItem(result)).unwrap())).await.is_err() {
+                    Job::Finished { config, result } => {
+                        if socket.send(
+                            Message::Binary(
+                                serde_json::to_vec(
+                                    &QueueMessage::RemoveQueueItem(Job::Finished {
+                                        config, 
+                                        result
+                                    })
+                                )
+                                .unwrap()
+                            )).await
+                            .is_err() {
                             info!("Client disconnected.");
                             return;
                         }

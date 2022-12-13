@@ -5,6 +5,7 @@ mod commits;
 mod navigation;
 mod profiling;
 mod queue;
+mod job_results_view;
 
 use crate::commits::Commits;
 use crate::profiling::Profiling;
