@@ -2,10 +2,11 @@ use yew::prelude::*;
 use yew_router::prelude::*;
 
 mod commits;
+mod job_results_view;
+mod modal;
 mod navigation;
 mod profiling;
 mod queue;
-mod job_results_view;
 
 use crate::commits::Commits;
 use crate::profiling::Profiling;

@@ -11,8 +11,9 @@ use common::data_types::{
 };
 use std::str::FromStr;
 
-use crate::navigation::Navigation;
 use crate::job_results_view::JobResultsView;
+use crate::modal::Modal;
+use crate::navigation::Navigation;
 
 #[derive(Clone, Debug, PartialEq)]
 struct SelectDataOption {
@@ -306,6 +307,7 @@ pub fn profiling() -> Html {
                     </main>
                 </div>
             </div>
+            <Modal />
         </div>
     }
 }

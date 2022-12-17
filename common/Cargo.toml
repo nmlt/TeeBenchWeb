@@ -4,9 +4,11 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-chrono = { version = "0.4", features = ["serde"] } # For Datetime in Commit
+time = "0.3"
 serde = "1"
 serde_json = "1"
 yewdux = { git = "https://github.com/nmlt/yewdux.git", branch = "patch-1" } # For `Store` trait for ProfilingConfiguration
 strum = "0.24"
 strum_macros = "0.24"
+indoc = "1.0"
+thiserror = "1.0"

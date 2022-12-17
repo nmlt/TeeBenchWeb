@@ -13,13 +13,11 @@ use serde_json::{json, Value};
 use std::collections::VecDeque;
 use std::sync::Arc;
 use std::sync::Mutex;
-use tokio::{
-    sync::{mpsc, oneshot},
-    time::{sleep, Duration},
-};
+use time::{Duration, OffsetDateTime};
+use tokio::sync::{mpsc, oneshot};
 use tracing::{info, instrument, warn};
 
-use common::data_types::{Commit, Job, ProfilingConfiguration, QueueMessage};
+use common::data_types::{Commit, Job, ProfilingConfiguration, QueueMessage, Report};
 
 const DEFAULT_TASK_CHANNEL_SIZE: usize = 5;
 
@@ -44,7 +42,7 @@ async fn run_experiment(
     Ok(())
 }
 
-#[instrument(skip(rx))]
+#[instrument(skip(rx, queue, queue_tx))]
 async fn profiling_task(
     rx: mpsc::Receiver<ProfilingConfiguration>,
     queue: Arc<Mutex<VecDeque<ProfilingConfiguration>>>,
@@ -52,7 +50,7 @@ async fn profiling_task(
 ) {
     // Using a tokio Mutex here to make it Send. Which is required...
     let rx = Arc::new(tokio::sync::Mutex::new(rx));
-    #[instrument(skip(queue, oneshot_tx))]
+    #[instrument(skip(queue, oneshot_tx, queue_tx))]
     async fn work_on_queue(
         queue: Arc<Mutex<VecDeque<ProfilingConfiguration>>>,
         oneshot_tx: oneshot::Sender<()>,
@@ -75,7 +73,11 @@ async fn profiling_task(
             info!("Process completed with {out:?}.");
             let finished_job = Job::Finished {
                 config: current_conf,
-                result: None,
+                submitted: OffsetDateTime::now_utc(), // TODO Fix this.
+                runtime: Duration::new(5, 0), // TODO Get actual runtime from teebench output.
+                result: Ok(Report {
+                    performance_gain: 3,
+                }),
             };
             queue_tx.send(finished_job).await.unwrap();
         }
@@ -116,7 +118,7 @@ async fn profiling_task(
     }
 }
 
-#[instrument]
+#[instrument(skip(queue_state, ws))]
 async fn ws_handler(
     State(queue_state): State<Arc<QueueState>>,
     ws: WebSocketUpgrade,
@@ -148,7 +150,6 @@ async fn handle_socket(mut socket: WebSocket, queue_state: Arc<QueueState>) {
                                             info!("Locking queue_state...");
                                             queue_state.queue.lock().unwrap().clone()
                                         };
-                                        sleep(Duration::from_millis(100)).await;
                                         for item in queue {
                                             if socket
                                                 .send(Message::Binary(
@@ -207,12 +208,14 @@ async fn handle_socket(mut socket: WebSocket, queue_state: Arc<QueueState>) {
                             return;
                         }
                     },
-                    Job::Finished { config, result } => {
+                    Job::Finished { config, submitted, runtime, result } => {
                         if socket.send(
                             Message::Binary(
                                 serde_json::to_vec(
                                     &QueueMessage::RemoveQueueItem(Job::Finished {
-                                        config, 
+                                        config,
+                                        submitted,
+                                        runtime,
                                         result
                                     })
                                 )

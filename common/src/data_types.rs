@@ -1,14 +1,25 @@
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use time::{Duration, OffsetDateTime};
 
+use indoc::writedoc;
 pub use strum::VariantNames;
 use strum_macros::{Display, EnumString, EnumVariantNames};
+use thiserror::Error;
 use yewdux::prelude::Store;
+
+#[derive(Error, Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+pub enum TeeBenchWebError {
+    #[error("Could not retrieve results")]
+    NoResults,
+    #[error("Unknown error")]
+    #[default]
+    Unknown,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Commit {
     pub title: String,
-    pub datetime: DateTime<Utc>,
+    pub datetime: OffsetDateTime,
     pub code: String,
     pub report: Option<Report>,
     // TODO Add an ID that the server generates to uniquely identify a commit, indenpendently of the user supplied title.
@@ -19,13 +30,15 @@ pub struct Report {
     pub performance_gain: u32,
 }
 
-pub type JobResult = Option<Report>; // TODO Maybe make this a Result in case the job failed.
+pub type JobResult = Result<Report, TeeBenchWebError>;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Job {
     Running(ProfilingConfiguration),
     Finished {
         config: ProfilingConfiguration, // TODO This doesn't even have to be here. We know it's the first item in the queue. Better to be sure, I guess.
+        submitted: OffsetDateTime,
+        runtime: Duration,
         result: JobResult,
     },
 }
@@ -115,4 +128,33 @@ pub struct ProfilingConfiguration {
     pub dataset: Dataset,
     pub platform: Platform,
     pub sort_data: bool,
+}
+
+impl std::fmt::Display for ProfilingConfiguration {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writedoc!(
+            f,
+            "
+            Configuration:
+                Algorithm(s): {}
+                Experiment Type: {}
+                Parameter: {}
+                min: {}
+                max: {}
+                step: {}
+                Dataset: {}
+                Platform: {}
+                Pre-sort data: {}
+        ",
+            self.algorithm,
+            self.experiment_type,
+            self.parameter,
+            self.min,
+            self.max,
+            self.step,
+            self.dataset,
+            self.platform,
+            self.sort_data
+        )
+    }
 }

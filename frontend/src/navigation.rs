@@ -12,9 +12,9 @@ pub struct NavigationProps {
 pub fn Navigation(NavigationProps { active_nav_item }: &NavigationProps) -> Html {
     fn add_active_class(current: &str, active: String) -> yew::html::Classes {
         if current == &active {
-            classes!("active", "nav-link")
+            classes!("active", "nav-link", "text-primary")
         } else {
-            classes!("nav-link")
+            classes!("nav-link", "text-reset")
         }
     }
     html! {
@@ -22,9 +22,9 @@ pub fn Navigation(NavigationProps { active_nav_item }: &NavigationProps) -> Html
             <nav class="d-flex flex-sm-column flex-row flex-grow-1 align-items-center align-items-sm-start px-3 pt-2 text-white">
                 <ul class="nav flex-lg-column">
                     <li class="nav-item">
-                        <Link<Route> classes={add_active_class("Home", active_nav_item.clone())} to={Route::Home}>
-                            <i class="fs-5 bi-grid"></i>
-                            <span class="ms-1 d-none d-sm-inline">{"TeeBenchWeb"}</span>// TODO Make this a heading.
+                        <Link<Route> classes={classes!("text-nowrap", "nav-link", "text-primary")} to={Route::Home}>
+                            <i class="fs-3 bi-grid text-primary"></i>
+                            <span class="fs-3 ms-1 d-none d-sm-inline text-truncate text-primary">{"TeeBenchWeb"}</span>// TODO Make this a heading.
                         </Link<Route>>
                     </li>
                     <li class="nav-item">
@@ -39,9 +39,11 @@ pub fn Navigation(NavigationProps { active_nav_item }: &NavigationProps) -> Html
                             <span class="ms-1 d-none d-sm-inline">{"Profiling"}</span>
                         </Link<Route>>
                     </li>
+                    <li class="nav-item">
+                        <Queue />
+                    </li>
                 </ul>
             </nav>
-            <Queue />
         </div>
     }
 }

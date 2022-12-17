@@ -14,7 +14,6 @@ use common::data_types::{
     //     Platform,
     ProfilingConfiguration,
     QueueMessage,
-    Job,
 };
 
 use crate::job_results_view::FinishedJobState;
@@ -130,17 +129,13 @@ pub fn Queue() -> Html {
         .iter()
         .enumerate()
         .map(|(i, c)| {
-            let running = if i == 0 {
-                true
-            } else {
-                false
-            };
+            let running = if i == 0 { true } else { false };
             html! { <QueueItem config={c.clone()} running={running} /> }
         })
         .collect();
     html! {
         <div class="text-white">
-            <h3>{"Queue"}</h3>
+            <h3 class="fs-5">{"Queue"}</h3>
             <ul class="list-group">
                 {for queue}
             </ul>
