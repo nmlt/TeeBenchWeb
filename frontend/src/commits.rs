@@ -1,26 +1,109 @@
 use yew::prelude::*;
+use yewdux::prelude::*;
+use gloo_console::log;
+use gloo_net::http::{Method, Request};
+use wasm_bindgen_futures::spawn_local;
+use time::OffsetDateTime;
+use web_sys::HtmlInputElement;
+use gloo_file::{File, futures::read_as_text};
+use js_sys;
+use std::{pin::Pin, rc::Rc};
 
 use crate::navigation::Navigation;
 
-// #[derive(Properties, PartialEq)]
-// struct VersionsListProps {
-//     versions: Vec<Version>,
-// }
+use common::data_types::Commit;
 
-// #[function_component(VersionsList)]
-// fn versions_list(VersionsListProps { versions }: &VersionsListProps) -> Html {
-//     let list_items_html: Html = versions.iter().map(|version| html! {
-//         <li class="list-group-item">{format!("Version: {}\n {:?}", version.title, version.report)}</li>
-//     }).collect();
-//     html! {
-//         <ul class="list-group">
-//             {list_items_html}
-//         </ul>
-//     }
-// }
+#[derive(Debug, Clone, PartialEq, Default, Store)]
+pub struct CommitState {
+    commits: Vec<Commit>,
+}
 
-#[function_component(Commits)]
-pub fn commits() -> Html {
+#[function_component]
+fn UploadCommit() -> Html {
+    let onchange = {
+        let (_store, dispatch) = use_store::<CommitState>();
+        dispatch.reduce_mut_future_callback_with(|store, e: Event| {
+            Box::pin(async move {
+                log!("UploadCommit: onchange triggered!");
+                let input = e.target_unchecked_into::<HtmlInputElement>();
+                if let Some(file_list) = input.files() {
+                    let file: File = js_sys::try_iter(&file_list)
+                        .unwrap()
+                        .unwrap()
+                        .next()
+                        .map(|v| web_sys::File::from(v.unwrap()))
+                        .map(File::from)
+                        .unwrap();
+                    let code = read_as_text(&file).await.unwrap();
+                    let commit = Commit::new("placeholder".to_owned(), OffsetDateTime::now_utc(), code, None);
+                    store.commits.push(commit.clone());
+                    let resp = Request::get("/api/commit")
+                        .method(Method::POST)
+                        .json(&commit)
+                        .unwrap()
+                        .send()
+                        .await
+                        .unwrap();
+                    log!("Sent commit to server, got response: ", format!("{resp:?}"));
+                }
+            })
+        })
+    };
+    html! {
+        <>
+        <input type="file" {onchange} />
+        </>
+    }
+}
+
+#[derive(Properties, PartialEq)]
+struct CommitsListProps {
+    commits: Vec<Commit>,
+}
+
+#[function_component]
+fn CommitsList(CommitsListProps { commits }: &CommitsListProps) -> Html {
+    let list_items_html: Html = commits.iter().map(|commit| html! {
+        <li class="list-group-item">{format!("Commit: {}\n {:?}", commit.title, commit.report)}</li>
+    }).collect();
+    html! {
+        <ul class="list-group">
+            {list_items_html}
+        </ul>
+    }
+}
+
+impl CommitState {
+    fn new(commits: Vec<Commit>) -> Self {
+        CommitState {
+            commits
+        }
+    }
+}
+
+#[function_component]
+pub fn Commits() -> Html {
+    let (commit_state, _dispatch) = use_store::<CommitState>();
+    {   
+        let commit_state = commit_state.clone(); 
+        spawn_local(async move {
+            let mut commit_state = commit_state.clone();
+            let resp: Result<Vec<Commit>, _> = Request::get("/api/profiling")
+                .method(Method::GET)
+                .send()
+                .await
+                .unwrap()
+                .json()
+                .await;
+            match resp {
+                Ok(json) => Pin::new(&mut commit_state).set(Rc::new(CommitState::new(json))),
+                Err(e) => log!("Error getting commit json: ", e.to_string()),
+            }
+            
+        });
+    }
+    let mut commits = (*commit_state).commits.clone();
+    commits.push(Commit::new("initial commit".to_owned(), OffsetDateTime::now_utc(), "auto a = 1;".to_owned(), None));
     html! {
         <div class="container-fluid">
             <div class="row vh-100">
@@ -31,10 +114,8 @@ pub fn commits() -> Html {
                     <main class="row">
                         <div class="col pt-4 col-lg-8">
                             <h2>{"Commits"}</h2>
-                            <ul>
-                                <li>{"1.2 on 12.12.12"}</li>
-                                <li>{"1.3 on 13.12.12"}</li>
-                            </ul>
+                            <CommitsList commits={commits} />
+                            <UploadCommit />
                         </div>
                     </main>
                 </div>

@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 common = { path="../common" }
 
-time = { version = "0.3", features = ["serde-human-readable", "macros"] }
+time = { version = "0.3", features = ["serde-human-readable", "macros", "wasm-bindgen"] }
 yew = { git = "https://github.com/yewstack/yew/", features = ["csr"] }
 yew-router = { git = "https://github.com/yewstack/yew.git" }
 yewdux = { git = "https://github.com/nmlt/yewdux.git", branch = "patch-1" }
@@ -17,8 +17,10 @@ gloo-net = "0.2"
 wasm-bindgen-futures = "0.4"
 futures = "0.3"
 gloo-console = "0.2.3"
+gloo-file = "0.2.3"
 wasm-bindgen = "0.2"
+js-sys = "0.3"
 
 [dependencies.web-sys]
 version = "0.3"
-features = ["HtmlSelectElement", "HtmlInputElement"]
+features = ["HtmlSelectElement", "HtmlInputElement", "HtmlButtonElement"]

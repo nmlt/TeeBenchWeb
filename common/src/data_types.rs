@@ -16,13 +16,24 @@ pub enum TeeBenchWebError {
     Unknown,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Commit {
     pub title: String,
     pub datetime: OffsetDateTime,
     pub code: String,
     pub report: Option<Report>,
     // TODO Add an ID that the server generates to uniquely identify a commit, indenpendently of the user supplied title.
+}
+
+impl Commit {
+    pub fn new(title: String, datetime: OffsetDateTime, code: String, report: Option<Report>) -> Self {
+        Commit {
+            title,
+            datetime,
+            code,
+            report,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
@@ -68,7 +79,7 @@ pub enum Algorithm {
     #[default]
     Rho,
     Cht,
-    #[strum(to_string = "Commit")]
+    #[strum(to_string = "Latest Commit")]
     Commit(u32), // TODO Uuid
 }
 
@@ -119,7 +130,7 @@ pub enum Platform {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Store)]
 pub struct ProfilingConfiguration {
-    pub algorithm: Algorithm,
+    pub algorithm: Vec<Algorithm>,
     pub experiment_type: ExperimentType,
     pub parameter: Parameter,
     pub min: i64,
@@ -136,7 +147,7 @@ impl std::fmt::Display for ProfilingConfiguration {
             f,
             "
             Configuration:
-                Algorithm(s): {}
+                Algorithm(s): {:?}
                 Experiment Type: {}
                 Parameter: {}
                 min: {}
