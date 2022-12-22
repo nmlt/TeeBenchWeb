@@ -54,7 +54,7 @@ pub fn JobResult(JobResultProps { job }: &JobResultProps) -> Html {
             html! {
                 <li class="list-group-item" title={format!("{config}")}>
                     {"Submitted at: "}<span class="fw-bold">{format!("{} ", submitted.format(time_format).unwrap())}</span>
-                    <span class="badge text-bg-primary">{format!("{}", config.algorithm)}</span>
+                    <span class="badge text-bg-primary">{format!("{:?}", config.algorithm)}</span>
                     <span>{format!(" took {runtime} ")}</span>
                     {result}
                 </li>
