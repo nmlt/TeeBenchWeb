@@ -167,10 +167,10 @@ pub fn profiling() -> Html {
                 Algorithm::Commit(_) => {
                     // TODO Get latest commit id.
                     let id = 0;
-                    store.algorithm = Algorithm::Commit(id);
+                    store.algorithm.push(Algorithm::Commit(id));
                 }
                 alg_variant => {
-                    store.algorithm = alg_variant;
+                    store.algorithm.push(alg_variant);
                 }
             }
         })
