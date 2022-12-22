@@ -18,10 +18,13 @@ pub struct CommitState {
     commits: Vec<Commit>,
 }
 
+#[derive(Debug, Clone, PartialEq, Default, Store)]
+pub struct UploadCommitState(Option<Commit>);
+
 #[function_component]
 fn UploadCommit() -> Html {
     let onchange = {
-        let (_store, dispatch) = use_store::<CommitState>();
+        let (_store, dispatch) = use_store::<UploadCommitState>();
         dispatch.reduce_mut_future_callback_with(|store, e: Event| {
             Box::pin(async move {
                 log!("UploadCommit: onchange triggered!");
@@ -36,7 +39,7 @@ fn UploadCommit() -> Html {
                         .unwrap();
                     let code = read_as_text(&file).await.unwrap();
                     let commit = Commit::new("placeholder".to_owned(), OffsetDateTime::now_utc(), code, None);
-                    store.commits.push(commit.clone());
+                    store.0 = Some(commit.clone());
                     let resp = Request::get("/api/commit")
                         .method(Method::POST)
                         .json(&commit)
@@ -49,9 +52,34 @@ fn UploadCommit() -> Html {
             })
         })
     };
+    let onchange_title = {
+        let (_state, dispatch) = use_store::<UploadCommitState>();
+        dispatch.reduce_callback_with(|s, e: Event| {
+            let input_elem = e.target_unchecked_into::<HtmlInputElement>();
+            let mut c = s.0.clone().unwrap();
+            c.title = input_elem.value();
+            Rc::new(UploadCommitState(Some(c)))
+        })
+    };
+    let onclick = {
+        let (upload_commit_state, _dispatch) = use_store::<UploadCommitState>();
+        let (_store, dispatch) = use_store::<CommitState>();
+        dispatch.reduce_mut_future_callback(move |commit_state| {
+            let upload_commit_state = upload_commit_state.clone();
+            Box::pin(async move {
+                let upload_commit_state = upload_commit_state.clone();
+                if let Some(new_commit) = upload_commit_state.0.clone() {
+                    commit_state.commits.push(new_commit);
+                    // TODO Remove the new_commit from the UploadCommitState. Not possible here, because it's a Rc without a RefCell. Not possible with a callback, because the callback needs the state as argument. And I can't call hooks in here. So maybe I have to use a channel? Or switch this around and make this callback run on UploadCommitState instead of CommitState?
+                }
+            })
+        })
+    };
     html! {
         <>
         <input type="file" {onchange} />
+        <input type="text" onchange={onchange_title} />
+        <button type="button" {onclick}>{"Upload"}</button>
         </>
     }
 }

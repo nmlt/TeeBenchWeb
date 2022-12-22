@@ -13,7 +13,7 @@ Requirements
 Running the server app with the web app
 ---------------------------------------
 
-First build the web app while in the `frontend` directory with `trunk build`. Then change to the `backend` directory and run the axum server: `cargo run`.
+Use `run.sh`. First build the web app while in the `frontend` directory with `trunk build`. Then change to the `backend` directory and run the axum server: `cargo run`.
 
 Running the axum server from the workspace does not work, as the path to the `dist` directory that trunk created is then wrong. Just switch to the `backend` directory or use the `run.sh` script.
 
@@ -22,9 +22,10 @@ Running the axum server from the workspace does not work, as the path to the `di
 Testing the web app
 -------------------
 
-For this the location of static assets needs to change. To prevent this from interfering with the build of the server, we'll also change the dist directory.
+For this the location of static assets needs to change. To prevent this from interfering with the build of the server, we'll also change the dist directory. 
 
 ```
+cd frontend
 trunk serve -d "dist" --public-url "/"
 ```
 

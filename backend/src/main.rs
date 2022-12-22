@@ -21,8 +21,11 @@ use common::data_types::{Commit, Job, ProfilingConfiguration, QueueMessage, Repo
 
 const DEFAULT_TASK_CHANNEL_SIZE: usize = 5;
 
+#[instrument(skip(state, payload))]
 async fn upload_commit(State(state): State<Arc<Mutex<ServerState>>>, Json(payload): Json<Commit>) {
     let mut s = state.lock().unwrap();
+    let debug_title = payload.title.clone();
+    info!("Received commit: {debug_title}");
     s.commits.push(payload);
 }
 
