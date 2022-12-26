@@ -7,6 +7,7 @@ mod modal;
 mod navigation;
 mod profiling;
 mod queue;
+mod chartjs;
 
 use crate::commits::Commits;
 use crate::profiling::Profiling;

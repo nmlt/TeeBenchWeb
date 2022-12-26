@@ -78,9 +78,7 @@ async fn profiling_task(
                 config: current_conf,
                 submitted: OffsetDateTime::now_utc(), // TODO Fix this.
                 runtime: Duration::new(5, 0), // TODO Get actual runtime from teebench output.
-                result: Ok(Report {
-                    performance_gain: 3,
-                }),
+                result: Ok(Report::default()),
             };
             queue_tx.send(finished_job).await.unwrap();
         }

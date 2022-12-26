@@ -39,6 +39,7 @@ impl Commit {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct Report {
     pub performance_gain: u32,
+    pub epc_pages: u32,
 }
 
 pub type JobResult = Result<Report, TeeBenchWebError>;
