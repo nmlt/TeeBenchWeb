@@ -24,4 +24,4 @@ js-sys = "0.3"
 
 [dependencies.web-sys]
 version = "0.3"
-features = ["HtmlSelectElement", "HtmlInputElement", "HtmlButtonElement"]
+features = ["HtmlSelectElement", "HtmlInputElement", "HtmlButtonElement", "HtmlOptionElement"]

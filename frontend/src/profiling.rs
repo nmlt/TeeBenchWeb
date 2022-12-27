@@ -1,19 +1,22 @@
 use gloo_console::log;
 use gloo_net::http::{Method, Request};
 use wasm_bindgen_futures::spawn_local;
-use web_sys::{HtmlInputElement, HtmlSelectElement};
+use web_sys::{HtmlInputElement, HtmlSelectElement, HtmlOptionElement};
 use yew::prelude::*;
 use yewdux::prelude::*;
 use yewdux_input::{Checkbox, InputDispatch};
 
 use common::data_types::{
-    Algorithm, Dataset, ExperimentType, Parameter, Platform, ProfilingConfiguration, VariantNames,
+    Algorithm, Dataset, ExperimentType, Parameter, Platform, ProfilingConfiguration, VariantNames
 };
 use std::str::FromStr;
+use std::collections::HashSet;
 
 use crate::job_results_view::JobResultsView;
 use crate::modal::Modal;
 use crate::navigation::Navigation;
+
+use wasm_bindgen::JsCast;
 
 #[derive(Clone, Debug, PartialEq)]
 struct SelectDataOption {
@@ -162,17 +165,23 @@ pub fn profiling() -> Html {
         let (_store, dispatch) = use_store::<ProfilingConfiguration>();
         dispatch.reduce_mut_callback_with(|store, e: Event| {
             let select_elem = e.target_unchecked_into::<HtmlSelectElement>();
-            let value = Algorithm::from_str(&select_elem.value()).unwrap();
-            match value {
-                Algorithm::Commit(_) => {
-                    // TODO Get latest commit id.
-                    let id = 0;
-                    store.algorithm.push(Algorithm::Commit(id));
-                }
-                alg_variant => {
-                    store.algorithm.push(alg_variant);
+            let html_collection = select_elem.selected_options();
+            let mut selected = HashSet::new();
+            for i in 0..html_collection.length() {
+                let value = html_collection.item(i).unwrap().dyn_into::<HtmlOptionElement>().unwrap();
+                let value = Algorithm::from_str(&value.value()).unwrap();
+                match value {
+                    Algorithm::Commit(_) => {
+                        // TODO Get latest commit id.
+                        let id = 0;
+                        selected.insert(Algorithm::Commit(id));
+                    }
+                    alg_variant => {
+                        selected.insert(alg_variant);
+                    }
                 }
             }
+            store.algorithm = selected;
         })
     };
     let exps = SelectDataOption::options_vec(&exps);
@@ -272,10 +281,10 @@ pub fn profiling() -> Html {
                                 <div class="col-md">
                                     <div class="row g-3">
                                         <div class="col-md">
-                                            <InputSelect options={algs} onchange={algs_onchange} label={"Algorithm"} multiple={false} />
+                                            <InputSelect options={algs} onchange={algs_onchange} label={"Algorithm (select multiple)"} multiple={true} />
                                         </div>
                                         <div class="col-md">
-                                            <InputSelect options={exps} onchange={exps_onchange} label={"Experiment (select multiple)"} multiple={false} />
+                                            <InputSelect options={exps} onchange={exps_onchange} label={"Experiment"} multiple={false} />
                                         </div>
                                     </div>
                                     <div class="row g-3">

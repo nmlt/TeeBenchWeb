@@ -7,6 +7,8 @@ use strum_macros::{Display, EnumString, EnumVariantNames};
 use thiserror::Error;
 use yewdux::prelude::Store;
 
+use std::collections::HashSet;
+
 #[derive(Error, Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub enum TeeBenchWebError {
     #[error("Could not retrieve results")]
@@ -73,7 +75,7 @@ pub enum QueueMessage {
 }
 
 #[derive(
-    Debug, Clone, Serialize, Deserialize, Default, PartialEq, EnumString, Display, EnumVariantNames,
+    Debug, Clone, Serialize, Deserialize, Default, PartialEq, EnumString, Display, EnumVariantNames, Eq, Hash
 )]
 #[strum(serialize_all = "UPPERCASE")]
 pub enum Algorithm {
@@ -131,7 +133,7 @@ pub enum Platform {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Store)]
 pub struct ProfilingConfiguration {
-    pub algorithm: Vec<Algorithm>,
+    pub algorithm: HashSet<Algorithm>,
     pub experiment_type: ExperimentType,
     pub parameter: Parameter,
     pub min: i64,
