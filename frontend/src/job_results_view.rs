@@ -1,14 +1,14 @@
+use gloo_timers::future::TimeoutFuture;
 use serde::{Deserialize, Serialize};
 use time::macros::format_description;
 use wasm_bindgen_futures::spawn_local;
-use gloo_timers::future::TimeoutFuture;
 use yew::prelude::*;
 use yewdux::prelude::*;
 
 use common::data_types::Job;
 
-use crate::modal::ModalContent;
 use crate::chartjs::draw_chart;
+use crate::modal::ModalContent;
 use std::collections::HashSet;
 
 #[function_component]
@@ -94,7 +94,9 @@ pub fn JobResultsView() -> Html {
     let jobs = finished_job_store.jobs.iter().map(|j| {
         html! { <JobResult job={j.clone()} /> }
     });
-    use common::data_types::{ProfilingConfiguration, Algorithm, ExperimentType, Parameter, Dataset, Platform, Report};
+    use common::data_types::{
+        Algorithm, Dataset, ExperimentType, Parameter, Platform, ProfilingConfiguration, Report,
+    };
     let test_j = Job::Finished {
         config: ProfilingConfiguration {
             algorithm: HashSet::from([Algorithm::Cht]),

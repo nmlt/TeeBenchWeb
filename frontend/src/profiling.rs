@@ -1,16 +1,16 @@
 use gloo_console::log;
 use gloo_net::http::{Method, Request};
 use wasm_bindgen_futures::spawn_local;
-use web_sys::{HtmlInputElement, HtmlSelectElement, HtmlOptionElement};
+use web_sys::{HtmlInputElement, HtmlOptionElement, HtmlSelectElement};
 use yew::prelude::*;
 use yewdux::prelude::*;
 use yewdux_input::{Checkbox, InputDispatch};
 
 use common::data_types::{
-    Algorithm, Dataset, ExperimentType, Parameter, Platform, ProfilingConfiguration, VariantNames
+    Algorithm, Dataset, ExperimentType, Parameter, Platform, ProfilingConfiguration, VariantNames,
 };
-use std::str::FromStr;
 use std::collections::HashSet;
+use std::str::FromStr;
 
 use crate::job_results_view::JobResultsView;
 use crate::modal::Modal;
@@ -168,7 +168,11 @@ pub fn profiling() -> Html {
             let html_collection = select_elem.selected_options();
             let mut selected = HashSet::new();
             for i in 0..html_collection.length() {
-                let value = html_collection.item(i).unwrap().dyn_into::<HtmlOptionElement>().unwrap();
+                let value = html_collection
+                    .item(i)
+                    .unwrap()
+                    .dyn_into::<HtmlOptionElement>()
+                    .unwrap();
                 let value = Algorithm::from_str(&value.value()).unwrap();
                 match value {
                     Algorithm::Commit(_) => {

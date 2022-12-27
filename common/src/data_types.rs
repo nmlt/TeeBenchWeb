@@ -28,7 +28,12 @@ pub struct Commit {
 }
 
 impl Commit {
-    pub fn new(title: String, datetime: OffsetDateTime, code: String, report: Option<Report>) -> Self {
+    pub fn new(
+        title: String,
+        datetime: OffsetDateTime,
+        code: String,
+        report: Option<Report>,
+    ) -> Self {
         Commit {
             title,
             datetime,
@@ -75,7 +80,17 @@ pub enum QueueMessage {
 }
 
 #[derive(
-    Debug, Clone, Serialize, Deserialize, Default, PartialEq, EnumString, Display, EnumVariantNames, Eq, Hash
+    Debug,
+    Clone,
+    Serialize,
+    Deserialize,
+    Default,
+    PartialEq,
+    EnumString,
+    Display,
+    EnumVariantNames,
+    Eq,
+    Hash,
 )]
 #[strum(serialize_all = "UPPERCASE")]
 pub enum Algorithm {

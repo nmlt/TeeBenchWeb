@@ -1,14 +1,16 @@
-use yew::prelude::*;
-use yewdux::prelude::*;
 use gloo_console::log;
+use gloo_file::{futures::read_as_text, File};
 use gloo_net::http::{Method, Request};
-use wasm_bindgen_futures::spawn_local;
-use time::OffsetDateTime;
-use web_sys::HtmlInputElement;
-use gloo_file::{File, futures::read_as_text};
 use js_sys;
 use std::{pin::Pin, rc::Rc};
+use time::OffsetDateTime;
+use wasm_bindgen_futures::spawn_local;
+use web_sys::HtmlInputElement;
+use yew::prelude::*;
+use yewdux::prelude::*;
 
+use crate::modal::Modal;
+use crate::modal::ModalContent;
 use crate::navigation::Navigation;
 
 use common::data_types::Commit;
@@ -38,7 +40,12 @@ fn UploadCommit() -> Html {
                         .map(File::from)
                         .unwrap();
                     let code = read_as_text(&file).await.unwrap();
-                    let commit = Commit::new("placeholder".to_owned(), OffsetDateTime::now_utc(), code, None);
+                    let commit = Commit::new(
+                        "placeholder".to_owned(),
+                        OffsetDateTime::now_utc(),
+                        code,
+                        None,
+                    );
                     store.0 = Some(commit.clone());
                     let resp = Request::get("/api/commit")
                         .method(Method::POST)
@@ -91,9 +98,39 @@ struct CommitsListProps {
 
 #[function_component]
 fn CommitsList(CommitsListProps { commits }: &CommitsListProps) -> Html {
-    let list_items_html: Html = commits.iter().map(|commit| html! {
-        <li class="list-group-item">{format!("Commit: {}\n {:?}", commit.title, commit.report)}</li>
-    }).collect();
+    let (_content_store, content_dispatch) = use_store::<ModalContent>();
+
+    let list_items_html: Html = commits.iter().map(|commit| {
+        let commit = commit.clone();
+
+    let onclick = {
+        let content_dispatch = content_dispatch.clone();
+        let commit = commit.clone();
+        content_dispatch.set_callback(move |_| {
+            let commit = commit.clone();
+            ModalContent {
+                content: html! {
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">{commit.title}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <pre>{commit.code}</pre>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{"Close"}</button>
+                        </div>
+                    </div>
+                }
+            }
+        })
+    };
+
+    html! {
+        <li class="list-group-item">{format!("Commit: {}\n {:?}", commit.title, commit.report)}
+        <button type="button" {onclick} data-bs-toggle="modal" data-bs-target="#mainModal">{"Code"}</button></li>
+    }}).collect();
     html! {
         <ul class="list-group">
             {list_items_html}
@@ -103,17 +140,15 @@ fn CommitsList(CommitsListProps { commits }: &CommitsListProps) -> Html {
 
 impl CommitState {
     fn new(commits: Vec<Commit>) -> Self {
-        CommitState {
-            commits
-        }
+        CommitState { commits }
     }
 }
 
 #[function_component]
 pub fn Commits() -> Html {
     let (commit_state, _dispatch) = use_store::<CommitState>();
-    {   
-        let commit_state = commit_state.clone(); 
+    {
+        let commit_state = commit_state.clone();
         spawn_local(async move {
             let mut commit_state = commit_state.clone();
             let resp: Result<Vec<Commit>, _> = Request::get("/api/profiling")
@@ -127,11 +162,15 @@ pub fn Commits() -> Html {
                 Ok(json) => Pin::new(&mut commit_state).set(Rc::new(CommitState::new(json))),
                 Err(e) => log!("Error getting commit json: ", e.to_string()),
             }
-            
         });
     }
     let mut commits = (*commit_state).commits.clone();
-    commits.push(Commit::new("initial commit".to_owned(), OffsetDateTime::now_utc(), "auto a = 1;".to_owned(), None));
+    commits.push(Commit::new(
+        "initial commit".to_owned(),
+        OffsetDateTime::now_utc(),
+        "auto a = 1;".to_owned(),
+        None,
+    ));
     html! {
         <div class="container-fluid">
             <div class="row vh-100">
@@ -148,6 +187,7 @@ pub fn Commits() -> Html {
                     </main>
                 </div>
             </div>
+            <Modal />
         </div>
     }
 }

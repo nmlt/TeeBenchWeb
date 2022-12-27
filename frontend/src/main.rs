@@ -1,13 +1,13 @@
 use yew::prelude::*;
 use yew_router::prelude::*;
 
+mod chartjs;
 mod commits;
 mod job_results_view;
 mod modal;
 mod navigation;
 mod profiling;
 mod queue;
-mod chartjs;
 
 use crate::commits::Commits;
 use crate::profiling::Profiling;
