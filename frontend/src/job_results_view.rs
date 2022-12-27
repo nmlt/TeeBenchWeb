@@ -9,6 +9,7 @@ use common::data_types::Job;
 
 use crate::modal::ModalContent;
 use crate::chartjs::draw_chart;
+use std::collections::HashSet;
 
 #[function_component]
 pub fn Chart() -> Html {
@@ -96,7 +97,7 @@ pub fn JobResultsView() -> Html {
     use common::data_types::{ProfilingConfiguration, Algorithm, ExperimentType, Parameter, Dataset, Platform, Report};
     let test_j = Job::Finished {
         config: ProfilingConfiguration {
-            algorithm: vec![Algorithm::Cht],
+            algorithm: HashSet::from([Algorithm::Cht]),
             experiment_type: ExperimentType::EpcPaging,
             parameter: Parameter::Threads,
             min: 3,
