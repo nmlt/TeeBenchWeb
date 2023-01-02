@@ -85,14 +85,14 @@ pub fn Queue() -> Html {
     let (mut write, mut read) = ws.split();
 
     spawn_local(async move {
-        log!("sending first...");
+        //log!("sending first...");
         write
             .send(Message::Bytes(
                 serde_json::to_vec(&QueueMessage::RequestQueue).unwrap(),
             ))
             .await
             .unwrap();
-        log!("Done!\nAwait-ing answer...");
+        //log!("Done!\nAwait-ing answer...");
         let queue_state_dispatch = Dispatch::<QueueState>::new();
         let finished_job_dispatch = Dispatch::<FinishedJobState>::new();
         while let Some(Ok(Message::Bytes(msg))) = read.next().await {
@@ -120,7 +120,7 @@ pub fn Queue() -> Html {
                 }
             }
         }
-        log!("Done!");
+        //log!("Done!");
     });
 
     let (queue_store, _dispatch) = use_store::<QueueState>();

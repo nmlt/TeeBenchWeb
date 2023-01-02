@@ -1,37 +1,22 @@
 export class MyChart {
     chart;
     constructor() {
-        // let data = {
-        //     labels: [1, 2, 3, 4, 5, 6],
-        //     datasets: [{
-        //         label: 'Widget data',
-        //         backgroundColor: 'rgb(255, 99, 132)',
-        //         borderColor: 'rgb(255, 99, 132)',
-        //         data: [10, 35, 30, 20, 25, 15],
-        //     }]
-        // };
-
-        // this.config = {
-        //     type: 'line',
-        //     data: data,
-        //     options: {
-        //         responsive: true,
-        //         scales: {
-        //             y: {
-        //                 suggestedMin: 0,
-        //                 suggestedMax: 50
-        //             }
-        //         }
-        //     }
-        // };
     }
 
-    draw(element_id, config) {
+    draw(context, config) {
         let obj_config = JSON.parse(config);
-        console.log(obj_config);
-        this.chart = new Chart(
-            document.getElementById(element_id),
-            obj_config
-        )
+        if (this.chart) {
+            let data = obj_config.data;
+            let options = obj_config.options;
+            this.chart.data = data;
+            this.chart.options = options;
+            this.chart.update();
+        } else {
+            this.chart = new Chart(
+                context,
+                obj_config
+            );
+        }
+        return this.chart;
     }
 }

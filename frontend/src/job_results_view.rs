@@ -1,29 +1,13 @@
-use gloo_timers::future::TimeoutFuture;
 use serde::{Deserialize, Serialize};
 use time::macros::format_description;
-use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
 use yewdux::prelude::*;
 
-use common::data_types::Job;
+use common::data_types::{Job, Report};
 
-use crate::chartjs::draw_chart;
+use crate::chartjs::Chart;
 use crate::modal::ModalContent;
 use std::collections::HashSet;
-
-#[function_component]
-pub fn Chart() -> Html {
-    spawn_local(async {
-        // We have to wait until the canvas has been created.
-        TimeoutFuture::new(100).await;
-        draw_chart("chartjs-canvas");
-    });
-    html! {
-        <div>
-            <canvas id="chartjs-canvas"></canvas>
-        </div>
-    }
-}
 
 #[derive(Debug, Clone, PartialEq, Properties)]
 pub struct JobResultProps {
@@ -47,6 +31,10 @@ pub fn JobResult(JobResultProps { job }: &JobResultProps) -> Html {
                 let onclick = {
                     content_dispatch.set_callback(move |_| {
                         let result = result.clone();
+                        let report = match result {
+                            Ok(r) => r,
+                            Err(_) => Report::default(),
+                        };
                         ModalContent {
                             content: html! {
                                 <div class="modal-content">
@@ -55,8 +43,7 @@ pub fn JobResult(JobResultProps { job }: &JobResultProps) -> Html {
                                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
                                     <div class="modal-body">
-                                        <p>{format!("{result:?}")}</p>
-                                        <Chart />
+                                        <Chart report={report}/>
                                     </div>
                                     <div class="modal-footer">
                                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{"Close"}</button>

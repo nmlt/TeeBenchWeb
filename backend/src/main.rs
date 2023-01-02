@@ -17,7 +17,7 @@ use time::{Duration, OffsetDateTime};
 use tokio::sync::{mpsc, oneshot};
 use tracing::{info, instrument, warn};
 
-use common::data_types::{Commit, Job, ProfilingConfiguration, QueueMessage, Report};
+use common::data_types::{Commit, Job, ProfilingConfiguration, QueueMessage, Report, ExperimentType};
 
 const DEFAULT_TASK_CHANNEL_SIZE: usize = 5;
 
@@ -74,11 +74,16 @@ async fn profiling_task(
                 .output()
                 .await;
             info!("Process completed with {out:?}.");
+            let report = match current_conf.experiment_type {
+                ExperimentType::EpcPaging => Report::Epc,
+                ExperimentType::Throughput => Report::Throughput,
+                ExperimentType::CpuCyclesTuple => Report::Scalability, // TODO This is probably wrong?
+            };
             let finished_job = Job::Finished {
                 config: current_conf,
                 submitted: OffsetDateTime::now_utc(), // TODO Fix this.
                 runtime: Duration::new(5, 0), // TODO Get actual runtime from teebench output.
-                result: Ok(Report::default()),
+                result: Ok(report),
             };
             queue_tx.send(finished_job).await.unwrap();
         }

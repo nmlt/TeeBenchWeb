@@ -6,11 +6,13 @@ mod commits;
 mod job_results_view;
 mod modal;
 mod navigation;
+mod perf_report;
 mod profiling;
 mod queue;
 
 use crate::commits::Commits;
 use crate::profiling::Profiling;
+use crate::perf_report::PerfReport;
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 pub enum Route {
@@ -20,6 +22,8 @@ pub enum Route {
     Commits,
     #[at("/profiling")]
     Profiling,
+    #[at("/performance_report")]
+    PerfReport,
     #[not_found]
     #[at("/404")]
     NotFound,
@@ -33,6 +37,9 @@ fn switch(routes: Route) -> Html {
         },
         Route::Profiling => html! {
             <Profiling />
+        },
+        Route::PerfReport => html! {
+            <PerfReport />
         },
         Route::NotFound => html! { <h1>{ "404" }</h1> },
     }

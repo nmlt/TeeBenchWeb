@@ -29,14 +29,22 @@ pub fn Navigation(NavigationProps { active_nav_item }: &NavigationProps) -> Html
                     </li>
                     <li class="nav-item">
                         <Link<Route> classes={add_active_class("Commits", active_nav_item.clone())} to={Route::Commits}>
-                            <i class="fs-5 bi-table"></i>
+                            //<i class="fs-5 bi-table"></i>
+                            <i class="fs-5 bi-list-ul"></i>
                             <span class="ms-1 d-none d-sm-inline">{"Commits"}</span>
                         </Link<Route>>
                     </li>
                     <li class="nav-item">
                         <Link<Route> classes={add_active_class("Profiling", active_nav_item.clone())} to={Route::Profiling}>
-                            <i class="fs-5 bi-graph-up"></i>
+                            //<i class="fs-5 bi-graph-up"></i>
+                            <i class="fs-5 bi-play-fill"></i>
                             <span class="ms-1 d-none d-sm-inline">{"Profiling"}</span>
+                        </Link<Route>>
+                    </li>
+                    <li class="nav-item">
+                        <Link<Route> classes={add_active_class("PerfReport", active_nav_item.clone())} to={Route::PerfReport}>
+                            <i class="fs-5 bi-bar-chart-fill"></i>
+                            <span class="ms-1 d-none d-sm-inline">{"PerfReport"}</span>
                         </Link<Route>>
                     </li>
                     <li class="nav-item">
