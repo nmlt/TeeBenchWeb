@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+</head>
+<body>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<div>
+  <canvas id="epc1"></canvas>
+</div>
+<script>
+  const labelsEPC1 = [8,16,24,32,40,48,56,64,72,80,88,96,104,112,120,128];
+  const dataEPC1 = {
+    labels: labelsEPC1,
+    datasets: [
+      {
+        label: 'Throughput',
+        data: [25.99,20.36,21.70,20.60,16.96,14.00,13.09,17.80,17.03,18.26,17.59,16.86,16.15,14.71,17.52,17.55],
+        borderColor: '#de3d82',
+        backgroundColor: '#de3d82',
+        order: 0,
+        type: 'line',
+        yAxisID: 'y',
+        borderWidth:5
+      },
+      {
+        label: 'EPC Paging',
+        data: [325201,334234,338962,343624,348356,353090,357802,362510,367241,371954,376744,381605,386340,390620,394810,399069],
+  borderColor: '#7e84fa',
+        backgroundColor: '#7e84fa',
+        // type: 'line',
+        order: 1,
+        yAxisID: 'y1',
+      }
+    ]
+  };
+  const configEPC1 = {
+    type: 'bar',
+    data: dataEPC1,
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: 'top',
+        },
+        title: {
+          display: true,
+          text: 'EPC Paging v2.1',
+          font: {size:60}
+        }
+      },
+      scales: {
+        x:{ticks: {font:{size:40}}},
+        y: {
+          text: 'Throughput [M rec/s]',
+          type: 'linear',
+          display: true,
+          position: 'left',
+          ticks: {font:{size:40}},
+        },
+        y1: {
+          type: 'linear',
+          display: true,
+          position: 'right',
+          ticks: {font:{size:40}},
+          // grid line settings
+          grid: {
+            drawOnChartArea: false, // only want the grid lines for one axis to show up
+          },
+        }
+      }
+    },
+  };
+  var epc1Chart = new Chart(document.getElementById('epc1').getContext('2d'), configEPC1);
+</script>
+</body>
+</html>

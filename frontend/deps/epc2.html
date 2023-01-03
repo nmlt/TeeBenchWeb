@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+</head>
+<body>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<div>
+<canvas id="epc2"></canvas>
+</div>
+<script>
+  const labelsEPC2 = [8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128];
+  const dataEPC2 = {
+    labels: labelsEPC2,
+    datasets: [
+      {
+        label: 'Throughput',
+        data: [26.05, 24.58, 21.74, 24.79, 23.20, 14.93, 14.70, 19.99, 21.07, 20.59, 20.94, 18.94, 18.14, 16.52, 18.05, 18.55],
+        borderColor: '#72e06a',
+        backgroundColor: '#72e06a',
+        order: 0,
+        type: 'line',
+        yAxisID: 'y',
+        borderWidth: 5
+      },
+      {
+        label: 'EPC Paging',
+        data: [324201, 332234, 337962, 342624, 346356, 351090, 354802, 359510, 364241, 368954, 373744, 378605, 383340, 387620, 391810, 396069],
+        borderColor: '#7e84fa',
+        backgroundColor: '#7e84fa',
+        // type: 'line',
+        order: 1,
+        yAxisID: 'y1',
+      }
+    ]
+  };
+  const configEPC2 = {
+    type: 'bar',
+    data: dataEPC2,
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: 'top',
+        },
+        title: {
+          display: true,
+          text: 'EPC Paging v2.2',
+          font: { size: 60 }
+        }
+      },
+      scales: {
+        x: { ticks: { font: { size: 40 } } },
+        y: {
+          text: 'Throughput [M rec/s]',
+          type: 'linear',
+          display: true,
+          position: 'left',
+          ticks: { font: { size: 40 } },
+        },
+        y1: {
+          type: 'linear',
+          display: true,
+          position: 'right',
+          ticks: { font: { size: 40 } },
+          // grid line settings
+          grid: {
+            drawOnChartArea: false, // only want the grid lines for one axis to show up
+          },
+        }
+      }
+    },
+  };
+  var epc1Chart = new Chart(document.getElementById('epc2').getContext('2d'), configEPC2);
+</script>
+</body>
+</html>

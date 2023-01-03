@@ -1,10 +1,8 @@
 use common::data_types::Report;
 use gloo_console::log;
-use gloo_timers::future::TimeoutFuture;
 use js_sys::Object;
 use serde_json::json;
 use wasm_bindgen::prelude::wasm_bindgen;
-use wasm_bindgen_futures::spawn_local;
 use web_sys::HtmlCanvasElement;
 use yew::prelude::*;
 use yewdux::prelude::*;

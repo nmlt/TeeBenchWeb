@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+</head>
+<body>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <div>
+    <canvas id="myChart"></canvas>
+  </div>
+  <!-- throughput cache fit -->
+  <script>
+    const labels = [
+      'native', 'sgx'
+    ];
+
+    const data = {
+      labels: ['native', 'sgx'],
+      datasets: [
+        {
+          label: 'v2.1',
+          backgroundColor: '#de3d82',
+          data: [164.11,33.51]
+        },
+        {
+          label: 'v2.2',
+          backgroundColor: '#72e06a',
+          data: [180.11,39.51]
+
+        }
+      ]
+    };
+    var ctx = document.getElementById('myChart').getContext('2d');
+    
+    var myBarChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['native', 'sgx'],
+        datasets: [{
+          label: 'v2.1',
+          backgroundColor: '#de3d82',
+          data: [164.11, 33.51]
+        },
+        {
+          label: 'v2.2',
+          backgroundColor: '#72e06a',
+          data: [180.11, 39.51]
+
+        }]
+      },
+      options: {
+          plugins: {
+            title: {
+              display: true,
+              text: 'Throughput cache-fit',
+              font: {
+                size:60 
+              }
+            }
+          },
+          barValueSpacing: 20,
+          scales: {
+              x:{ticks: {font:{size:40}}},
+              y:{ticks: {font:{size:40}},
+                text: 'Throughput [M rec/s]',
+              }
+          }
+      }
+    });
+  </script>
+</body>
+</html>
