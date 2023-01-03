@@ -1,13 +1,13 @@
-use wasm_bindgen::prelude::wasm_bindgen;
-use js_sys::Object;
-use web_sys::HtmlCanvasElement;
-use serde_json::json;
-use yew::prelude::*;
-use yewdux::prelude::*;
-use gloo_timers::future::TimeoutFuture;
-use wasm_bindgen_futures::spawn_local;
 use common::data_types::Report;
 use gloo_console::log;
+use gloo_timers::future::TimeoutFuture;
+use js_sys::Object;
+use serde_json::json;
+use wasm_bindgen::prelude::wasm_bindgen;
+use wasm_bindgen_futures::spawn_local;
+use web_sys::HtmlCanvasElement;
+use yew::prelude::*;
+use yewdux::prelude::*;
 
 #[allow(non_snake_case)]
 #[wasm_bindgen(module = "/deps/MyChart.js")]
@@ -20,6 +20,9 @@ extern "C" {
 
     #[wasm_bindgen(method)]
     fn draw(this: &MyChart, context: Object, config: &str);
+
+    #[wasm_bindgen(method)]
+    fn destroy(this: &MyChart);
 }
 
 #[derive(Clone, PartialEq, Default, Store)]
@@ -36,193 +39,203 @@ pub fn Chart(ChartProps { report }: &ChartProps) -> Html {
     let canvas_ref = NodeRef::default();
     let move_canvas_ref = canvas_ref.clone();
     let (store, dispatch) = use_store::<ChartState>();
-    spawn_local(async move {
-        let report = report.clone();
-        let canvas_ref = move_canvas_ref.clone();
-        // We have to wait a bit until the canvas has been created.
-        TimeoutFuture::new(100).await;
-        let chart_type;
-        let labels;
-        let datasets;
-        let plugins;
-        let scales;
-        let options;
-        match report {
-            Report::Epc => {
-                chart_type = "bar";
-                labels = json!([8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128]);
-                datasets = json!([
-                    {
-                        "label": "Throughput",
-                        "data": [25.99, 20.36, 21.70, 20.60, 16.96, 14.00, 13.09, 17.80, 17.03, 18.26, 17.59, 16.86, 16.15, 14.71, 17.52, 17.55],
-                        "borderColor": "#de3d82",
-                        "backgroundColor": "#de3d82",
-                        "border": 0,
-                        "type": "line",
-                        "yAxisID": "y",
-                        "borderWidth": 5
-                    },
-                    {
-                        "label": "EPC Paging",
-                        "data": [325201, 334234, 338962, 343624, 348356, 353090, 357802, 362510, 367241, 371954, 376744, 381605, 386340, 390620, 394810, 399069],
-                        "borderColor": "#7e84fa",
-                        "backgroundColor": "#7e84fa",
-                        // "type": "line",
-                        "order": 1,
-                        "yAxisID": "y1",
-                    }
-                ]);
-                plugins = json!({
-                    "legend": {
-                        "position": "top",
-                    },
-                    "title": {
-                        "display": true,
-                        "text": "EPC Paging v2.1",
-                        "font": {"size":60}
-                    }
-                });
-                scales = json!({
-                    "x": {"ticks": {"font": {"size":40}}},
-                    "y": {
-                        "text": "Throughput [M rec/s]",
-                        "type": "linear",
-                        "display": true,
-                        "position": "left",
-                        "ticks": {"font": {"size": 40}},
-                    },
-                    "y1": {
-                        "type": "linear",
-                        "display": true,
-                        "position": "right",
-                        "ticks": {"font": {"size": 40}},
-                        // grid line settings
-                        "grid": {
-                            "drawOnChartArea": false, // only want the grid lines for one axis to show up
+    use_effect_with_deps(
+        move |_| {
+            let report = report.clone();
+            let canvas_ref = move_canvas_ref.clone();
+            // We have to wait a bit until the canvas has been created.
+            let chart_type;
+            let labels;
+            let datasets;
+            let plugins;
+            let scales;
+            let options;
+            match report {
+                Report::Epc => {
+                    chart_type = "bar";
+                    labels = json!([8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128]);
+                    datasets = json!([
+                        {
+                            "label": "Throughput",
+                            "data": [25.99, 20.36, 21.70, 20.60, 16.96, 14.00, 13.09, 17.80, 17.03, 18.26, 17.59, 16.86, 16.15, 14.71, 17.52, 17.55],
+                            "borderColor": "#de3d82",
+                            "backgroundColor": "#de3d82",
+                            "border": 0,
+                            "type": "line",
+                            "yAxisID": "y",
+                            "borderWidth": 5
                         },
-                    }
-                });
-                options = json!({
-                    "responsive": true,
-                    "plugins": plugins,
-                    "scales": scales,
-                });
-            },
-            Report::Scalability => {
-                chart_type = "lines";
-                labels = json!([1,2,3,4,5,6,7,8]);
-                datasets = json!([
-                    {
-                        "label": "v2.1",
-                        "data": [11.54,16.73,19.05,18.78,18.32,17.97,17.58,16.39],
-                        "backgroundColor": "#de3d82",
-                        "borderColor": "#de3d82",
-                        "yAxisID": "y",
-                        "borderWidth":5
-                    },
-                    {
-                        "label": "v2.2",
-                        "data": [12.84,17.03,21.05,21.78,19.32,18.54,18.01,17.09],
-                        "backgroundColor": "#72e06a",
-                        "borderColor": "#72e06a",
-                        "yAxisID": "y",
-                        "borderWidth":5
-                    }
-                ]);
-                plugins = json!({
-                    "title": {
-                        "display": true,
-                        "text": "Scalability cache-exceed",
-                        "font": {
-                            "size": 60
+                        {
+                            "label": "EPC Paging",
+                            "data": [325201, 334234, 338962, 343624, 348356, 353090, 357802, 362510, 367241, 371954, 376744, 381605, 386340, 390620, 394810, 399069],
+                            "borderColor": "#7e84fa",
+                            "backgroundColor": "#7e84fa",
+                            // "type": "line",
+                            "order": 1,
+                            "yAxisID": "y1",
                         }
-                    }
-                });
-                scales = json!({
-                    "x": {
-                        "ticks": {
+                    ]);
+                    plugins = json!({
+                        "legend": {
+                            "position": "top",
+                        },
+                        "title": {
+                            "display": true,
+                            "text": "EPC Paging v2.1",
+                            "font": {"size":60}
+                        }
+                    });
+                    scales = json!({
+                        "x": {"ticks": {"font": {"size":40}}},
+                        "y": {
+                            "text": "Throughput [M rec/s]",
+                            "type": "linear",
+                            "display": true,
+                            "position": "left",
+                            "ticks": {"font": {"size": 40}},
+                        },
+                        "y1": {
+                            "type": "linear",
+                            "display": true,
+                            "position": "right",
+                            "ticks": {"font": {"size": 40}},
+                            // grid line settings
+                            "grid": {
+                                "drawOnChartArea": false, // only want the grid lines for one axis to show up
+                            },
+                        }
+                    });
+                    options = json!({
+                        "responsive": true,
+                        "plugins": plugins,
+                        "scales": scales,
+                    });
+                }
+                Report::Scalability => {
+                    chart_type = "lines";
+                    labels = json!([1, 2, 3, 4, 5, 6, 7, 8]);
+                    datasets = json!([
+                        {
+                            "label": "v2.1",
+                            "data": [11.54,16.73,19.05,18.78,18.32,17.97,17.58,16.39],
+                            "backgroundColor": "#de3d82",
+                            "borderColor": "#de3d82",
+                            "yAxisID": "y",
+                            "borderWidth":5
+                        },
+                        {
+                            "label": "v2.2",
+                            "data": [12.84,17.03,21.05,21.78,19.32,18.54,18.01,17.09],
+                            "backgroundColor": "#72e06a",
+                            "borderColor": "#72e06a",
+                            "yAxisID": "y",
+                            "borderWidth":5
+                        }
+                    ]);
+                    plugins = json!({
+                        "title": {
+                            "display": true,
+                            "text": "Scalability cache-exceed",
                             "font": {
-                                "size": 40
+                                "size": 60
                             }
                         }
-                    },
-                    "y": {
-                        "ticks": {
-                            "font": {
-                                "size": 40
-                            },
-                            "min": 0
+                    });
+                    scales = json!({
+                        "x": {
+                            "ticks": {
+                                "font": {
+                                    "size": 40
+                                }
+                            }
                         },
-                        "text": "Throughput [M rec/s]",
-                        "type": "linear",
-                        "display": true,
-                        "position": "left"
-                    }
-                });
-                options = json!({
-                    "responsive": true,
-                    "plugins": plugins,
-                    "scales": scales,
-                });
-            },
-            Report::Throughput => {
-                chart_type = "bar";
-                labels = json!(["native", "sgx"]);
-                datasets = json!([
-                    {
-                        "label": "v2.1",
-                        "backgroundColor": "#de3d82",
-                        "data": [164.11,33.51]
-                    },
-                    {
-                        "label": "v2.2",
-                        "backgroundColor": "#72e06a",
-                        "data": [180.11,39.51]
-
-                    }
-                ]);
-                plugins = json!({
-                    "title": {
-                        "display": true,
-                        "text": "Throughput cache-fit",
-                        "font": {
-                            "size":60 
+                        "y": {
+                            "ticks": {
+                                "font": {
+                                    "size": 40
+                                },
+                                "min": 0
+                            },
+                            "text": "Throughput [M rec/s]",
+                            "type": "linear",
+                            "display": true,
+                            "position": "left"
                         }
-                    }
-                });
-                scales = json!({
-                    "x": {"ticks": {"font": {"size": 40}}},
-                    "y": {"ticks": {"font": {"size": 40}},
-                    "text": "Throughput [M rec/s]",
-                    }
-                });
-                options = json!({
-                    "responsive": true,
-                    "plugins": plugins,
-                    "scales": scales,
-                });
+                    });
+                    options = json!({
+                        "responsive": true,
+                        "plugins": plugins,
+                        "scales": scales,
+                    });
+                }
+                Report::Throughput => {
+                    chart_type = "bar";
+                    labels = json!(["native", "sgx"]);
+                    datasets = json!([
+                        {
+                            "label": "v2.1",
+                            "backgroundColor": "#de3d82",
+                            "data": [164.11,33.51]
+                        },
+                        {
+                            "label": "v2.2",
+                            "backgroundColor": "#72e06a",
+                            "data": [180.11,39.51]
+
+                        }
+                    ]);
+                    plugins = json!({
+                        "title": {
+                            "display": true,
+                            "text": "Throughput cache-fit",
+                            "font": {
+                                "size":60
+                            }
+                        }
+                    });
+                    scales = json!({
+                        "x": {"ticks": {"font": {"size": 40}}},
+                        "y": {"ticks": {"font": {"size": 40}},
+                        "text": "Throughput [M rec/s]",
+                        }
+                    });
+                    options = json!({
+                        "responsive": true,
+                        "plugins": plugins,
+                        "scales": scales,
+                    });
+                }
             }
-        }
-        let config = json!({
-            "type": chart_type,
-            "data": {
-                "labels": labels,
-                "datasets": datasets,
-            },
-            "options": options,
-        });
-        let context = canvas_ref.cast::<HtmlCanvasElement>().unwrap().get_context("2d").unwrap().unwrap();
-        let my_chart = if store.1 {
-            store.0.clone()
-        } else {
-            MyChart::new()
-        };
-        my_chart.draw(context, &config.to_string());
-        dispatch.reduce_mut(|state| {
-            state.0 = my_chart;
-            state.1 = true;
-        });
-    });
+            let config = json!({
+                "type": chart_type,
+                "data": {
+                    "labels": labels,
+                    "datasets": datasets,
+                },
+                "options": options,
+            });
+            let context = canvas_ref
+                .cast::<HtmlCanvasElement>()
+                .unwrap()
+                .get_context("2d")
+                .unwrap()
+                .unwrap();
+            let my_chart = if store.1 {
+                store.0.clone()
+            } else {
+                MyChart::new()
+            };
+            my_chart.draw(context, &config.to_string());
+
+            dispatch.reduce_mut(|state| {
+                log!("async Chart dispatch running.");
+                state.0 = my_chart.clone();
+                state.1 = true;
+            });
+            move || { my_chart.destroy() }
+        },
+        ()
+    );
     html! {
         <div>
             <canvas ref={canvas_ref}></canvas>

@@ -19,4 +19,10 @@ export class MyChart {
         }
         return this.chart;
     }
+
+    destroy() {
+        if (this.chart) {
+            this.chart.destroy();
+        }
+    }
 }

@@ -1,10 +1,6 @@
 use yew::prelude::*;
 
-use crate::{
-    modal::Modal,
-    navigation::Navigation,
-    chartjs::Chart,
-};
+use crate::{chartjs::Chart, modal::Modal, navigation::Navigation};
 use common::data_types::Report;
 
 #[function_component]

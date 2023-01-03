@@ -11,8 +11,8 @@ mod profiling;
 mod queue;
 
 use crate::commits::Commits;
-use crate::profiling::Profiling;
 use crate::perf_report::PerfReport;
+use crate::profiling::Profiling;
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 pub enum Route {
@@ -41,7 +41,7 @@ fn switch(routes: Route) -> Html {
         Route::PerfReport => html! {
             <PerfReport />
         },
-        Route::NotFound => html! { <h1>{ "404" }</h1> },
+        Route::NotFound => html! { <main><h1>{ "404" }</h1><p>{"not found in yew app"}</p></main> },
     }
 }
 
