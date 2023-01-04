@@ -47,14 +47,30 @@ const config = {
         display: true,
         text: 'Scalability cache-fit',
         font: {
-          size: 60
+          size: 35
         }
       }
     },
     scales: {
-      x:{ticks: {font:{size:40}}},
-      y:{ticks: {font:{size:40}, min:0},
-        text: 'Throughput [M rec/s]',
+      x:{
+          ticks: {font:{size:15}},
+          title : {
+              display: true,
+              text: "Threads",
+              font: {
+                  size: 20
+              }
+          }
+      },
+      y:{
+          ticks: {font:{size:15}, min:0},
+          title : {
+              display: true,
+              text: "Throughput [M rec/s]",
+              font: {
+                  size: 20
+              }
+          },
         type:'linear',
         display:true,
         position:'left'

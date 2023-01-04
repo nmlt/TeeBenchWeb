@@ -46,23 +46,44 @@
         title: {
           display: true,
           text: 'EPC Paging v2.1',
-          font: {size:60}
+          font: {size:35}
         }
       },
       scales: {
-        x:{ticks: {font:{size:40}}},
+        x:{ticks: {font:{size:15}},
+          title : {
+            display: true,
+            text: "Size of R [MB]",
+            font: {
+              size: 20
+            }
+          }},
         y: {
           text: 'Throughput [M rec/s]',
           type: 'linear',
           display: true,
           position: 'left',
-          ticks: {font:{size:40}},
+          ticks: {font:{size:15}},
+          title : {
+            display: true,
+            text: 'Throughput [M rec/s]',
+            font: {
+              size: 20
+            }
+          }
         },
         y1: {
           type: 'linear',
           display: true,
           position: 'right',
-          ticks: {font:{size:40}},
+          ticks: {font:{size:15}},
+          title : {
+            display: true,
+            text: 'EPC Misses',
+            font: {
+              size: 20
+            }
+          },
           // grid line settings
           grid: {
             drawOnChartArea: false, // only want the grid lines for one axis to show up
