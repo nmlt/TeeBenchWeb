@@ -83,12 +83,14 @@ pub fn JobResultsView() -> Html {
     });
     use common::data_types::{
         Algorithm, Dataset, ExperimentType, Parameter, Platform, ProfilingConfiguration, Report,
+        Measurement
     };
     let test_j = Job::Finished {
         config: ProfilingConfiguration {
             algorithm: HashSet::from([Algorithm::Cht]),
             experiment_type: ExperimentType::EpcPaging,
             parameter: Parameter::Threads,
+            measurement: Measurement::Throughput,
             min: 3,
             max: 3,
             step: 3,
@@ -100,10 +102,28 @@ pub fn JobResultsView() -> Html {
         runtime: time::Duration::new(5, 0),
         result: Ok(Report::default()),
     };
+    let test_scalability = Job::Finished {
+        config: ProfilingConfiguration {
+            algorithm: HashSet::from([Algorithm::Rho]),
+            experiment_type: ExperimentType::EpcPaging,
+            parameter: Parameter::Threads,
+            measurement: Measurement::Throughput,
+            min: 1,
+            max: 8,
+            step: 1,
+            dataset: Dataset::CacheFit,
+            platform: Platform::Sgx,
+            sort_data: false,
+        },
+        submitted: time::OffsetDateTime::now_utc(),
+        runtime: time::Duration::new(180, 0),
+        result: Ok(Report::ScalabilityNativeSgxExample),
+    };
     html! {
         <ul class="list-group">
             {for jobs}
             <JobResult job={test_j} />
+            <JobResult job={test_scalability} />
         </ul>
     }
 }

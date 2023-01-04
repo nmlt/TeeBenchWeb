@@ -55,6 +55,8 @@ pub fn Chart(ChartProps { report }: &ChartProps) -> Html {
                     datasets = json!([
                         {
                             "label": "Throughput",
+                            "labelString": "Throughput",
+                            "display": true,
                             "data": [25.99, 20.36, 21.70, 20.60, 16.96, 14.00, 13.09, 17.80, 17.03, 18.26, 17.59, 16.86, 16.15, 14.71, 17.52, 17.55],
                             "borderColor": "#de3d82",
                             "backgroundColor": "#de3d82",
@@ -80,27 +82,50 @@ pub fn Chart(ChartProps { report }: &ChartProps) -> Html {
                         "title": {
                             "display": true,
                             "text": "EPC Paging v2.1",
-                            "font": {"size":60}
+                            "font": {"size":40}
                         }
                     });
                     scales = json!({
-                        "x": {"ticks": {"font": {"size":40}}},
+                        "x": {
+                            "ticks": {"font": {"size":20}},
+                            "title" : {
+                                "display": true,
+                                "text": "Size of R [MB]",
+                                "font": {
+                                    "size": 25
+                                }
+                            }
+                        },
                         "y": {
                             "text": "Throughput [M rec/s]",
                             "type": "linear",
                             "display": true,
                             "position": "left",
-                            "ticks": {"font": {"size": 40}},
+                            "ticks": {"font": {"size": 20}},
+                            "title" : {
+                                "display": true,
+                                "text": "Throughput [M rec/s]",
+                                "font": {
+                                    "size": 25
+                                }
+                            }
                         },
                         "y1": {
                             "type": "linear",
                             "display": true,
                             "position": "right",
-                            "ticks": {"font": {"size": 40}},
+                            "ticks": {"font": {"size": 20}},
                             // grid line settings
                             "grid": {
                                 "drawOnChartArea": false, // only want the grid lines for one axis to show up
                             },
+                            "title" : {
+                                "display": true,
+                                "text": "EPC Misses",
+                                "font": {
+                                    "size": 25
+                                }
+                            }
                         }
                     });
                     options = json!({
@@ -110,7 +135,7 @@ pub fn Chart(ChartProps { report }: &ChartProps) -> Html {
                     });
                 }
                 Report::Scalability => {
-                    chart_type = "lines";
+                    chart_type = "line";
                     labels = json!([1, 2, 3, 4, 5, 6, 7, 8]);
                     datasets = json!([
                         {
@@ -158,6 +183,76 @@ pub fn Chart(ChartProps { report }: &ChartProps) -> Html {
                             "type": "linear",
                             "display": true,
                             "position": "left"
+                        }
+                    });
+                    options = json!({
+                        "responsive": true,
+                        "plugins": plugins,
+                        "scales": scales,
+                    });
+                }
+                Report::ScalabilityNativeSgxExample => {
+                    chart_type = "line";
+                    labels = json!([1, 2, 3, 4, 5, 6, 7, 8]);
+                    datasets = json!([
+                        {
+                            "label": "Intel SGX",
+                            "data": [15.11,21.94,15.52,13.82,12.19,7.77,7.1,6.26],
+                            "backgroundColor": "#e6ab48",
+                            "borderColor": "#e6ab48",
+                            "yAxisID": "y",
+                            "borderWidth":5
+                        },
+                        {
+                            "label": "native CPU",
+                            "data": [111.62,174.20,183.31,179.32,195.53,197.12,181.30,194.19],
+                            "backgroundColor": "black",
+                            "borderColor": "black",
+                            "yAxisID": "y",
+                            "borderWidth":5
+                        }
+                    ]);
+                    plugins = json!({
+                        "title": {
+                            "display": true,
+                            "text": "Scalability",
+                            "font": {
+                                "size": 40
+                            }
+                        }
+                    });
+                    scales = json!({
+                        "x": {
+                            "ticks": {
+                                "font": {
+                                    "size": 25
+                                }
+                            },
+                            "title" : {
+                                "display": true,
+                                "text": "Threads",
+                                "font": {
+                                    "size": 25
+                                }
+                            }
+                        },
+                        "y": {
+                            "ticks": {
+                                "font": {
+                                    "size": 25
+                                },
+                                "min": 0
+                            },
+                            "type": "linear",
+                            "display": true,
+                            "position": "left",
+                            "title" : {
+                                "display": true,
+                                "text": "Throughput [M rec/s]",
+                                "font": {
+                                    "size": 25
+                                }
+                            }
                         }
                     });
                     options = json!({

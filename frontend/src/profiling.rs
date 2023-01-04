@@ -8,6 +8,7 @@ use yewdux_input::{Checkbox, InputDispatch};
 
 use common::data_types::{
     Algorithm, Dataset, ExperimentType, Parameter, Platform, ProfilingConfiguration, VariantNames,
+    Measurement
 };
 use std::collections::HashSet;
 use std::str::FromStr;
@@ -114,7 +115,7 @@ fn InputRadio(
     let options = data.iter().map(|RadioData {label, value}| {
         html! {
             <div class="form-check">
-                <input class="form-check-input" onchange={onchange.clone()} type="radio" id={format!("radio-{}", value)} name={title.clone()} value={value.clone()} />
+                <input class="form-check-input" onchange={onchange.clone()} type="checkbox" id={format!("radio-{}", value)} name={title.clone()} value={value.clone()} />
                 <label class="form-label" for={format!("radio-{}", value)}>{label.clone()}</label>
             </div>
         }
@@ -158,6 +159,7 @@ pub fn profiling() -> Html {
     let algs = Algorithm::VARIANTS;
     let exps = ExperimentType::VARIANTS;
     let params = Parameter::VARIANTS;
+    let measurements = Measurement::VARIANTS;
     let platforms = Platform::VARIANTS;
     let datasets = Dataset::VARIANTS;
     let algs = SelectDataOption::options_vec(algs);
@@ -205,6 +207,15 @@ pub fn profiling() -> Html {
             let value = select_elem.value();
             store.parameter = Parameter::from_str(&value).unwrap();
         })
+    };
+    let measurements = SelectDataOption::options_vec(&measurements);
+    let measurements_onchange = {
+        let (_store, dispatch) = use_store::<ProfilingConfiguration>();
+            dispatch.reduce_mut_callback_with(|store, e: Event| {
+                let select_elem = e.target_unchecked_into::<HtmlSelectElement>();
+                let value = select_elem.value();
+                store.measurement = Measurement::from_str(&value).unwrap();
+            })
     };
     let min_onchange = {
         let (_store, dispatch) = use_store::<ProfilingConfiguration>();
@@ -293,7 +304,8 @@ pub fn profiling() -> Html {
                                     </div>
                                     <div class="row g-3">
                                         <div class="col-md">
-                                            <InputSelect options={params} onchange={params_onchange} label={"Parameter"} multiple={false} />
+                                            <InputSelect options={measurements} onchange={measurements_onchange} label={"Measurement (Y-axis)"} multiple={false} />
+                                            <InputSelect options={params} onchange={params_onchange} label={"Parameter (X-axis)"} multiple={false} />
                                         </div>
                                         <div class="col-md">
                                             <InputNumber label={"min"} onchange={min_onchange} />

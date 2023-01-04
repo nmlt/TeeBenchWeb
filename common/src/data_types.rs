@@ -48,6 +48,7 @@ pub enum Report {
     #[default]
     Epc,
     Scalability,
+    ScalabilityNativeSgxExample,
     Throughput,
 }
 
@@ -131,6 +132,16 @@ pub enum Parameter {
     Debug, Clone, Serialize, Deserialize, Default, PartialEq, EnumString, Display, EnumVariantNames,
 )]
 #[strum(serialize_all = "title_case")]
+pub enum Measurement {
+    #[default]
+    Throughput,
+    EpcPaging
+}
+
+#[derive(
+    Debug, Clone, Serialize, Deserialize, Default, PartialEq, EnumString, Display, EnumVariantNames,
+)]
+#[strum(serialize_all = "title_case")]
 pub enum Dataset {
     #[default]
     CacheFit,
@@ -153,6 +164,7 @@ pub struct ProfilingConfiguration {
     pub algorithm: HashSet<Algorithm>,
     pub experiment_type: ExperimentType,
     pub parameter: Parameter,
+    pub measurement: Measurement,
     pub min: i64,
     pub max: i64,
     pub step: i64,
