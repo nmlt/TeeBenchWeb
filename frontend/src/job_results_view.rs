@@ -31,9 +31,9 @@ pub fn JobResult(JobResultProps { job }: &JobResultProps) -> Html {
                 let onclick = {
                     content_dispatch.set_callback(move |_| {
                         let result = result.clone();
-                        let report = match result {
-                            Ok(r) => r,
-                            Err(_) => Report::default(),
+                        let (report,_findings) = match result {
+                            Ok(r) => (r.report, r.findings),
+                            Err(_) => (Report::default(), HashSet::new()),
                         };
                         ModalContent {
                             content: html! {
@@ -44,6 +44,24 @@ pub fn JobResult(JobResultProps { job }: &JobResultProps) -> Html {
                                     </div>
                                     <div class="modal-body">
                                         <Chart report={report}/>
+                                    </div>
+                                    <div class="row" style="padding:20px">
+                                        <div class="col-sm-2">
+                                            <div class="card my-4">
+                                                <div class="card-body">
+                                                    <h5 class="card-text">{"Performance Gain"}</h5>
+                                                    <h5 class="card-title">{"+ 3.6 %"}</h5>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-2">
+                                            <div class="card my-4">
+                                                <div class="card-body">
+                                                    <h5 class="card-text">{"Some other shit"}</h5>
+                                                    <h5 class="card-title">{"0 %"}</h5>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div class="modal-footer">
                                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{"Close"}</button>
@@ -83,7 +101,7 @@ pub fn JobResultsView() -> Html {
     });
     use common::data_types::{
         Algorithm, Dataset, ExperimentType, Parameter, Platform, ProfilingConfiguration, Report,
-        Measurement
+        Measurement, ReportWithFindings, Finding
     };
     let test_j = Job::Finished {
         config: ProfilingConfiguration {
@@ -100,7 +118,7 @@ pub fn JobResultsView() -> Html {
         },
         submitted: time::OffsetDateTime::now_utc(),
         runtime: time::Duration::new(5, 0),
-        result: Ok(Report::default()),
+        result: Ok(ReportWithFindings{report: Report::default(), findings: HashSet::from([Finding::SevereEpcPaging])}),
     };
     let test_scalability = Job::Finished {
         config: ProfilingConfiguration {
@@ -117,7 +135,9 @@ pub fn JobResultsView() -> Html {
         },
         submitted: time::OffsetDateTime::now_utc(),
         runtime: time::Duration::new(180, 0),
-        result: Ok(Report::ScalabilityNativeSgxExample),
+        result: Ok(ReportWithFindings{
+                        report: Report::ScalabilityNativeSgxExample,
+                        findings: HashSet::from([Finding::MaxThroughput, Finding::CpuLogicalCores])})
     };
     html! {
         <ul class="list-group">

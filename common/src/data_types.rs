@@ -52,7 +52,24 @@ pub enum Report {
     Throughput,
 }
 
-pub type JobResult = Result<Report, TeeBenchWebError>;
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default, Hash, Eq)]
+pub enum Finding {
+    #[default]
+    SevereEpcPaging,
+    MaxThroughput,
+    CpuLogicalCores,
+    CpuPhysicalCores,
+    SgxMaxCores,
+    NativeMaxCores
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Store)]
+pub struct ReportWithFindings {
+  pub report : Report,
+  pub findings : HashSet<Finding>
+}
+
+pub type JobResult = Result<ReportWithFindings, TeeBenchWebError>;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Job {
