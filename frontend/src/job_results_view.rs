@@ -3,7 +3,7 @@ use time::macros::format_description;
 use yew::prelude::*;
 use yewdux::prelude::*;
 
-use common::data_types::{Job, Report};
+use common::data_types::{Job, Report, Finding};
 
 use crate::chartjs::Chart;
 use crate::modal::ModalContent;
@@ -31,10 +31,74 @@ pub fn JobResult(JobResultProps { job }: &JobResultProps) -> Html {
                 let onclick = {
                     content_dispatch.set_callback(move |_| {
                         let result = result.clone();
-                        let (report,_findings) = match result {
+                        let (report,findings) = match result {
                             Ok(r) => (r.report, r.findings),
                             Err(_) => (Report::default(), HashSet::new()),
                         };
+                        let findings = findings.iter().map(|f| {
+                            match f {
+                                Finding::SevereEpcPaging => html! {
+                                    <div class="col-sm-2">
+                                        <div class="card my-4">
+                                            <div class="card-body">
+                                                <h5 class="card-text">{"SevereEpcPaging"}</h5>
+                                                <h5 class="card-title">{"+ 3.6 %"}</h5>
+                                            </div>
+                                        </div>
+                                    </div>
+                                },
+                                Finding::MaxThroughput => html! {
+                                     <div class="col-sm-2">
+                                        <div class="card my-4">
+                                            <div class="card-body">
+                                                <h5 class="card-text">{"MaxThroughput"}</h5>
+                                                <h5 class="card-title">{"+ 3.6 %"}</h5>
+                                            </div>
+                                        </div>
+                                    </div>
+                                },
+                                Finding::CpuLogicalCores => html! {
+                                     <div class="col-sm-2">
+                                        <div class="card my-4">
+                                            <div class="card-body">
+                                                <h5 class="card-text">{"CpuLogicalCores"}</h5>
+                                                <h5 class="card-title">{"+ 3.6 %"}</h5>
+                                            </div>
+                                        </div>
+                                    </div>
+                                },
+                                Finding::CpuPhysicalCores => html! {
+                                     <div class="col-sm-2">
+                                        <div class="card my-4">
+                                            <div class="card-body">
+                                                <h5 class="card-text">{"CpuPhysicalCores"}</h5>
+                                                <h5 class="card-title">{"+ 3.6 %"}</h5>
+                                            </div>
+                                        </div>
+                                    </div>
+                                },
+                                Finding::SgxMaxCores => html! {
+                                     <div class="col-sm-2">
+                                        <div class="card my-4">
+                                            <div class="card-body">
+                                                <h5 class="card-text">{"SgxMaxCores"}</h5>
+                                                <h5 class="card-title">{"+ 3.6 %"}</h5>
+                                            </div>
+                                        </div>
+                                    </div>
+                                },
+                                Finding::NativeMaxCores => html! {
+                                     <div class="col-sm-2">
+                                        <div class="card my-4">
+                                            <div class="card-body">
+                                                <h5 class="card-text">{"NativeMaxCores"}</h5>
+                                                <h5 class="card-title">{"+ 3.6 %"}</h5>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                        });
                         ModalContent {
                             content: html! {
                                 <div class="modal-content">
@@ -46,22 +110,7 @@ pub fn JobResult(JobResultProps { job }: &JobResultProps) -> Html {
                                         <Chart report={report}/>
                                     </div>
                                     <div class="row" style="padding:20px">
-                                        <div class="col-sm-2">
-                                            <div class="card my-4">
-                                                <div class="card-body">
-                                                    <h5 class="card-text">{"Performance Gain"}</h5>
-                                                    <h5 class="card-title">{"+ 3.6 %"}</h5>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-sm-2">
-                                            <div class="card my-4">
-                                                <div class="card-body">
-                                                    <h5 class="card-text">{"Some other shit"}</h5>
-                                                    <h5 class="card-title">{"0 %"}</h5>
-                                                </div>
-                                            </div>
-                                        </div>
+                                        {for findings}
                                     </div>
                                     <div class="modal-footer">
                                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{"Close"}</button>
