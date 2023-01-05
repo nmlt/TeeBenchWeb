@@ -3,7 +3,7 @@ use time::macros::format_description;
 use yew::prelude::*;
 use yewdux::prelude::*;
 
-use common::data_types::{Job, Report, Finding};
+use common::data_types::{FindingStyle, Job, Report};
 
 use crate::chartjs::Chart;
 use crate::modal::ModalContent;
@@ -36,63 +36,44 @@ pub fn JobResult(JobResultProps { job }: &JobResultProps) -> Html {
                             Err(_) => (Report::default(), HashSet::new()),
                         };
                         let findings = findings.iter().map(|f| {
-                            match f {
-                                Finding::SevereEpcPaging => html! {
-                                    <div class="col-sm-2">
-                                        <div class="card my-4">
+                            let f = f.clone();
+                            match f.style {
+                                FindingStyle::Neutral => html! {
+                                    <div class="col-sm-3">
+                                        <div class="card my-4" style="background-color: #FFFFFF;">
                                             <div class="card-body">
-                                                <h5 class="card-text">{"SevereEpcPaging"}</h5>
-                                                <h5 class="card-title">{"+ 3.6 %"}</h5>
+                                                <h5 class="card-text">{f.title}</h5>
+                                                <h5 class="card-title">{f.message}</h5>
                                             </div>
                                         </div>
                                     </div>
                                 },
-                                Finding::MaxThroughput => html! {
-                                     <div class="col-sm-2">
-                                        <div class="card my-4">
+                                FindingStyle::Good => html! {
+                                    <div class="col-sm-3">
+                                        <div class="card my-4" style="background-color: #77DD77;">
                                             <div class="card-body">
-                                                <h5 class="card-text">{"MaxThroughput"}</h5>
-                                                <h5 class="card-title">{"+ 3.6 %"}</h5>
+                                                <h5 class="card-text">{f.title}</h5>
+                                                <h5 class="card-title">{f.message}</h5>
                                             </div>
                                         </div>
                                     </div>
                                 },
-                                Finding::CpuLogicalCores => html! {
-                                     <div class="col-sm-2">
-                                        <div class="card my-4">
+                                FindingStyle::SoSo => html! {
+                                    <div class="col-sm-3">
+                                        <div class="card my-4" style="background-color: #FDE26C;">
                                             <div class="card-body">
-                                                <h5 class="card-text">{"CpuLogicalCores"}</h5>
-                                                <h5 class="card-title">{"+ 3.6 %"}</h5>
+                                                <h5 class="card-text">{f.title}</h5>
+                                                <h5 class="card-title">{f.message}</h5>
                                             </div>
                                         </div>
                                     </div>
                                 },
-                                Finding::CpuPhysicalCores => html! {
-                                     <div class="col-sm-2">
-                                        <div class="card my-4">
+                                FindingStyle::Bad => html! {
+                                    <div class="col-sm-3">
+                                        <div class="card my-4" style="background-color: #FF6961;">
                                             <div class="card-body">
-                                                <h5 class="card-text">{"CpuPhysicalCores"}</h5>
-                                                <h5 class="card-title">{"+ 3.6 %"}</h5>
-                                            </div>
-                                        </div>
-                                    </div>
-                                },
-                                Finding::SgxMaxCores => html! {
-                                     <div class="col-sm-2">
-                                        <div class="card my-4">
-                                            <div class="card-body">
-                                                <h5 class="card-text">{"SgxMaxCores"}</h5>
-                                                <h5 class="card-title">{"+ 3.6 %"}</h5>
-                                            </div>
-                                        </div>
-                                    </div>
-                                },
-                                Finding::NativeMaxCores => html! {
-                                     <div class="col-sm-2">
-                                        <div class="card my-4">
-                                            <div class="card-body">
-                                                <h5 class="card-text">{"NativeMaxCores"}</h5>
-                                                <h5 class="card-title">{"+ 3.6 %"}</h5>
+                                                <h5 class="card-text">{f.title}</h5>
+                                                <h5 class="card-title">{f.message}</h5>
                                             </div>
                                         </div>
                                     </div>
@@ -149,8 +130,8 @@ pub fn JobResultsView() -> Html {
         html! { <JobResult job={j.clone()} /> }
     });
     use common::data_types::{
-        Algorithm, Dataset, ExperimentType, Parameter, Platform, ProfilingConfiguration, Report,
-        Measurement, ReportWithFindings, Finding
+        Algorithm, Dataset, ExperimentType, Finding, Measurement, Parameter, Platform,
+        ProfilingConfiguration, Report, ReportWithFindings,
     };
     let test_j = Job::Finished {
         config: ProfilingConfiguration {
@@ -167,7 +148,14 @@ pub fn JobResultsView() -> Html {
         },
         submitted: time::OffsetDateTime::now_utc(),
         runtime: time::Duration::new(5, 0),
-        result: Ok(ReportWithFindings{report: Report::default(), findings: HashSet::from([Finding::SevereEpcPaging])}),
+        result: Ok(ReportWithFindings {
+            report: Report::default(),
+            findings: HashSet::from([Finding {
+                title: "Severe EPC Paging".to_owned(),
+                message: "severe".to_owned(),
+                style: FindingStyle::Bad,
+            }]),
+        }),
     };
     let test_scalability = Job::Finished {
         config: ProfilingConfiguration {
@@ -184,9 +172,21 @@ pub fn JobResultsView() -> Html {
         },
         submitted: time::OffsetDateTime::now_utc(),
         runtime: time::Duration::new(180, 0),
-        result: Ok(ReportWithFindings{
-                        report: Report::ScalabilityNativeSgxExample,
-                        findings: HashSet::from([Finding::MaxThroughput, Finding::CpuLogicalCores])})
+        result: Ok(ReportWithFindings {
+            report: Report::ScalabilityNativeSgxExample,
+            findings: HashSet::from([
+                Finding {
+                    title: "MaxThroughput".to_owned(),
+                    message: "60.22 M".to_owned(),
+                    style: FindingStyle::Good,
+                },
+                Finding {
+                    title: "CpuLogicalCores".to_owned(),
+                    message: "16".to_owned(),
+                    style: FindingStyle::Neutral,
+                },
+            ]),
+        }),
     };
     html! {
         <ul class="list-group">

@@ -10,15 +10,17 @@ use axum::{
 };
 use axum_extra::routing::SpaRouter;
 use serde_json::{json, Value};
-use std::collections::VecDeque;
 use std::collections::HashSet;
+use std::collections::VecDeque;
 use std::sync::Arc;
 use std::sync::Mutex;
 use time::{Duration, OffsetDateTime};
 use tokio::sync::{mpsc, oneshot};
 use tracing::{info, instrument, warn};
 
-use common::data_types::{Commit, Job, ProfilingConfiguration, QueueMessage, Report, ReportWithFindings, ExperimentType};
+use common::data_types::{
+    Commit, ExperimentType, Job, ProfilingConfiguration, QueueMessage, Report, ReportWithFindings,
+};
 
 const DEFAULT_TASK_CHANNEL_SIZE: usize = 5;
 
@@ -84,10 +86,10 @@ async fn profiling_task(
                 config: current_conf,
                 submitted: OffsetDateTime::now_utc(), // TODO Fix this.
                 runtime: Duration::new(5, 0), // TODO Get actual runtime from teebench output.
-                result: Ok(ReportWithFindings{
-                             report: report,
-                             findings: HashSet::new()
-                           }),
+                result: Ok(ReportWithFindings {
+                    report: report,
+                    findings: HashSet::new(),
+                }),
             };
             queue_tx.send(finished_job).await.unwrap();
         }

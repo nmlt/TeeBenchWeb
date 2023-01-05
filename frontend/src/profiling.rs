@@ -7,8 +7,8 @@ use yewdux::prelude::*;
 use yewdux_input::{Checkbox, InputDispatch};
 
 use common::data_types::{
-    Algorithm, Dataset, ExperimentType, Parameter, Platform, ProfilingConfiguration, VariantNames,
-    Measurement
+    Algorithm, Dataset, ExperimentType, Measurement, Parameter, Platform, ProfilingConfiguration,
+    VariantNames,
 };
 use std::collections::HashSet;
 use std::str::FromStr;
@@ -211,11 +211,11 @@ pub fn profiling() -> Html {
     let measurements = SelectDataOption::options_vec(&measurements);
     let measurements_onchange = {
         let (_store, dispatch) = use_store::<ProfilingConfiguration>();
-            dispatch.reduce_mut_callback_with(|store, e: Event| {
-                let select_elem = e.target_unchecked_into::<HtmlSelectElement>();
-                let value = select_elem.value();
-                store.measurement = Measurement::from_str(&value).unwrap();
-            })
+        dispatch.reduce_mut_callback_with(|store, e: Event| {
+            let select_elem = e.target_unchecked_into::<HtmlSelectElement>();
+            let value = select_elem.value();
+            store.measurement = Measurement::from_str(&value).unwrap();
+        })
     };
     let min_onchange = {
         let (_store, dispatch) = use_store::<ProfilingConfiguration>();

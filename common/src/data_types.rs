@@ -53,20 +53,25 @@ pub enum Report {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default, Hash, Eq)]
-pub enum Finding {
+pub enum FindingStyle {
     #[default]
-    SevereEpcPaging,
-    MaxThroughput,
-    CpuLogicalCores,
-    CpuPhysicalCores,
-    SgxMaxCores,
-    NativeMaxCores
+    Neutral,
+    Good,
+    SoSo,
+    Bad,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Hash, Eq)]
+pub struct Finding {
+    pub title: String,
+    pub message: String,
+    pub style: FindingStyle,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Store)]
 pub struct ReportWithFindings {
-  pub report : Report,
-  pub findings : HashSet<Finding>
+    pub report: Report,
+    pub findings: HashSet<Finding>,
 }
 
 pub type JobResult = Result<ReportWithFindings, TeeBenchWebError>;
@@ -152,7 +157,7 @@ pub enum Parameter {
 pub enum Measurement {
     #[default]
     Throughput,
-    EpcPaging
+    EpcPaging,
 }
 
 #[derive(

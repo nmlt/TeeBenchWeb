@@ -51,7 +51,8 @@ pub fn Chart(ChartProps { report }: &ChartProps) -> Html {
             match report {
                 Report::Epc => {
                     chart_type = "bar";
-                    labels = json!([8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128]);
+                    labels =
+                        json!([8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128]);
                     datasets = json!([
                         {
                             "label": "Throughput",
@@ -325,9 +326,9 @@ pub fn Chart(ChartProps { report }: &ChartProps) -> Html {
                 state.0 = my_chart.clone();
                 state.1 = true;
             });
-            move || { my_chart.destroy() }
+            move || my_chart.destroy()
         },
-        ()
+        (),
     );
     html! {
         <div>
