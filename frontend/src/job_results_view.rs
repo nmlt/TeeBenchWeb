@@ -90,6 +90,9 @@ pub fn JobResult(JobResultProps { job }: &JobResultProps) -> Html {
                                     <div class="modal-body">
                                         <Chart report={report}/>
                                     </div>
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">{"Analyser Findings"}</h5> // TODO Add a proper title.
+                                    </div>
                                     <div class="row" style="padding:20px">
                                         {for findings}
                                     </div>
