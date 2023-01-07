@@ -1,5 +1,5 @@
 use common::data_types::Report;
-use gloo_console::log;
+//use gloo_console::log;
 use js_sys::Object;
 use serde_json::json;
 use wasm_bindgen::prelude::wasm_bindgen;

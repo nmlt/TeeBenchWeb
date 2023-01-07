@@ -3,6 +3,8 @@ use time::macros::format_description;
 use yew::prelude::*;
 use yewdux::prelude::*;
 
+use crate::queue::Queue;
+
 use common::data_types::{FindingStyle, Job, Report};
 
 use crate::chartjs::Chart;
@@ -149,7 +151,7 @@ pub fn JobResultsView() -> Html {
             platform: Platform::Sgx,
             sort_data: true,
         },
-        submitted: time::OffsetDateTime::now_utc(),
+        submitted: time::OffsetDateTime::now_utc() - time::Duration::new(4000, 0),
         runtime: time::Duration::new(5, 0),
         result: Ok(ReportWithFindings {
             report: Report::default(),
@@ -173,7 +175,7 @@ pub fn JobResultsView() -> Html {
             platform: Platform::Sgx,
             sort_data: false,
         },
-        submitted: time::OffsetDateTime::now_utc(),
+        submitted: time::OffsetDateTime::now_utc() - time::Duration::new(3600, 0),
         runtime: time::Duration::new(180, 0),
         result: Ok(ReportWithFindings {
             report: Report::ScalabilityNativeSgxExample,
@@ -193,9 +195,10 @@ pub fn JobResultsView() -> Html {
     };
     html! {
         <ul class="list-group">
-            {for jobs}
             <JobResult job={test_j} />
             <JobResult job={test_scalability} />
+            {for jobs}
+            <Queue />
         </ul>
     }
 }

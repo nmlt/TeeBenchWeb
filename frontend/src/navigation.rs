@@ -1,7 +1,7 @@
 use yew::prelude::*;
 use yew_router::components::Link;
 
-use crate::{queue::Queue, Route};
+use crate::Route;
 
 #[derive(Clone, PartialEq, Properties)]
 pub struct NavigationProps {
@@ -46,9 +46,6 @@ pub fn Navigation(NavigationProps { active_nav_item }: &NavigationProps) -> Html
                             <i class="fs-5 bi-bar-chart-fill"></i>
                             <span class="ms-1 d-none d-sm-inline">{"PerfReport"}</span>
                         </Link<Route>>
-                    </li>
-                    <li class="nav-item">
-                        <Queue />
                     </li>
                 </ul>
             </nav>

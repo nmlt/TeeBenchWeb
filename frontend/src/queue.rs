@@ -40,9 +40,12 @@ fn QueueItem(QueueItemProps { config, running }: &QueueItemProps) -> Html {
         }
     };
     html! {
-        <li class="list-group-item">
+        <li class="list-group-item" title={format!("{config}")}>
             {spinner}
-            <div>{format!("Profiling job with {config:?}")}</div>
+            //{"Submitted at: "}<span class="fw-bold">{format!("{} ", submitted.format(time_format).unwrap())}</span>
+            {" "}
+            <span class="badge text-bg-primary">{format!("{:?}", config.algorithm)}</span>
+            <span>{" running... "}</span>
         </li>
     }
 }
@@ -134,11 +137,13 @@ pub fn Queue() -> Html {
         })
         .collect();
     html! {
-        <div class="text-white">
-            <h3 class="fs-5">{"Queue"}</h3>
-            <ul class="list-group">
-                {for queue}
-            </ul>
-        </div>
+        // <div class="text-white">
+        //     <h3 class="fs-5">{"Queue"}</h3>
+        //     <ul class="list-group">
+        <>
+            {for queue}
+        </>
+        //     </ul>
+        // </div>
     }
 }
