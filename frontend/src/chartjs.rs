@@ -36,12 +36,11 @@ pub fn Chart(ChartProps { report }: &ChartProps) -> Html {
     let report = report.clone();
     let canvas_ref = NodeRef::default();
     let move_canvas_ref = canvas_ref.clone();
-    let (store, dispatch) = use_store::<ChartState>();
+    //let (store, dispatch) = use_store::<ChartState>();
     use_effect_with_deps(
         move |_| {
             let report = report.clone();
             let canvas_ref = move_canvas_ref.clone();
-            // We have to wait a bit until the canvas has been created.
             let chart_type;
             let labels;
             let datasets;
@@ -314,19 +313,20 @@ pub fn Chart(ChartProps { report }: &ChartProps) -> Html {
                 .get_context("2d")
                 .unwrap()
                 .unwrap();
-            let my_chart = if store.1 {
-                store.0.clone()
-            } else {
-                MyChart::new()
-            };
+            // let my_chart = if store.1 {
+            //     store.0.clone()
+            // } else {
+            //     MyChart::new()
+            // };
+            let my_chart = MyChart::new();
             my_chart.draw(context, &config.to_string());
 
-            dispatch.reduce_mut(|state| {
-                log!("async Chart dispatch running.");
-                state.0 = my_chart.clone();
-                state.1 = true;
-            });
-            move || my_chart.destroy()
+            // dispatch.reduce_mut(|state| {
+            //     log!("async Chart dispatch running.");
+            //     state.0 = my_chart.clone();
+            //     state.1 = true;
+            // });
+            move || {}//my_chart.destroy()
         },
         (),
     );
