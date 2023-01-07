@@ -25,6 +25,7 @@ export class MyChart {
     destroy() {
         if (this.chart) {
             this.chart.destroy();
+            console.log("Destroyed chart.");
         }
     }
 }

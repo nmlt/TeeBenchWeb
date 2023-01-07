@@ -326,7 +326,7 @@ pub fn Chart(ChartProps { report }: &ChartProps) -> Html {
             //     state.0 = my_chart.clone();
             //     state.1 = true;
             // });
-            move || {}//my_chart.destroy()
+            move || my_chart.destroy()
         },
         (),
     );

@@ -31,7 +31,9 @@ pub fn JobResult(JobResultProps { job }: &JobResultProps) -> Html {
             let result = if result.is_ok() {
                 let result = result.clone();
                 let onclick = {
+                    let move_content_dispatch = content_dispatch.clone();
                     content_dispatch.set_callback(move |_| {
+                        let content_dispatch = move_content_dispatch.clone();
                         let result = result.clone();
                         let (report,findings) = match result {
                             Ok(r) => (r.report, r.findings),
@@ -82,12 +84,20 @@ pub fn JobResult(JobResultProps { job }: &JobResultProps) -> Html {
                                 }
                             }
                         });
+                        let destroy_onclick = content_dispatch.set_callback(|_| {
+                            ModalContent {
+                                content: html! {
+                                    <>
+                                    </>
+                                }
+                            }
+                        });
                         ModalContent {
                             content: html! {
                                 <div class="modal-content">
                                     <div class="modal-header">
                                         <h5 class="modal-title">{"Job Result"}</h5> // TODO Add a proper title.
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        <button type="button" class="btn-close" onclick={destroy_onclick.clone()} data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
                                     <div class="modal-body">
                                         <Chart report={report}/>
@@ -99,7 +109,7 @@ pub fn JobResult(JobResultProps { job }: &JobResultProps) -> Html {
                                         {for findings}
                                     </div>
                                     <div class="modal-footer">
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{"Close"}</button>
+                                        <button type="button" class="btn btn-secondary" onclick={destroy_onclick.clone()} data-bs-dismiss="modal">{"Close"}</button>
                                     </div>
                                 </div>
                             }
