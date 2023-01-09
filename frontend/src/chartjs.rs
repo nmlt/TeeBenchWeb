@@ -21,6 +21,8 @@ extern "C" {
 
     #[wasm_bindgen(method)]
     fn destroy(this: &MyChart);
+
+    pub fn hljs_highlight(code: String) -> String;
 }
 
 #[derive(Clone, PartialEq, Default, Store)]

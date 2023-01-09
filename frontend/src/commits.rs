@@ -12,6 +12,7 @@ use yewdux::prelude::*;
 use crate::modal::Modal;
 use crate::modal::ModalContent;
 use crate::navigation::Navigation;
+use crate::chartjs::hljs_highlight;
 
 use common::data_types::Commit;
 
@@ -108,6 +109,8 @@ fn CommitsList(CommitsListProps { commits }: &CommitsListProps) -> Html {
         let commit = commit.clone();
         content_dispatch.set_callback(move |_| {
             let commit = commit.clone();
+            let html = hljs_highlight(commit.code);
+            let parsed = Html::from_html_unchecked(AttrValue::from(format!("<code class=\"hljs language-cpp\">{html}</code>")));
             ModalContent {
                 content: html! {
                     <div class="modal-content">
@@ -116,7 +119,9 @@ fn CommitsList(CommitsListProps { commits }: &CommitsListProps) -> Html {
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
-                            <pre>{commit.code}</pre>
+                            <pre>
+                                {parsed}
+                            </pre>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{"Close"}</button>
