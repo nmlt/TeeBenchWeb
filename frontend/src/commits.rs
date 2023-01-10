@@ -43,6 +43,7 @@ fn UploadCommit() -> Html {
                     let code = read_as_text(&file).await.unwrap();
                     let commit = Commit::new(
                         "placeholder".to_owned(),
+                        "JOIN".to_owned(),
                         OffsetDateTime::now_utc(),
                         code,
                         None,
@@ -87,6 +88,13 @@ fn UploadCommit() -> Html {
         <>
         <input type="file" {onchange} />
         <input type="text" onchange={onchange_title} />
+        <select class="custom-select">
+          <option selected=true>{"Select Operator..."}</option>
+          <option value="1">{"JOIN"}</option>
+          <option value="2">{"GROUP BY"}</option>
+          <option value="3">{"PROJECTION"}</option>
+          <option value="4">{"ORDER BY"}</option>
+        </select>
         <button type="button" {onclick}>{"Upload"}</button>
         </>
     }
@@ -137,6 +145,7 @@ fn CommitsList(CommitsListProps { commits }: &CommitsListProps) -> Html {
             <b>{format!("{}", commit.title)}</b>
 
             <div class="container d-flex flex-row justify-content-start">
+                <div class="p-2"><button type="button" class="btn btn-light">{commit.operator}</button></div>
                 <div class="p-2">
                     <button type="button" class="btn btn-secondary" {onclick} data-bs-toggle="modal" data-bs-target="#mainModal">{"Code"}</button>
                 </div>
@@ -180,12 +189,14 @@ pub fn Commits() -> Html {
     let mut commits = (*commit_state).commits.clone();
     commits.push(Commit::new(
         "v2.1".to_owned(),
+        "JOIN".to_owned(),
         OffsetDateTime::now_utc(),
         "auto a = 1;".to_owned(),
         None,
     ));
     commits.push(Commit::new(
         "v2.2".to_owned(),
+        "JOIN".to_owned(),
         OffsetDateTime::now_utc(),
         "auto a = 2;".to_owned(),
         None,
@@ -199,7 +210,7 @@ pub fn Commits() -> Html {
                 <div class="col d-flex flex-column h-sm-100">
                     <main class="row">
                         <div class="col pt-4 col-lg-8">
-                            <h2>{"Commits"}</h2>
+                            <h2>{"Operators"}</h2>
                             <CommitsList commits={commits} />
                             <UploadCommit />
                         </div>

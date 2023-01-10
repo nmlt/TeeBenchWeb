@@ -21,6 +21,7 @@ pub enum TeeBenchWebError {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Commit {
     pub title: String,
+    pub operator: String,
     pub datetime: OffsetDateTime,
     pub code: String,
     pub report: Option<Report>,
@@ -30,12 +31,14 @@ pub struct Commit {
 impl Commit {
     pub fn new(
         title: String,
+        operator: String,
         datetime: OffsetDateTime,
         code: String,
         report: Option<Report>,
     ) -> Self {
         Commit {
             title,
+            operator,
             datetime,
             code,
             report,
@@ -120,10 +123,30 @@ pub enum QueueMessage {
 #[strum(serialize_all = "UPPERCASE")]
 pub enum Algorithm {
     #[default]
-    Rho,
+    #[strum(to_string = "JOIN - CHT")]
     Cht,
-    #[strum(to_string = "Latest Commit")]
-    Commit(u32), // TODO Uuid
+    #[strum(to_string = "JOIN - PHT")]
+    Pht,
+    #[strum(to_string = "JOIN - PSM")]
+    Psm,
+    #[strum(to_string = "JOIN - MWAY")]
+    Mway,
+    #[strum(to_string = "JOIN - RHT")]
+    Rht,
+    #[strum(to_string = "JOIN - RHO")]
+    Rho,
+    #[strum(to_string = "JOIN - RSM")]
+    Rsm,
+    #[strum(to_string = "JOIN - INL")]
+    Inl,
+    #[strum(to_string = "JOIN - v2.1")]
+    V21,
+    #[strum(to_string = "JOIN - v2.2")]
+    V22,
+    #[strum(to_string = "JOIN - NestedLoopJoin")]
+    Nlj,
+//     #[strum(to_string = "Latest Commit")]
+//     Commit(u32), // TODO Uuid
 }
 
 #[derive(

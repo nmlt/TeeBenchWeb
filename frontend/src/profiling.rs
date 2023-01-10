@@ -177,11 +177,11 @@ pub fn profiling() -> Html {
                     .unwrap();
                 let value = Algorithm::from_str(&value.value()).unwrap();
                 match value {
-                    Algorithm::Commit(_) => {
-                        // TODO Get latest commit id.
-                        let id = 0;
-                        selected.insert(Algorithm::Commit(id));
-                    }
+//                     Algorithm::Commit(_) => {
+//                         // TODO Get latest commit id.
+//                         let id = 0;
+//                         selected.insert(Algorithm::Commit(id));
+//                     }
                     alg_variant => {
                         selected.insert(alg_variant);
                     }

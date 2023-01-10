@@ -24,14 +24,20 @@ pub fn Navigation(NavigationProps { active_nav_item }: &NavigationProps) -> Html
                     <li class="nav-item">
                         <Link<Route> classes={classes!("text-nowrap", "nav-link", "text-primary")} to={Route::Home}>
                             <i class="fs-3 bi-grid text-primary"></i>
-                            <span class="fs-3 ms-1 d-none d-sm-inline text-truncate text-primary">{"TeeBenchWeb"}</span>// TODO Make this a heading.
+                            <span class="fs-3 ms-1 d-none d-sm-inline text-truncate text-primary">{"TeeBench"}</span>// TODO Make this a heading.
                         </Link<Route>>
                     </li>
                     <li class="nav-item">
                         <Link<Route> classes={add_active_class("Commits", active_nav_item.clone())} to={Route::Commits}>
                             //<i class="fs-5 bi-table"></i>
                             <i class="fs-5 bi-list-ul"></i>
-                            <span class="ms-1 d-none d-sm-inline">{"Commits"}</span>
+                            <span class="ms-1 d-none d-sm-inline">{"Operators"}</span>
+                        </Link<Route>>
+                    </li>
+                    <li class="nav-item">
+                        <Link<Route> classes={add_active_class("PerfReport", active_nav_item.clone())} to={Route::PerfReport}>
+                            <i class="fs-5 bi-bar-chart-fill"></i>
+                            <span class="ms-1 d-none d-sm-inline">{"PerfReport"}</span>
                         </Link<Route>>
                     </li>
                     <li class="nav-item">
@@ -39,12 +45,6 @@ pub fn Navigation(NavigationProps { active_nav_item }: &NavigationProps) -> Html
                             //<i class="fs-5 bi-graph-up"></i>
                             <i class="fs-5 bi-play-fill"></i>
                             <span class="ms-1 d-none d-sm-inline">{"Profiling"}</span>
-                        </Link<Route>>
-                    </li>
-                    <li class="nav-item">
-                        <Link<Route> classes={add_active_class("PerfReport", active_nav_item.clone())} to={Route::PerfReport}>
-                            <i class="fs-5 bi-bar-chart-fill"></i>
-                            <span class="ms-1 d-none d-sm-inline">{"PerfReport"}</span>
                         </Link<Route>>
                     </li>
                 </ul>
