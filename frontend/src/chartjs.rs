@@ -136,6 +136,89 @@ pub fn Chart(ChartProps { report }: &ChartProps) -> Html {
                         "scales": scales,
                     });
                 }
+                Report::EpcCht => {
+                    chart_type = "bar";
+                    labels =
+                        json!([8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128]);
+                    datasets = json!([
+                        {
+                          "label": "Throughput",
+                          "data": [64.22,26.54,23.16,22.0,21.32,19.29,16.59,15.68,13.61,12.65,12.07,1.37,0.97,1.0,1.04,1.15],
+                          "borderColor": "#de3d82",
+                          "backgroundColor": "#de3d82",
+                          "order": 0,
+                          "type": "line",
+                          "yAxisID": "y",
+                          "borderWidth":5
+                        },
+                        {
+                          "label": "EPC Paging",
+                          "data": [289860,293995,298271,302353,306725,318300,332876,341882,359938,372715,386494,1283342,1838011,1851572,1862953,1870652],
+                          "borderColor": "#7e84fa",
+                          "backgroundColor": "#7e84fa",
+                          "order": 1,
+                          "yAxisID": "y1",
+                        }
+                    ]);
+                    plugins = json!({
+                        "legend": {
+                            "position": "top",
+                        },
+                        "title": {
+                            "display": true,
+                            "text": "EPC Paging",
+                            "font": {"size":40}
+                        }
+                    });
+                    scales = json!({
+                        "x": {
+                            "ticks": {"font": {"size":20}},
+                            "title" : {
+                                "display": true,
+                                "text": "Size of R [MB]",
+                                "font": {
+                                    "size": 25
+                                }
+                            }
+                        },
+                        "y": {
+                            "text": "Throughput [M rec/s]",
+                            "type": "linear",
+                            "display": true,
+                            "position": "left",
+                            "ticks": {"font": {"size": 20}},
+                            "title" : {
+                                "display": true,
+                                "text": "Throughput [M rec/s]",
+                                "font": {
+                                    "size": 25
+                                }
+                            }
+                        },
+                        "y1": {
+                            "type": "linear",
+                            "display": true,
+                            "position": "right",
+                            "ticks": {"font": {"size": 20}},
+                            // grid line settings
+                            "grid": {
+                                "drawOnChartArea": false, // only want the grid lines for one axis to show up
+                            },
+                            "title" : {
+                                "display": true,
+                                "text": "EPC Misses",
+                                "font": {
+                                    "size": 25
+                                }
+                            }
+                        }
+                    });
+                    options = json!({
+                        "responsive": true,
+                        "plugins": plugins,
+                        "scales": scales,
+                    });
+                }
                 Report::Scalability => {
                     chart_type = "line";
                     labels = json!([1, 2, 3, 4, 5, 6, 7, 8]);

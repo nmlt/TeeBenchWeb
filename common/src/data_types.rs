@@ -53,6 +53,7 @@ pub enum Report {
     Scalability,
     ScalabilityNativeSgxExample,
     Throughput,
+    EpcCht
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default, Hash, Eq)]

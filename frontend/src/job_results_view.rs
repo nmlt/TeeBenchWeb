@@ -164,12 +164,23 @@ pub fn JobResultsView() -> Html {
         submitted: time::OffsetDateTime::now_utc() - time::Duration::new(4000, 0),
         runtime: time::Duration::new(5, 0),
         result: Ok(ReportWithFindings {
-            report: Report::default(),
-            findings: HashSet::from([Finding {
-                title: "Severe EPC Paging".to_owned(),
-                message: "severe".to_owned(),
-                style: FindingStyle::Bad,
-            }]),
+            report: Report::EpcCht,
+            findings: HashSet::from([
+                Finding {
+                    title: "MaxThroughput".to_owned(),
+                    message: "64.22 M".to_owned(),
+                    style: FindingStyle::Neutral,
+                },
+                Finding {
+                    title: "Severe EPC Paging".to_owned(),
+                    message: "Max EPC misses: 1870652".to_owned(),
+                    style: FindingStyle::Bad,
+                },
+                Finding {
+                    title: "Low throughput".to_owned(),
+                    message: "Lowest throughput [M rec/s]: 0.97".to_owned(),
+                    style: FindingStyle::Bad
+                }]),
         }),
     };
     let test_scalability = Job::Finished {
@@ -191,14 +202,19 @@ pub fn JobResultsView() -> Html {
             report: Report::ScalabilityNativeSgxExample,
             findings: HashSet::from([
                 Finding {
-                    title: "MaxThroughput".to_owned(),
-                    message: "60.22 M".to_owned(),
-                    style: FindingStyle::Good,
+                    title: "CPU Logical Cores".to_owned(),
+                    message: "8".to_owned(),
+                    style: FindingStyle::Neutral,
                 },
                 Finding {
-                    title: "CpuLogicalCores".to_owned(),
-                    message: "16".to_owned(),
-                    style: FindingStyle::Neutral,
+                    title: "Optimal CPU cores Native".to_owned(),
+                    message: "6".to_owned(),
+                    style: FindingStyle::SoSo,
+                },
+                Finding {
+                    title: "Optimal CPU cores SGX".to_owned(),
+                    message: "2".to_owned(),
+                    style: FindingStyle::Bad,
                 },
             ]),
         }),
