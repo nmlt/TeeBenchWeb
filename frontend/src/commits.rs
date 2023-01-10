@@ -101,7 +101,7 @@ struct CommitsListProps {
 fn CommitsList(CommitsListProps { commits }: &CommitsListProps) -> Html {
     let (_content_store, content_dispatch) = use_store::<ModalContent>();
 
-    let list_items_html: Html = commits.iter().map(|commit| {
+    let list_items_html: Html = commits.iter().rev().map(|commit| {
         let commit = commit.clone();
 
     let onclick = {
@@ -133,8 +133,16 @@ fn CommitsList(CommitsListProps { commits }: &CommitsListProps) -> Html {
     };
 
     html! {
-        <li class="list-group-item">{format!("Commit: {}\n {:?}", commit.title, commit.report)}
-        <button type="button" {onclick} data-bs-toggle="modal" data-bs-target="#mainModal">{"Code"}</button></li>
+        <li class="list-group-item">
+            <b>{format!("{}", commit.title)}</b>
+
+            <div class="container d-flex flex-row justify-content-start">
+                <div class="p-2">
+                    <button type="button" class="btn btn-secondary" {onclick} data-bs-toggle="modal" data-bs-target="#mainModal">{"Code"}</button>
+                </div>
+                <div class="p-2"><button type="button" class="btn btn-info">{"Report"}</button></div>
+            </div>
+        </li>
     }}).collect();
     html! {
         <ul class="list-group">
@@ -171,9 +179,15 @@ pub fn Commits() -> Html {
     }
     let mut commits = (*commit_state).commits.clone();
     commits.push(Commit::new(
-        "initial commit".to_owned(),
+        "v2.1".to_owned(),
         OffsetDateTime::now_utc(),
         "auto a = 1;".to_owned(),
+        None,
+    ));
+    commits.push(Commit::new(
+        "v2.2".to_owned(),
+        OffsetDateTime::now_utc(),
+        "auto a = 2;".to_owned(),
         None,
     ));
     html! {
