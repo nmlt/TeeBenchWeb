@@ -16,6 +16,10 @@ use crate::chartjs::hljs_highlight;
 
 use common::data_types::Commit;
 
+use yew_router::components::Link;
+
+use crate::Route;
+
 #[derive(Debug, Clone, PartialEq, Default, Store)]
 pub struct CommitState {
     commits: Vec<Commit>,
@@ -156,7 +160,11 @@ fn CommitsList(CommitsListProps { commits }: &CommitsListProps) -> Html {
                 <div class="p-2">
                     <button type="button" class="btn btn-secondary" {onclick} data-bs-toggle="modal" data-bs-target="#mainModal">{"Code"}</button>
                 </div>
-                <div class="p-2"><button type="button" class="btn btn-info">{"Report"}</button></div>
+                <div class="p-2">
+                    <Link<Route> classes={classes!("btn", "btn-info")} to={Route::PerfReport}>
+                        <span>{"Report"}</span>
+                    </Link<Route>>
+                </div>
             </div>
         </li>
     }}).collect();
