@@ -104,7 +104,7 @@ fn UploadCommit() -> Html {
           <option value="1">{"MWAY"}</option>
           <option value="2">{"PHT"}</option>
           <option value="3">{"CHT"}</option>
-          <option value="4">{"RHO"}</option>
+          <option value="4">{"RHT"}</option>
         </select>
         <button type="button" {onclick}>{"Upload"}</button>
         </>
@@ -203,7 +203,7 @@ pub fn Commits() -> Html {
     }
     let mut commits = (*commit_state).commits.clone();
     commits.push(Commit::new(
-        "RHO".to_owned(),
+        "RHT".to_owned(),
         "JOIN".to_owned(),
         OffsetDateTime::now_utc(),
         include_str!("../deps/radix_join.c").to_owned(),
@@ -230,20 +230,20 @@ pub fn Commits() -> Html {
         "blah".to_owned(),
         None,
     ));
-    commits.push(Commit::new(
-        "v2.1".to_owned(),
-        "JOIN".to_owned(),
-        OffsetDateTime::now_utc(),
-        include_str!("../deps/radix_join.c").to_owned(),
-        None,
-    ));
-    commits.push(Commit::new(
-        "v2.2".to_owned(),
-        "JOIN".to_owned(),
-        OffsetDateTime::now_utc(),
-        include_str!("../deps/radix_join.c").to_owned(),
-        None,
-    ));
+//     commits.push(Commit::new(
+//         "v2.1".to_owned(),
+//         "JOIN".to_owned(),
+//         OffsetDateTime::now_utc(),
+//         include_str!("../deps/radix_join.c").to_owned(),
+//         None,
+//     ));
+//     commits.push(Commit::new(
+//         "v2.2".to_owned(),
+//         "JOIN".to_owned(),
+//         OffsetDateTime::now_utc(),
+//         include_str!("../deps/radix_join.c").to_owned(),
+//         None,
+//     ));
     html! {
         <div class="container-fluid">
             <div class="row vh-100">

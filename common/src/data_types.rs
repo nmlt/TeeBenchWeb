@@ -75,7 +75,7 @@ pub struct Finding {
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Store)]
 pub struct ReportWithFindings {
     pub report: Report,
-    pub findings: HashSet<Finding>,
+    pub findings: Vec<Finding>,
 }
 
 pub type JobResult = Result<ReportWithFindings, TeeBenchWebError>;

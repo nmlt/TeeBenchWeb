@@ -37,47 +37,47 @@ pub fn JobResult(JobResultProps { job }: &JobResultProps) -> Html {
                         let result = result.clone();
                         let (report,findings) = match result {
                             Ok(r) => (r.report, r.findings),
-                            Err(_) => (Report::default(), HashSet::new()),
+                            Err(_) => (Report::default(), Vec::new()),
                         };
                         let findings = findings.iter().map(|f| {
                             let f = f.clone();
                             match f.style {
                                 FindingStyle::Neutral => html! {
-                                    <div class="col-sm-3">
+                                    <div class="col-sm-2">
                                         <div class="card my-4" style="background-color: #FFFFFF;">
                                             <div class="card-body">
-                                                <h5 class="card-text">{f.title}</h5>
-                                                <h5 class="card-title">{f.message}</h5>
+                                                <h6 class="card-text">{f.title}</h6>
+                                                <h6 class="card-title">{f.message}</h6>
                                             </div>
                                         </div>
                                     </div>
                                 },
                                 FindingStyle::Good => html! {
-                                    <div class="col-sm-3">
+                                    <div class="col-sm-2">
                                         <div class="card my-4" style="background-color: #77DD77;">
                                             <div class="card-body">
-                                                <h5 class="card-text">{f.title}</h5>
-                                                <h5 class="card-title">{f.message}</h5>
+                                                <h6 class="card-text">{f.title}</h6>
+                                                <h6 class="card-title">{f.message}</h6>
                                             </div>
                                         </div>
                                     </div>
                                 },
                                 FindingStyle::SoSo => html! {
-                                    <div class="col-sm-3">
+                                    <div class="col-sm-2">
                                         <div class="card my-4" style="background-color: #FDE26C;">
                                             <div class="card-body">
-                                                <h5 class="card-text">{f.title}</h5>
-                                                <h5 class="card-title">{f.message}</h5>
+                                                <h6 class="card-text">{f.title}</h6>
+                                                <h6 class="card-title">{f.message}</h6>
                                             </div>
                                         </div>
                                     </div>
                                 },
                                 FindingStyle::Bad => html! {
-                                    <div class="col-sm-3">
+                                    <div class="col-sm-2">
                                         <div class="card my-4" style="background-color: #FF6961;">
                                             <div class="card-body">
-                                                <h5 class="card-text">{f.title}</h5>
-                                                <h5 class="card-title">{f.message}</h5>
+                                                <h6 class="card-text">{f.title}</h6>
+                                                <h6 class="card-title">{f.message}</h6>
                                             </div>
                                         </div>
                                     </div>
@@ -165,7 +165,7 @@ pub fn JobResultsView() -> Html {
         runtime: time::Duration::new(5, 0),
         result: Ok(ReportWithFindings {
             report: Report::EpcCht,
-            findings: HashSet::from([
+            findings: Vec::from([
                 Finding {
                     title: "MaxThroughput".to_owned(),
                     message: "64.22 M".to_owned(),
@@ -200,21 +200,31 @@ pub fn JobResultsView() -> Html {
         runtime: time::Duration::new(180, 0),
         result: Ok(ReportWithFindings {
             report: Report::ScalabilityNativeSgxExample,
-            findings: HashSet::from([
+            findings: Vec::from([
                 Finding {
-                    title: "CPU Logical Cores".to_owned(),
-                    message: "8".to_owned(),
+                    title: "Throughput ratio (Native/SGX)".to_owned(),
+                    message: "7x - 31x".to_owned(),
                     style: FindingStyle::Neutral,
                 },
                 Finding {
-                    title: "Optimal CPU cores Native".to_owned(),
-                    message: "6".to_owned(),
+                    title: "Best CPU cores Native".to_owned(),
+                    message: "6 / 8".to_owned(),
                     style: FindingStyle::SoSo,
                 },
                 Finding {
-                    title: "Optimal CPU cores SGX".to_owned(),
-                    message: "2".to_owned(),
+                    title: "Best CPU cores SGX".to_owned(),
+                    message: "2 / 8".to_owned(),
                     style: FindingStyle::Bad,
+                },
+                Finding {
+                    title: "CPU context-switch - High".to_owned(),
+                    message: "SGX".to_owned(),
+                    style: FindingStyle::Bad,
+                },
+                Finding {
+                    title: "EPC Paging - Medium".to_owned(),
+                    message: "SGX".to_owned(),
+                    style: FindingStyle::SoSo,
                 },
             ]),
         }),

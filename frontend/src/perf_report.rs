@@ -18,44 +18,44 @@ pub fn PerfReport() -> Html {
                                 // Top row
                                 <div class="col-sm-2">
                                     <div class="card my-4">
-                                        <div class="card-body">
-                                            <h5 class="card-text">{"Performance Gain"}</h5>
+                                        <div class="card-body" style="background-color: #77DD77;">
+                                            <h6 class="card-text">{"Performance Difference"}</h6>
                                             <h5 class="card-title">{"+ 3.6 %"}</h5>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="col-sm-2">
                                     <div class="card my-4">
-                                        <div class="card-body">
-                                            <h5 class="card-text">{"Phase 1: Sort"}</h5>
-                                            <h5 class="card-title">{"180/191"}</h5>
+                                        <div class="card-body" style="background-color: #FDE26C;">
+                                            <h5 class="card-text">{"Phase 1: Partition"}</h5>
+                                            <h5 class="card-title">{"180/191 (+0)"}</h5>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="col-sm-2">
                                     <div class="card my-4">
-                                        <div class="card-body">
-                                            <h5 class="card-text">{"Phase 2: Merge"}</h5>
-                                            <h5 class="card-title">{"11/191"}</h5>
+                                        <div class="card-body" style="background-color: #77DD77;">
+                                            <h5 class="card-text">{"Phase 2: Join"}</h5>
+                                            <h5 class="card-title">{"11/191 (-4)"}</h5>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="col-sm-2">
                                     <div class="card my-4">
-                                        <div class="card-body">
+                                        <div class="card-body" style="background-color: #77DD77;">
                                             <h5 class="card-text">{"EPC Paging"}</h5>
-                                            <h5 class="card-title">{"- 1.4 %"}</h5>
+                                            <h5 class="card-title">{"- 0.4 %"}</h5>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-sm-2">
-                                    <div class="card my-4">
-                                        <div class="card-body">
-                                            <h5 class="card-text">{"Overall Best Version"}</h5>
-                                            <h5 class="card-title">{"v2.2"}</h5>
-                                        </div>
-                                    </div>
-                                </div>
+//                                 <div class="col-sm-2">
+//                                     <div class="card my-4">
+//                                         <div class="card-body">
+//                                             <h5 class="card-text">{"Overall Best Version"}</h5>
+//                                             <h5 class="card-title">{"v2.2"}</h5>
+//                                         </div>
+//                                     </div>
+//                                 </div>
                             </div>
                             <div class="row">
                                 // Graph cards
@@ -79,7 +79,7 @@ pub fn PerfReport() -> Html {
                                 <div class="col-lg-6">
                                     <div class="card my-4">
                                         <div class="card-body ratio ratio-16x9">
-                                            <iframe src="assets/throughput.html" />
+                                            <iframe src="assets/throughputCE.html" />
                                         </div>
                                     </div>
                                     <div class="card my-4">

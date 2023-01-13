@@ -10,7 +10,6 @@ use axum::{
 };
 use axum_extra::routing::SpaRouter;
 use serde_json::{json, Value};
-use std::collections::HashSet;
 use std::collections::VecDeque;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -73,7 +72,7 @@ async fn profiling_task(
         while let Some(current_conf) = pop_queue(queue.clone()) {
             info!("Working on {current_conf:#?}...");
             let out = tokio::process::Command::new("sleep")
-                .arg("5")
+                .arg("300")
                 .output()
                 .await;
             info!("Process completed with {out:?}.");
@@ -88,7 +87,7 @@ async fn profiling_task(
                 runtime: Duration::new(5, 0), // TODO Get actual runtime from teebench output.
                 result: Ok(ReportWithFindings {
                     report: report,
-                    findings: HashSet::new(),
+                    findings: Vec::new(),
                 }),
             };
             queue_tx.send(finished_job).await.unwrap();
