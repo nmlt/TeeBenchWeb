@@ -35,7 +35,7 @@ pub fn Navigation(NavigationProps { active_nav_item }: &NavigationProps) -> Html
                         </Link<Route>>
                     </li>
                     <li class="nav-item">
-                        <Link<Route> classes={add_active_class("PerfReport", active_nav_item.clone())} to={Route::PerfReport { commit: "Latest Commit".to_owned() }}> // TODO This is a hack. Either implement a route that redirects empty PerfReport s to the latest or change the data type of commit to an option.
+                        <Link<Route> classes={add_active_class("PerfReport", active_nav_item.clone())} to={Route::PerfReportLatest}>
                             <i class="fs-5 bi-bar-chart-fill"></i>
                             <span class="ms-1 d-none d-sm-inline">{"PerfReport"}</span>
                         </Link<Route>>

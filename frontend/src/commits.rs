@@ -14,7 +14,7 @@ use crate::modal::Modal;
 use crate::modal::ModalContent;
 use crate::navigation::Navigation;
 
-use common::data_types::Commit;
+use common::data_types::{Commit, Report};
 
 use yew_router::components::Link;
 
@@ -183,46 +183,7 @@ impl CommitState {
 
 #[function_component]
 pub fn Commits() -> Html {
-    let default_commits = vec![
-        Commit::new(
-            "RHT".to_owned(),
-            "JOIN".to_owned(),
-            OffsetDateTime::now_utc(),
-            include_str!("../deps/radix_join.c").to_owned(),
-            None,
-        ),
-        Commit::new(
-            "CHT".to_owned(),
-            "JOIN".to_owned(),
-            OffsetDateTime::now_utc(),
-            "blah".to_owned(),
-            None,
-        ),
-        Commit::new(
-            "PHT".to_owned(),
-            "JOIN".to_owned(),
-            OffsetDateTime::now_utc(),
-            "blah".to_owned(),
-            None,
-        ),
-        Commit::new(
-            "MWAY".to_owned(),
-            "JOIN".to_owned(),
-            OffsetDateTime::now_utc(),
-            "blah".to_owned(),
-            None,
-        ),
-    ];
     let commit_state = use_store_value::<CommitState>();
-    use_effect_with_deps(
-        move |_| {
-            Dispatch::<CommitState>::new().set(CommitState {
-                commits: default_commits,
-            });
-            || {}
-        },
-        (),
-    );
     {
         let commit_state = commit_state.clone();
         spawn_local(async move {

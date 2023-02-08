@@ -10,9 +10,13 @@ mod perf_report;
 mod profiling;
 mod queue;
 
-use crate::commits::Commits;
+use crate::commits::{CommitState, Commits};
 use crate::perf_report::PerfReport;
 use crate::profiling::Profiling;
+
+use common::data_types::{Commit, Report};
+use time::OffsetDateTime;
+use yewdux::prelude::Dispatch;
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 pub enum Route {
@@ -22,6 +26,8 @@ pub enum Route {
     Commits,
     #[at("/profiling")]
     Profiling,
+    #[at("/performance_report")]
+    PerfReportLatest,
     #[at("/performance_report/:commit")]
     PerfReport { commit: String },
     #[not_found]
@@ -38,10 +44,13 @@ fn switch(routes: Route) -> Html {
         Route::Profiling => html! {
             <Profiling />
         },
-        Route::PerfReport { commit } => html! {
-            <PerfReport {commit}/>
+        Route::PerfReportLatest => html! {
+            <PerfReport commit={None::<String>} />
         },
-        Route::NotFound => html! { <main><h1>{ "404" }</h1><p>{"not found in yew app"}</p></main> },
+        Route::PerfReport { commit } => html! {
+            <PerfReport commit={Some(commit)} />
+        },
+        Route::NotFound => html! { <main><h1>{"404"}</h1><p>{"not found in yew app"}</p></main> },
     }
 }
 
@@ -55,5 +64,38 @@ fn app() -> Html {
 }
 
 fn main() {
+    let default_commits = vec![
+        Commit::new(
+            "RHT".to_owned(),
+            "JOIN".to_owned(),
+            OffsetDateTime::now_utc(),
+            include_str!("../deps/radix_join.c").to_owned(),
+            Some(Report::Epc),
+        ),
+        Commit::new(
+            "CHT".to_owned(),
+            "JOIN".to_owned(),
+            OffsetDateTime::now_utc(),
+            "blah".to_owned(),
+            Some(Report::Scalability),
+        ),
+        Commit::new(
+            "PHT".to_owned(),
+            "JOIN".to_owned(),
+            OffsetDateTime::now_utc(),
+            "blah".to_owned(),
+            Some(Report::ScalabilityNativeSgxExample),
+        ),
+        Commit::new(
+            "MWAY".to_owned(),
+            "JOIN".to_owned(),
+            OffsetDateTime::now_utc(),
+            "blah".to_owned(),
+            Some(Report::Throughput),
+        ),
+    ];
+    Dispatch::<CommitState>::new().set(CommitState {
+        commits: default_commits,
+    });
     yew::Renderer::<App>::new().render();
 }
