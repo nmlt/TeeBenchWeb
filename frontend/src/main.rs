@@ -22,8 +22,8 @@ pub enum Route {
     Commits,
     #[at("/profiling")]
     Profiling,
-    #[at("/performance_report")]
-    PerfReport,
+    #[at("/performance_report/:commit")]
+    PerfReport { commit: String },
     #[not_found]
     #[at("/404")]
     NotFound,
@@ -38,8 +38,8 @@ fn switch(routes: Route) -> Html {
         Route::Profiling => html! {
             <Profiling />
         },
-        Route::PerfReport => html! {
-            <PerfReport />
+        Route::PerfReport { commit } => html! {
+            <PerfReport {commit}/>
         },
         Route::NotFound => html! { <main><h1>{ "404" }</h1><p>{"not found in yew app"}</p></main> },
     }

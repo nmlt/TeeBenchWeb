@@ -9,10 +9,10 @@ use web_sys::HtmlInputElement;
 use yew::prelude::*;
 use yewdux::prelude::*;
 
+use crate::chartjs::hljs_highlight;
 use crate::modal::Modal;
 use crate::modal::ModalContent;
 use crate::navigation::Navigation;
-use crate::chartjs::hljs_highlight;
 
 use common::data_types::Commit;
 
@@ -22,7 +22,7 @@ use crate::Route;
 
 #[derive(Debug, Clone, PartialEq, Default, Store)]
 pub struct CommitState {
-    commits: Vec<Commit>,
+    pub commits: Vec<Commit>,
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Store)]
@@ -153,7 +153,7 @@ fn CommitsList(CommitsListProps { commits }: &CommitsListProps) -> Html {
 
     html! {
         <li class="list-group-item">
-            <b>{format!("{}", commit.title)}</b>
+            <b>{format!("{}", commit.title.clone())}</b>
 
             <div class="container d-flex flex-row justify-content-start">
                 <div class="p-2"><button type="button" class="btn btn-light">{commit.operator}</button></div>
@@ -161,7 +161,7 @@ fn CommitsList(CommitsListProps { commits }: &CommitsListProps) -> Html {
                     <button type="button" class="btn btn-secondary" {onclick} data-bs-toggle="modal" data-bs-target="#mainModal">{"Code"}</button>
                 </div>
                 <div class="p-2">
-                    <Link<Route> classes={classes!("btn", "btn-info")} to={Route::PerfReport}>
+                    <Link<Route> classes={classes!("btn", "btn-info")} to={Route::PerfReport { commit: commit.title }}>
                         <span>{"Report"}</span>
                     </Link<Route>>
                 </div>
@@ -183,7 +183,46 @@ impl CommitState {
 
 #[function_component]
 pub fn Commits() -> Html {
-    let (commit_state, _dispatch) = use_store::<CommitState>();
+    let default_commits = vec![
+        Commit::new(
+            "RHT".to_owned(),
+            "JOIN".to_owned(),
+            OffsetDateTime::now_utc(),
+            include_str!("../deps/radix_join.c").to_owned(),
+            None,
+        ),
+        Commit::new(
+            "CHT".to_owned(),
+            "JOIN".to_owned(),
+            OffsetDateTime::now_utc(),
+            "blah".to_owned(),
+            None,
+        ),
+        Commit::new(
+            "PHT".to_owned(),
+            "JOIN".to_owned(),
+            OffsetDateTime::now_utc(),
+            "blah".to_owned(),
+            None,
+        ),
+        Commit::new(
+            "MWAY".to_owned(),
+            "JOIN".to_owned(),
+            OffsetDateTime::now_utc(),
+            "blah".to_owned(),
+            None,
+        ),
+    ];
+    let commit_state = use_store_value::<CommitState>();
+    use_effect_with_deps(
+        move |_| {
+            Dispatch::<CommitState>::new().set(CommitState {
+                commits: default_commits,
+            });
+            || {}
+        },
+        (),
+    );
     {
         let commit_state = commit_state.clone();
         spawn_local(async move {
@@ -201,49 +240,21 @@ pub fn Commits() -> Html {
             }
         });
     }
-    let mut commits = (*commit_state).commits.clone();
-    commits.push(Commit::new(
-        "RHT".to_owned(),
-        "JOIN".to_owned(),
-        OffsetDateTime::now_utc(),
-        include_str!("../deps/radix_join.c").to_owned(),
-        None,
-    ));
-    commits.push(Commit::new(
-        "CHT".to_owned(),
-        "JOIN".to_owned(),
-        OffsetDateTime::now_utc(),
-        "blah".to_owned(),
-        None,
-    ));
-    commits.push(Commit::new(
-        "PHT".to_owned(),
-        "JOIN".to_owned(),
-        OffsetDateTime::now_utc(),
-        "blah".to_owned(),
-        None,
-    ));
-    commits.push(Commit::new(
-        "MWAY".to_owned(),
-        "JOIN".to_owned(),
-        OffsetDateTime::now_utc(),
-        "blah".to_owned(),
-        None,
-    ));
-//     commits.push(Commit::new(
-//         "v2.1".to_owned(),
-//         "JOIN".to_owned(),
-//         OffsetDateTime::now_utc(),
-//         include_str!("../deps/radix_join.c").to_owned(),
-//         None,
-//     ));
-//     commits.push(Commit::new(
-//         "v2.2".to_owned(),
-//         "JOIN".to_owned(),
-//         OffsetDateTime::now_utc(),
-//         include_str!("../deps/radix_join.c").to_owned(),
-//         None,
-//     ));
+    let commits = (*commit_state).commits.clone();
+    //     commits.push(Commit::new(
+    //         "v2.1".to_owned(),
+    //         "JOIN".to_owned(),
+    //         OffsetDateTime::now_utc(),
+    //         include_str!("../deps/radix_join.c").to_owned(),
+    //         None,
+    //     ));
+    //     commits.push(Commit::new(
+    //         "v2.2".to_owned(),
+    //         "JOIN".to_owned(),
+    //         OffsetDateTime::now_utc(),
+    //         include_str!("../deps/radix_join.c").to_owned(),
+    //         None,
+    //     ));
     html! {
         <div class="container-fluid">
             <div class="row vh-100">

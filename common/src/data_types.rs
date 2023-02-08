@@ -72,6 +72,16 @@ pub struct Finding {
     pub style: FindingStyle,
 }
 
+impl Finding {
+    pub fn new(title: &str, message: &str, style: FindingStyle) -> Self {
+        Self {
+            title: title.to_owned(),
+            message: message.to_owned(),
+            style,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Store)]
 pub struct ReportWithFindings {
     pub report: Report,

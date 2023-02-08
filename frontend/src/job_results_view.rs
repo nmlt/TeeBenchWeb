@@ -179,8 +179,9 @@ pub fn JobResultsView() -> Html {
                 Finding {
                     title: "Low throughput".to_owned(),
                     message: "Lowest throughput [M rec/s]: 0.97".to_owned(),
-                    style: FindingStyle::Bad
-                }]),
+                    style: FindingStyle::Bad,
+                },
+            ]),
         }),
     };
     let test_scalability = Job::Finished {

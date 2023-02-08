@@ -6,14 +6,14 @@ A frontend for [TeeBench](https://github.com/agora-ecosystem/tee-bench).
 Requirements
 ------------
 
-- Rust (best via [rustup.rs](rustup.rs), latest version or at least 1.56 (untested))
+- Rust (best via [rustup.rs](rustup.rs), latest version or at least 1.65)
 - Rust target `wasm32-unknown-unknown` (install via `rustup target add wasm32-unknown-unknown`)
 - Trunk (install as explained on their [website](https://trunkrs.dev/))
 
 Running the server app with the web app
 ---------------------------------------
 
-Use `run.sh`. First build the web app while in the `frontend` directory with `trunk build`. Then change to the `backend` directory and run the axum server: `cargo run`.
+Use `run.sh`. Or, first build the web app while in the `frontend` directory with `trunk build`. Then change to the `backend` directory and run the axum server: `cargo run`.
 
 Running the axum server from the workspace does not work, as the path to the `dist` directory that trunk created is then wrong. Just switch to the `backend` directory or use the `run.sh` script.
 
