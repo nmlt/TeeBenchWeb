@@ -164,7 +164,7 @@ pub fn JobResultsView() -> Html {
         submitted: time::OffsetDateTime::now_utc() - time::Duration::new(4000, 0),
         runtime: time::Duration::new(5, 0),
         result: Ok(ReportWithFindings {
-            report: Report::EpcCht,
+            report: Report::EpcCht { findings: vec![] },
             findings: Vec::from([
                 Finding {
                     title: "MaxThroughput".to_owned(),
@@ -200,7 +200,7 @@ pub fn JobResultsView() -> Html {
         submitted: time::OffsetDateTime::now_utc() - time::Duration::new(3600, 0),
         runtime: time::Duration::new(180, 0),
         result: Ok(ReportWithFindings {
-            report: Report::ScalabilityNativeSgxExample,
+            report: Report::ScalabilityNativeSgxExample { findings: vec![] },
             findings: Vec::from([
                 Finding {
                     title: "Throughput ratio (Native/SGX)".to_owned(),

@@ -18,14 +18,17 @@ pub enum TeeBenchWebError {
     Unknown,
 }
 
+/// A commit represents an algorithm and its profiling results.
+/// 
+/// The `reports` field contain all profiling jobs that included this algorithm. So if a profiling job compared algorithm A and B, the both commits' `report` field contains the result.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Commit {
     pub title: String,
     pub operator: String,
     pub datetime: OffsetDateTime,
     pub code: String,
-    pub report: Option<Report>,
-    // TODO Add an ID that the server generates to uniquely identify a commit, indenpendently of the user supplied title.
+    pub reports: Vec<Report>,
+    // TODO Add an ID that the server generates to uniquely identify a commit, independently of the user supplied title.
 }
 
 impl Commit {
@@ -34,26 +37,31 @@ impl Commit {
         operator: String,
         datetime: OffsetDateTime,
         code: String,
-        report: Option<Report>,
+        reports: Vec<Report>,
     ) -> Self {
         Commit {
             title,
             operator,
             datetime,
             code,
-            report,
+            reports,
         }
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Report {
-    #[default]
-    Epc,
-    Scalability,
-    ScalabilityNativeSgxExample,
-    Throughput,
-    EpcCht
+    Epc { findings: Vec<Finding>, },
+    Scalability { findings: Vec<Finding>, },
+    ScalabilityNativeSgxExample { findings: Vec<Finding>, },
+    Throughput { findings: Vec<Finding>, },
+    EpcCht { findings: Vec<Finding>, },
+}
+
+impl Default for Report {
+    fn default() -> Self {
+        Report::Epc { findings: vec![] }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default, Hash, Eq)]
@@ -134,27 +142,27 @@ pub enum QueueMessage {
 #[strum(serialize_all = "UPPERCASE")]
 pub enum Algorithm {
     #[default]
-    #[strum(to_string = "JOIN - CHT")]
+    // #[strum(to_string = "JOIN - CHT")]
     Cht,
-    #[strum(to_string = "JOIN - PHT")]
+    // #[strum(to_string = "JOIN - PHT")]
     Pht,
-    #[strum(to_string = "JOIN - PSM")]
+    // #[strum(to_string = "JOIN - PSM")]
     Psm,
-    #[strum(to_string = "JOIN - MWAY")]
+    // #[strum(to_string = "JOIN - MWAY")]
     Mway,
-    #[strum(to_string = "JOIN - RHT")]
+    // #[strum(to_string = "JOIN - RHT")]
     Rht,
-    #[strum(to_string = "JOIN - RHO")]
+    // #[strum(to_string = "JOIN - RHO")]
     Rho,
-    #[strum(to_string = "JOIN - RSM")]
+    // #[strum(to_string = "JOIN - RSM")]
     Rsm,
-    #[strum(to_string = "JOIN - INL")]
+    // #[strum(to_string = "JOIN - INL")]
     Inl,
-    #[strum(to_string = "JOIN - v2.1")]
+    // #[strum(to_string = "JOIN - v2.1")]
     V21,
-    #[strum(to_string = "JOIN - v2.2")]
+    // #[strum(to_string = "JOIN - v2.2")]
     V22,
-    #[strum(to_string = "JOIN - NestedLoopJoin")]
+    // #[strum(to_string = "JOIN - NestedLoopJoin")]
     Nlj,
 //     #[strum(to_string = "Latest Commit")]
 //     Commit(u32), // TODO Uuid
@@ -257,3 +265,16 @@ impl std::fmt::Display for ProfilingConfiguration {
         )
     }
 }
+
+// #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
+// pub struct ExperimentConfiguration {
+//     pub experiment_type: ExperimentType,
+//     pub parameter: Parameter,
+//     pub measurement: Measurement,
+//     pub min: i64,
+//     pub max: i64,
+//     pub step: i64,
+//     pub dataset: Dataset,
+//     pub platform: Platform,
+//     pub sort_data: bool,
+// }

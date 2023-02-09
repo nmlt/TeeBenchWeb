@@ -50,7 +50,7 @@ pub fn Chart(ChartProps { report }: &ChartProps) -> Html {
             let scales;
             let options;
             match report {
-                Report::Epc => {
+                Report::Epc { findings: _ } => {
                     chart_type = "bar";
                     labels =
                         json!([8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128]);
@@ -136,7 +136,7 @@ pub fn Chart(ChartProps { report }: &ChartProps) -> Html {
                         "scales": scales,
                     });
                 }
-                Report::EpcCht => {
+                Report::EpcCht { findings: _ } => {
                     chart_type = "bar";
                     labels =
                         json!([8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128]);
@@ -219,7 +219,7 @@ pub fn Chart(ChartProps { report }: &ChartProps) -> Html {
                         "scales": scales,
                     });
                 }
-                Report::Scalability => {
+                Report::Scalability { findings: _ } => {
                     chart_type = "line";
                     labels = json!([1, 2, 3, 4, 5, 6, 7, 8]);
                     datasets = json!([
@@ -276,7 +276,7 @@ pub fn Chart(ChartProps { report }: &ChartProps) -> Html {
                         "scales": scales,
                     });
                 }
-                Report::ScalabilityNativeSgxExample => {
+                Report::ScalabilityNativeSgxExample { findings: _ } => {
                     chart_type = "line";
                     labels = json!([1, 2, 3, 4, 5, 6, 7, 8]);
                     datasets = json!([
@@ -346,7 +346,7 @@ pub fn Chart(ChartProps { report }: &ChartProps) -> Html {
                         "scales": scales,
                     });
                 }
-                Report::Throughput => {
+                Report::Throughput { findings: _ } => {
                     chart_type = "bar";
                     labels = json!(["native", "sgx"]);
                     datasets = json!([

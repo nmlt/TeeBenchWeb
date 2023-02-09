@@ -1,8 +1,7 @@
 use yew::prelude::*;
-use yew_router::components::Redirect;
 use yewdux::prelude::*;
 
-use crate::{chartjs::Chart, commits::CommitState, modal::Modal, navigation::Navigation, Route};
+use crate::{chartjs::Chart, commits::CommitState, modal::Modal, navigation::Navigation};
 use common::data_types::{Finding, FindingStyle, Report};
 
 #[derive(Debug, PartialEq, Properties)]
@@ -19,7 +18,7 @@ pub fn FindingCardColumn(FindingCardColumnProps { finding }: &FindingCardColumnP
         FindingStyle::Bad => "background-color: #FF6961;",
     };
     html! {
-        <div class="col-lg-2 col-sm-4">
+        <div class="col-xl-2 col-lg-4">
             <div class="card my-4" style={class_list}>
                 <div class="card-body">
                     <h5 class="card-text">{finding.title.clone()}</h5>
@@ -58,13 +57,19 @@ pub fn PerfReport(PerfReportProps { commit: current }: &PerfReportProps) -> Html
     let commit_store = use_store_value::<CommitState>();
     let current = match current {
         Some(c) => c,
-        None => "MWAY", // TODO Make this the latest commit.
+        None => &commit_store.commits.iter().last().unwrap().title, // Latest commit
     };
-    let Some(commit) = commit_store.commits.iter().filter(|c| &c.title == current).next() else {
-        let titles = commit_store.commits.iter().map(|c| c.title.clone()).collect::<Vec<String>>();
+    if commit_store.commits.len() == 0 {
         return html! {
-            //<Redirect<Route> to={Route::NotFound} />
-            {for titles}
+            <h1>{"No data! Run some experiments."}</h1> // TODO Would be nice to provide a link to the Profiling tab.
+        };
+    }
+    // TODO THE QUESTION IS: What do I show, depending on how we store experiment results?
+    // - Simply all graphs that were generated in the profiling tab. But how do I select which algorithm? If the user goes to perf_report/MWAY do I show the comparison of MWAY to RHO _and_ MWAY to CHT? Seems like I need a database and precise queries.
+    // - For now, I'm not splitting comparison experiments. So each experiment that contains eg. CHT will get added to CHT algorithm commit state, and displayed here.
+    let Some(commit) = commit_store.commits.iter().filter(|c| &c.title == current).next() else {
+        return html! {
+            <h1>{format!("Error getting commit with title {current:?}!")}</h1>
         }
     };
     let findings = vec![
@@ -78,8 +83,7 @@ pub fn PerfReport(PerfReportProps { commit: current }: &PerfReportProps) -> Html
             <FindingCardColumn finding={f.clone()} />
         }
     });
-    let reports = vec![commit.report.clone().unwrap()];
-    let reports = reports.iter().map(|r| {
+    let reports = commit.reports.iter().map(|r: &Report| {
         let chart = html! {
             <Chart report={r.clone()} />
         };

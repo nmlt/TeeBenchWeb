@@ -14,7 +14,7 @@ use crate::modal::Modal;
 use crate::modal::ModalContent;
 use crate::navigation::Navigation;
 
-use common::data_types::{Commit, Report};
+use common::data_types::Commit;
 
 use yew_router::components::Link;
 
@@ -50,7 +50,7 @@ fn UploadCommit() -> Html {
                         "JOIN".to_owned(),
                         OffsetDateTime::now_utc(),
                         code,
-                        None,
+                        vec![],
                     );
                     store.0 = Some(commit.clone());
                     let resp = Request::get("/api/commit")

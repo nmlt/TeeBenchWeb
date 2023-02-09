@@ -72,14 +72,14 @@ async fn profiling_task(
         while let Some(current_conf) = pop_queue(queue.clone()) {
             info!("Working on {current_conf:#?}...");
             let out = tokio::process::Command::new("sleep")
-                .arg("300")
+                .arg("2")
                 .output()
                 .await;
             info!("Process completed with {out:?}.");
             let report = match current_conf.experiment_type {
-                ExperimentType::EpcPaging => Report::Epc,
-                ExperimentType::Throughput => Report::Throughput,
-                ExperimentType::CpuCyclesTuple => Report::Scalability, // TODO This is probably wrong?
+                ExperimentType::EpcPaging => Report::Epc { findings: vec![] },
+                ExperimentType::Throughput => Report::Throughput { findings: vec![] },
+                ExperimentType::CpuCyclesTuple => Report::Scalability { findings: vec![] }, // TODO This is probably wrong?
             };
             let finished_job = Job::Finished {
                 config: current_conf,

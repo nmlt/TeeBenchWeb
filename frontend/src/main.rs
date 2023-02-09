@@ -70,28 +70,28 @@ fn main() {
             "JOIN".to_owned(),
             OffsetDateTime::now_utc(),
             include_str!("../deps/radix_join.c").to_owned(),
-            Some(Report::Epc),
+            vec![Report::Epc { findings: vec![] }],
         ),
         Commit::new(
             "CHT".to_owned(),
             "JOIN".to_owned(),
             OffsetDateTime::now_utc(),
             "blah".to_owned(),
-            Some(Report::Scalability),
+            vec![Report::Scalability { findings: vec![] }],
         ),
         Commit::new(
             "PHT".to_owned(),
             "JOIN".to_owned(),
             OffsetDateTime::now_utc(),
             "blah".to_owned(),
-            Some(Report::ScalabilityNativeSgxExample),
+            vec![Report::ScalabilityNativeSgxExample { findings: vec![] }],
         ),
         Commit::new(
             "MWAY".to_owned(),
             "JOIN".to_owned(),
             OffsetDateTime::now_utc(),
             "blah".to_owned(),
-            Some(Report::Throughput),
+            vec![Report::Throughput { findings: vec![] }],
         ),
     ];
     Dispatch::<CommitState>::new().set(CommitState {
