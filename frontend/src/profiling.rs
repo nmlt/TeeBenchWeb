@@ -248,14 +248,14 @@ pub fn profiling() -> Html {
     let datasets_onchange = {
         let (_store, dispatch) = use_store::<ProfilingConfiguration>();
         dispatch.input_mut(|s, value: String| {
-            s.dataset = Dataset::from_str(&value).unwrap();
+            s.dataset = HashSet::from([Dataset::from_str(&value).unwrap()]);
         })
     };
     let platforms: Vec<RadioData> = platforms.iter().map(|p| RadioData::new(&p, &p)).collect();
     let platforms_onchange = {
         let (_store, dispatch) = use_store::<ProfilingConfiguration>();
         dispatch.input_mut(|s, value: String| {
-            s.platform = Platform::from_str(&value).unwrap();
+            s.platform = HashSet::from([Platform::from_str(&value).unwrap()]);
         })
     };
     let sort_onchange = {
