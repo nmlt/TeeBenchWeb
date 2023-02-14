@@ -452,7 +452,6 @@ mod tests {
         }
     }
 
-    #[ignore] // TODO This test does not work, as HashSet's order changes randomly (per compilation I think). So the cmds array for comparison cannot easily be compared.
     #[test]
     fn profiling_configuration_to_teebench_cmd_multiple_cmds() {
         let c = ProfilingConfiguration::new(
@@ -503,14 +502,10 @@ mod tests {
             Commandline::with_args(&Platform::Native,&vec!["-a", "RHO","--sort-r","--sort-s","-d","Cache Fit"   ,"-z","8",],),
         ];
         let to_be_tested = c.to_teebench_cmd();
-        println!("{to_be_tested:#?}");
 
         assert_eq!(to_be_tested.len(), cmds.len());
-        let mut i = 0;
-        for (tested, expected) in to_be_tested.iter().zip(cmds.iter()) {
-            println!("{i}");
-            i += 1;
-            assert_eq!(tested, expected);
+        for tested_cmd in to_be_tested {
+            assert!(cmds.contains(&tested_cmd));
         }
     }
 }
