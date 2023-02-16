@@ -11,7 +11,7 @@ use std::path::PathBuf;
 use common::data_types::{ExperimentType, Job, ProfilingConfiguration, ReportWithFindings, Report, Commandline, Platform};
 
 async fn compile_and_run(conf: ProfilingConfiguration) -> Report {
-    let mut tee_bench_dir = PathBuf::from(var("TEEBENCHWEB_RUN_DIR").expect("TEEBENCHWEB_RUN_DIR not set"));//TODO here;
+    let mut tee_bench_dir = PathBuf::from(var("TEEBENCHWEB_RUN_DIR").expect("TEEBENCHWEB_RUN_DIR not set"));
     let cmds = conf.to_teebench_cmd();
     let mut outputs = vec![];
     for cmd in cmds {
@@ -27,9 +27,11 @@ async fn compile_and_run(conf: ProfilingConfiguration) -> Report {
         // Command::new("make").args(["clean"]).status().await.expect("Failed to run make clean");
         // Command::new("make").args(["-B", "sgx"]).status().await.expect("Failed to compile sgx version of TeeBench");
         // This assumes that the Makefile of TeeBench has a different app name ("sgx")
+        info!("Now running `{cmd}`...");
         let output = to_command(cmd).output().await.expect("Failed to run sgx version of TeeBench");
         outputs.push(output);
     }
+    println!("{outputs:#?}");
     Report::default()
 }
 

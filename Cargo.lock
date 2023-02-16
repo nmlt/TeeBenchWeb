@@ -133,6 +133,7 @@ dependencies = [
  "axum-extra",
  "axum-macros",
  "common",
+ "indoc",
  "serde",
  "serde_json",
  "structopt",

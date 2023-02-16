@@ -3,7 +3,7 @@ use time::{Duration, OffsetDateTime};
 
 use indoc::writedoc;
 pub use strum::VariantNames;
-use strum_macros::{Display, EnumString, EnumVariantNames};
+use strum_macros::{Display, EnumString, EnumIter, EnumVariantNames};
 use thiserror::Error;
 use yewdux::prelude::Store;
 
@@ -137,6 +137,7 @@ pub enum QueueMessage {
     EnumString,
     Display,
     EnumVariantNames,
+    EnumIter,
     Eq,
     Hash,
 )]
@@ -307,18 +308,20 @@ impl ProfilingConfiguration {
         }
     }
 }
-
+use strum::IntoEnumIterator;
 impl Default for ProfilingConfiguration {
+    /// Like Figure 4 off the shelf performance: throughput of all algorithms.
     fn default() -> Self {
+        let algorithm = Algorithm::iter().collect();
         Self {
-            algorithm: HashSet::from([Algorithm::default()]),
+            algorithm,
             experiment_type: ExperimentType::default(),
             parameter: Parameter::default(),
             measurement: Measurement::default(),
             min: 2,
             max: 2,
             step: 1,
-            dataset: HashSet::from([Dataset::default()]),
+            dataset: HashSet::from([Dataset::CacheExceed, Dataset::CacheFit]),
             platform: HashSet::from([Platform::default()]),
             sort_data: false,
         }
@@ -407,12 +410,6 @@ pub struct Commandline {
 }
 
 impl Commandline {
-    pub fn app_string(&self) -> String {
-        match self.app {
-            Platform::Sgx => "./fake_teebench".to_string(),
-            Platform::Native => "./fake_teebench".to_string(),
-        }
-    }
     pub fn new(platform: Platform) -> Self {
         Self { app: platform, args: vec![] }
     }
@@ -440,6 +437,19 @@ impl Commandline {
                 *d_arg = val.to_string();
             }
         }
+    }
+    pub fn app_string(&self) -> String {
+        match self.app {
+            Platform::Sgx => "./fake_teebench".to_string(),
+            Platform::Native => "./fake_teebench".to_string(),
+        }
+    }
+}
+
+impl std::fmt::Display for Commandline {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let args_joined = self.args.join(" ");
+        write!(f, "{} {}", self.app_string(), args_joined)
     }
 }
 
