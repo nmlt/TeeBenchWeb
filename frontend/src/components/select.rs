@@ -24,6 +24,9 @@ pub struct InputSelectProps {
     pub multiple: bool,
     pub label: String,
     pub onchange: Callback<Event>,
+    /// If None, the first in the options vector will be selected.
+    pub selected: Vec<String>,
+    pub disabled: bool,
 }
 
 #[function_component]
@@ -33,15 +36,22 @@ pub fn InputSelect(
         multiple,
         label,
         onchange,
+        selected,
+        disabled,
     }: &InputSelectProps,
 ) -> Html {
     let options = options
         .iter()
-        .map(|o| html! { <option value={o.value.clone()}>{o.label.clone()}</option> });
+        .map(|o| {
+            if selected.contains(&o.value) {
+                return html! { <option value={o.value.clone()} selected={true} >{o.label.clone()}</option> };
+            }
+            html! { <option value={o.value.clone()}>{o.label.clone()}</option> }
+        });
     html! {
         <div>
             <label class="form-label" for={format!("select-{label}")}>{label.clone()}</label>
-            <select class="form-select" id={format!("select-{label}")} type="select" multiple={*multiple} {onchange}>
+            <select class="form-select" id={format!("select-{label}")} type="select" multiple={*multiple} {onchange} disabled={*disabled} >
                 {for options}
             </select>
         </div>

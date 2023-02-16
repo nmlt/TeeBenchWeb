@@ -161,6 +161,8 @@ pub fn profiling() -> Html {
             });
         })
     };
+    let store = use_store_value::<ProfilingConfiguration>();
+    let disable_controls = store.experiment_type != ExperimentType::Custom;
     html! {
         <div class="container-fluid">
             <div class="row vh-100">
@@ -175,16 +177,16 @@ pub fn profiling() -> Html {
                                 <div class="col-md">
                                     <div class="row g-3">
                                         <div class="col-md">
-                                            <InputSelect options={algs} onchange={algs_onchange} label={"Algorithm (select multiple)"} multiple={true} />
+                                            <InputSelect options={algs} onchange={algs_onchange} label={"Algorithm (select multiple)"} multiple={true} selected={store.algorithm.iter().map(|a| a.to_string()).collect::<Vec<_>>()} disabled={disable_controls} />
                                         </div>
                                         <div class="col-md">
-                                            <InputSelect options={exps} onchange={exps_onchange} label={"Experiment"} multiple={false} />
+                                            <InputSelect options={exps} onchange={exps_onchange} label={"Experiment"} multiple={false} selected={vec![store.experiment_type.to_string()]} disabled={false} />
                                         </div>
                                     </div>
                                     <div class="row g-3">
                                         <div class="col-md">
-                                            <InputSelect options={measurements} onchange={measurements_onchange} label={"Measurement (Y-axis)"} multiple={false} />
-                                            <InputSelect options={params} onchange={params_onchange} label={"Parameter (X-axis)"} multiple={false} />
+                                            <InputSelect options={measurements} onchange={measurements_onchange} label={"Measurement (Y-axis)"} multiple={false} selected={vec![store.measurement.to_string()]} disabled={disable_controls} />
+                                            <InputSelect options={params} onchange={params_onchange} label={"Parameter (X-axis)"} multiple={false} selected={vec![store.parameter.to_string()]} disabled={disable_controls} />
                                         </div>
                                         <div class="col-md">
                                             <InputNumber label={"min"} onchange={min_onchange} />

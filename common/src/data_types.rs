@@ -181,6 +181,7 @@ pub enum ExperimentType {
     Throughput,
     #[strum(to_string = "CPU Cycles/Tuple")]
     CpuCyclesTuple,
+    Custom,
 }
 
 #[derive(
