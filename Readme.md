@@ -13,7 +13,13 @@ Requirements
 Running the server app with the web app
 ---------------------------------------
 
-Use `run.sh`. Or, first build the web app while in the `frontend` directory with `trunk build`. Then change to the `backend` directory and run the axum server: `cargo run`.
+Use `run.sh` and set the environment variable `TEEBENCHWEB_RUN_DIR` to the directory of TeeBench:
+
+```sh
+export TEEBENCHWEB_RUN_DIR="<path to TeeBench>"; ./run.sh
+```
+
+Or, first build the web app while in the `frontend` directory with `trunk build`. Then change to the `backend` directory and run the axum server: `cargo run` (This part needs the environment variable `TEEBENCHWEB_RUN_DIR` set to the directory of TeeBench).
 
 Running the axum server from the workspace does not work, as the path to the `dist` directory that trunk created is then wrong. Just switch to the `backend` directory or use the `run.sh` script.
 
@@ -32,7 +38,8 @@ trunk serve -d "dist" --public-url "/"
 Testing
 -------
 
-... is very lacking.
+There are some tests, run them with `cargo test`.
+
 Check the json extractor of the server with
 ```sh
 curl --header "Content-Type:application/json" \

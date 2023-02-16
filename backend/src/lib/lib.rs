@@ -1,11 +1,37 @@
 use tokio::sync::{mpsc, oneshot};
+use tokio::process::Command;
 use tracing::{info, instrument, warn};
 use time::{Duration, OffsetDateTime};
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::collections::VecDeque;
+use std::env::{var, set_current_dir};
+use std::path::PathBuf;
 
-use common::data_types::{ExperimentType, Job, ProfilingConfiguration, ReportWithFindings, Report, Commandline};
+use common::data_types::{ExperimentType, Job, ProfilingConfiguration, ReportWithFindings, Report, Commandline, Platform};
+
+async fn compile_and_run(conf: ProfilingConfiguration) -> Report {
+    let mut tee_bench_dir = PathBuf::from(var("TEEBENCHWEB_RUN_DIR").expect("TEEBENCHWEB_RUN_DIR not set"));//TODO here;
+    let cmds = conf.to_teebench_cmd();
+    let mut outputs = vec![];
+    for cmd in cmds {
+        // match cmd.app {
+        //     Platform::Sgx => {
+        //         tee_bench_dir.push("sgx");
+        //     }
+        //     Platform::Native => {
+        //         tee_bench_dir.push("native");
+        //     }
+        // }
+        set_current_dir(&tee_bench_dir).expect("Failed to change dir to sgx subdir");
+        // Command::new("make").args(["clean"]).status().await.expect("Failed to run make clean");
+        // Command::new("make").args(["-B", "sgx"]).status().await.expect("Failed to compile sgx version of TeeBench");
+        // This assumes that the Makefile of TeeBench has a different app name ("sgx")
+        let output = to_command(cmd).output().await.expect("Failed to run sgx version of TeeBench");
+        outputs.push(output);
+    }
+    Report::default()
+}
 
 #[instrument(skip(rx, queue, queue_tx))]
 pub async fn profiling_task(
@@ -31,16 +57,8 @@ pub async fn profiling_task(
         // Probably by making the above function a closure, which would also be more idiomatic.
         while let Some(current_conf) = pop_queue(queue.clone()) {
             info!("Working on {current_conf:#?}...");
-            let out = tokio::process::Command::new("sleep")
-                .arg("2")
-                .output()
-                .await;
-            info!("Process completed with {out:?}.");
-            let report = match current_conf.experiment_type {
-                ExperimentType::EpcPaging => Report::Epc { findings: vec![] },
-                ExperimentType::Throughput => Report::Throughput { findings: vec![] },
-                ExperimentType::CpuCyclesTuple => Report::Scalability { findings: vec![] }, // TODO This is probably wrong?
-            };
+            let report = compile_and_run(current_conf.clone()).await;
+            info!("Process completed with {report:?}.");
             let finished_job = Job::Finished {
                 config: current_conf,
                 submitted: OffsetDateTime::now_utc(), // TODO Fix this.
@@ -91,7 +109,7 @@ pub async fn profiling_task(
 
 /// Consumes `Commandline` and makes a tokio process out of it.
 fn to_command(cmdline: Commandline) -> tokio::process::Command {
-    let mut cmd = tokio::process::Command::new(cmdline.app);
+    let mut cmd = Command::new(cmdline.app_string());
     cmd.args(cmdline.args);
     cmd
 }

@@ -234,6 +234,7 @@ impl Dataset {
 
 #[derive(
     Debug,
+    Copy,
     Clone,
     Serialize,
     Deserialize,
@@ -357,7 +358,7 @@ impl ProfilingConfiguration {
     pub fn to_teebench_cmd(&self) -> Vec<Commandline> {
         let mut res = vec![];
         for platform in &self.platform {
-            let cmd = Commandline::new(platform);
+            let cmd = Commandline::new(*platform);
             res.push(cmd);
         }
         // ProfilingConfiguration.experiment_type only relevant for output
@@ -401,25 +402,23 @@ impl ProfilingConfiguration {
 /// Sadly, I cannot include a method to create a `tokio::process::Command` from this, because including tokio in common is impossible: the frontend also uses the common crate, and you cannot use tokio in a webapp.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Commandline {
-    pub app: String,
+    pub app: Platform,
     pub args: Vec<String>,
 }
 
 impl Commandline {
-    fn platform_app_string(platform: &Platform) -> String {
-        match platform {
-            Platform::Sgx => "./sgx".to_string(),
-            Platform::Native => "./native".to_string(),
+    pub fn app_string(&self) -> String {
+        match self.app {
+            Platform::Sgx => "./fake_teebench".to_string(),
+            Platform::Native => "./fake_teebench".to_string(),
         }
     }
-    pub fn new(platform: &Platform) -> Self {
-        let app = Self::platform_app_string(platform);
-        Self { app, args: vec![] }
+    pub fn new(platform: Platform) -> Self {
+        Self { app: platform, args: vec![] }
     }
-    pub fn with_args(platform: &Platform, args: &[&str]) -> Self {
-        let app = Self::platform_app_string(platform);
+    pub fn with_args(platform: Platform, args: &[&str]) -> Self {
         let args = args.iter().map(|a| a.to_string()).collect();
-        Self { app, args }
+        Self { app: platform, args }
     }
     pub fn add_args<S: Display>(&mut self, name: &str, value: S) {
         self.args.push(name.to_string());
