@@ -2,8 +2,20 @@
 name = "backend"
 version = "0.1.0"
 edition = "2021"
+default-run = "backend"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "backend_lib"
+path = "src/lib/lib.rs"
+
+[[bin]]
+name = "backend"
+path = "src/main.rs"
+
+[[bin]]
+name = "fake_teebench"
+path = "src/fake_teebench.rs"
+
 
 [dependencies]
 common = { path="../common" }
@@ -17,3 +29,4 @@ serde_json = "1"
 tracing = "0.1"
 tracing-subscriber = "0.3"
 axum-macros = "0.3"
+structopt = { version = "0.3", default-features = false }
