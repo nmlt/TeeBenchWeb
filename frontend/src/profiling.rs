@@ -16,135 +16,14 @@ use std::str::FromStr;
 use crate::job_results_view::JobResultsView;
 use crate::modal::Modal;
 use crate::navigation::Navigation;
+use crate::components::{
+    select::{InputSelect, SelectDataOption},
+    checkbox::InputCheckbox,
+    radio::{InputRadio, RadioData},
+    number::InputNumber,
+};
 
 use wasm_bindgen::JsCast;
-
-#[derive(Clone, Debug, PartialEq)]
-struct SelectDataOption {
-    label: String,
-    value: String,
-}
-
-impl SelectDataOption {
-    fn new(label: String, value: String) -> Self {
-        Self { label, value }
-    }
-    fn options_vec(options: &[&str]) -> Vec<Self> {
-        options
-            .iter()
-            .map(|o| SelectDataOption::new(o.to_string(), o.to_string()))
-            .collect()
-    }
-}
-
-#[derive(Clone, Properties, PartialEq)]
-struct InputSelectProps {
-    options: Vec<SelectDataOption>,
-    multiple: bool,
-    label: String,
-    onchange: Callback<Event>,
-}
-
-#[function_component]
-fn InputSelect(
-    InputSelectProps {
-        options,
-        multiple,
-        label,
-        onchange,
-    }: &InputSelectProps,
-) -> Html {
-    let options = options
-        .iter()
-        .map(|o| html! { <option value={o.value.clone()}>{o.label.clone()}</option> });
-    html! {
-        <div>
-            <label class="form-label" for={format!("select-{label}")}>{label.clone()}</label>
-            <select class="form-select" id={format!("select-{label}")} type="select" multiple={*multiple} {onchange}>
-                {for options}
-            </select>
-        </div>
-    }
-}
-
-#[derive(Clone, Properties, PartialEq)]
-struct InputCheckboxProps {
-    label: String,
-    onchange: Callback<Event>,
-}
-
-#[function_component]
-fn InputCheckbox(InputCheckboxProps { label, onchange }: &InputCheckboxProps) -> Html {
-    html! {
-        <div class="form-check">
-            <input class="form-check-input" type="checkbox" {onchange} />
-            <label class="form-check-label">{label.clone()}</label>
-        </div>
-    }
-}
-
-#[derive(Clone, PartialEq)]
-struct RadioData {
-    label: String,
-    value: String,
-}
-impl RadioData {
-    fn new(label: &str, value: &str) -> Self {
-        RadioData {
-            label: String::from(label),
-            value: String::from(value),
-        }
-    }
-}
-
-#[derive(Clone, PartialEq, Properties)]
-struct InputRadioProps {
-    data: Vec<RadioData>,
-    title: String,
-    onchange: Callback<Event>,
-}
-
-#[function_component]
-fn InputRadio(
-    InputRadioProps {
-        data,
-        title,
-        onchange,
-    }: &InputRadioProps,
-) -> Html {
-    let options = data.iter().map(|RadioData {label, value}| {
-        html! {
-            <div class="form-check">
-                <input class="form-check-input" onchange={onchange.clone()} type="checkbox" id={format!("radio-{}", value)} name={title.clone()} value={value.clone()} />
-                <label class="form-label" for={format!("radio-{}", value)}>{label.clone()}</label>
-            </div>
-        }
-    });
-    html! {
-        <fieldset class="row mb-3 col-md">
-            <legend class="form-label">{title}</legend>
-            <div class="col-sm-10">
-                {for options}
-            </div>
-        </fieldset>
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Properties)]
-struct InputNumberProps {
-    label: String,
-    onchange: Callback<Event>,
-}
-
-#[function_component]
-fn InputNumber(InputNumberProps { label, onchange }: &InputNumberProps) -> Html {
-    html! {
-        <div>
-            <label class="form-label" for={format!("number-{label}")}>{label.clone()}</label>
-            <input class="form-control" {onchange} type="number" id={format!("number-{label}")} />
-        </div>
-    }
-}
 
 // #[derive(Debug, Properties, Clone, PartialEq)]
 // pub struct ProfilingMenuProps {

@@ -1,6 +1,7 @@
 use yew::prelude::*;
 use yew_router::prelude::*;
 
+mod components;
 mod chartjs;
 mod commits;
 mod job_results_view;
