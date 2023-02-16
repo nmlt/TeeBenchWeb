@@ -23,12 +23,12 @@ async fn compile_and_run(conf: ProfilingConfiguration) -> Report {
         //         tee_bench_dir.push("native");
         //     }
         // }
-        set_current_dir(&tee_bench_dir).expect("Failed to change dir to sgx subdir");
+        set_current_dir(&tee_bench_dir).expect("Failed to change to TeeBench dir");
         // Command::new("make").args(["clean"]).status().await.expect("Failed to run make clean");
         // Command::new("make").args(["-B", "sgx"]).status().await.expect("Failed to compile sgx version of TeeBench");
         // This assumes that the Makefile of TeeBench has a different app name ("sgx")
         info!("Now running `{cmd}`...");
-        let output = to_command(cmd).output().await.expect("Failed to run sgx version of TeeBench");
+        let output = to_command(cmd).output().await.expect("Failed to run TeeBench");
         outputs.push(output);
     }
     println!("{outputs:#?}");

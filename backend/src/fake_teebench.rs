@@ -72,7 +72,7 @@ struct TeebenchArgs {
 
 fn main() {
     let opt = TeebenchArgs::from_args();
-    println!("{:#?}", opt);
+    //println!("{:#?}", opt);
     match opt {
         TeebenchArgs {
             algorithm: alg,
