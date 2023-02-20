@@ -13,15 +13,15 @@ use common::data_types::{
 use std::collections::HashSet;
 use std::str::FromStr;
 
+use crate::components::{
+    checkbox::InputCheckbox,
+    number::InputNumber,
+    radio::{InputRadio, RadioData},
+    select::{InputSelect, SelectDataOption},
+};
 use crate::job_results_view::JobResultsView;
 use crate::modal::Modal;
 use crate::navigation::Navigation;
-use crate::components::{
-    select::{InputSelect, SelectDataOption},
-    checkbox::InputCheckbox,
-    radio::{InputRadio, RadioData},
-    number::InputNumber,
-};
 
 use wasm_bindgen::JsCast;
 

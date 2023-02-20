@@ -1,9 +1,9 @@
 use yew::prelude::*;
 use yew_router::prelude::*;
 
-mod components;
 mod chartjs;
 mod commits;
+mod components;
 mod job_results_view;
 mod modal;
 mod navigation;
