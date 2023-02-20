@@ -399,6 +399,26 @@ impl ProfilingConfiguration {
 
         res
     }
+    pub fn preconfigured_experiment(&mut self) {
+        match self.experiment_type {
+            ExperimentType::Throughput => {
+                self.min = 2;
+                self.max = 2;
+                self.step = 1;
+            },
+            ExperimentType::EpcPaging => {
+                self.min = 5;
+                self.max = 5;
+                self.step = 1;
+            },
+            ExperimentType::CpuCyclesTuple => {
+                self.min = 15;
+                self.max = 15;
+                self.step = 1;
+            },
+            ExperimentType::Custom => (),
+        }
+    }
 }
 
 /// Commandline is a builder for a std::process::Command or its tokio equivalent.

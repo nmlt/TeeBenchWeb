@@ -19,6 +19,7 @@ pub struct InputRadioProps {
     pub data: Vec<RadioData>,
     pub title: String,
     pub onchange: Callback<Event>,
+    pub disabled: bool,
 }
 
 #[function_component]
@@ -27,12 +28,13 @@ pub fn InputRadio(
         data,
         title,
         onchange,
+        disabled,
     }: &InputRadioProps,
 ) -> Html {
     let options = data.iter().map(|RadioData {label, value}| {
         html! {
             <div class="form-check">
-                <input class="form-check-input" onchange={onchange.clone()} type="checkbox" id={format!("radio-{}", value)} name={title.clone()} value={value.clone()} />
+                <input class="form-check-input" onchange={onchange.clone()} type="checkbox" id={format!("radio-{}", value)} name={title.clone()} value={value.clone()} disabled={*disabled} />
                 <label class="form-label" for={format!("radio-{}", value)}>{label.clone()}</label>
             </div>
         }
