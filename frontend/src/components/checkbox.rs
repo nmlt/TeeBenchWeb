@@ -10,10 +10,18 @@ pub struct InputCheckboxProps {
 }
 
 #[function_component]
-pub fn InputCheckbox(InputCheckboxProps { label, onchange, value, selected, disabled }: &InputCheckboxProps) -> Html {
+pub fn InputCheckbox(
+    InputCheckboxProps {
+        label,
+        onchange,
+        value,
+        selected,
+        disabled,
+    }: &InputCheckboxProps,
+) -> Html {
     html! {
         <div class="form-check">
-            <input class="form-check-input" type="checkbox" {onchange} disabled={*disabled} checked={*selected} />
+            <input class="form-check-input" type="checkbox" {onchange} value={value.clone()} disabled={*disabled} checked={*selected} />
             <label class="form-check-label">{label.clone()}</label>
         </div>
     }
@@ -43,7 +51,15 @@ pub struct InputCheckboxesProps {
 }
 
 #[function_component]
-pub fn InputCheckboxes(InputCheckboxesProps { title, data, onchange, selected, disabled }: &InputCheckboxesProps) -> Html {
+pub fn InputCheckboxes(
+    InputCheckboxesProps {
+        title,
+        data,
+        onchange,
+        selected,
+        disabled,
+    }: &InputCheckboxesProps,
+) -> Html {
     let options = data.iter().map(|CheckboxData { label, value}| {
         let selected = selected.contains(value);
         html! {

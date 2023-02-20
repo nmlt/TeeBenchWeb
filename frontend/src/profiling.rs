@@ -14,7 +14,7 @@ use std::collections::HashSet;
 use std::str::FromStr;
 
 use crate::components::{
-    checkbox::{InputCheckbox, CheckboxData, InputCheckboxes},
+    checkbox::{CheckboxData, InputCheckbox, InputCheckboxes},
     number::InputNumber,
     select::{InputSelect, SelectDataOption},
 };
@@ -122,20 +122,39 @@ pub fn profiling() -> Html {
             store.step = value;
         })
     };
-    // let datasets: Vec<CheckboxData> = datasets.iter().map(|d| CheckboxData::new(&d, &d)).collect();
-    // let datasets_onchange = {
-    //     let (_store, dispatch) = use_store::<ProfilingConfiguration>();
-    //     dispatch.input_mut(|s, value: String| {
-    //         s.dataset = HashSet::from([Dataset::from_str(&value).unwrap()]);
-    //     })
-    // };
-    // let platforms: Vec<RadioData> = platforms.iter().map(|p| RadioData::new(&p, &p)).collect();
-    // let platforms_onchange = {
-    //     let (_store, dispatch) = use_store::<ProfilingConfiguration>();
-    //     dispatch.input_mut(|s, value: String| {
-    //         s.platform = HashSet::from([Platform::from_str(&value).unwrap()]);
-    //     })
-    // };
+    let datasets: Vec<CheckboxData> = datasets.iter().map(|d| CheckboxData::new(&d, &d)).collect();
+    let datasets_onchange = {
+        let (_store, dispatch) = use_store::<ProfilingConfiguration>();
+        dispatch.reduce_mut_callback_with(|s, e: Event| {
+            let input_check = e.target_unchecked_into::<HtmlInputElement>();
+            let value = input_check.value();
+            let bool_val = input_check.checked();
+            let ds = Dataset::from_str(&value).unwrap();
+            if bool_val {
+                s.dataset.insert(ds);
+            } else {
+                s.dataset.remove(&ds);
+            }
+        })
+    };
+    let platforms: Vec<CheckboxData> = platforms
+        .iter()
+        .map(|p| CheckboxData::new(&p, &p))
+        .collect();
+    let platforms_onchange = {
+        let (_store, dispatch) = use_store::<ProfilingConfiguration>();
+        dispatch.reduce_mut_callback_with(|s, e: Event| {
+            let input_check = e.target_unchecked_into::<HtmlInputElement>();
+            let value = input_check.value();
+            let bool_val = input_check.checked();
+            let pl = Platform::from_str(&value).unwrap();
+            if bool_val {
+                s.platform.insert(pl);
+            } else {
+                s.platform.remove(&pl);
+            }
+        })
+    };
     let sort_onchange = {
         let (_store, dispatch) = use_store::<ProfilingConfiguration>();
         dispatch.input_mut(|s, value: Checkbox| {
@@ -162,7 +181,7 @@ pub fn profiling() -> Html {
     };
     let (store, dispatch) = use_store::<ProfilingConfiguration>();
     dispatch.reduce_mut(|s| {
-        s.preconfigured_experiment();
+        s.set_preconfigured_experiment();
     });
     let disable_controls = store.experiment_type != ExperimentType::Custom;
     html! {
@@ -197,14 +216,17 @@ pub fn profiling() -> Html {
                                         </div>
                                     </div>
                                     <div class="row g-3">
-                                        // <div class="col-md">
-                                        //     <InputCheckboxes title={"Dataset"} data={datasets} onchange={datasets_onchange} selected={store.dataset.iter().map(|ds| ds.to_string()).collect::<Vec<_>>()} disabled={disable_controls} />
-                                        // </div>
-                                        // <div class="col-md">
-                                        //     <InputRadio data={platforms} title={"Platform"} onchange={platforms_onchange} selected={store.dataset.iter().map(|ds| ds.to_string()).collect::<Vec<_>>()} disabled={disable_controls} />
-                                        // </div>
                                         <div class="col-md">
-                                            <InputCheckbox label={"Pre-sort data"} onchange={sort_onchange} value={"sort_data".to_string()} selected={store.sort_data} disabled={disable_controls} />
+                                            <InputCheckboxes title={"Dataset"} data={datasets} onchange={datasets_onchange} selected={store.dataset.iter().map(|ds| ds.to_string()).collect::<Vec<_>>()} disabled={disable_controls} />
+                                        </div>
+                                        <div class="col-md">
+                                            <InputCheckboxes title={"Platform"} data={platforms} onchange={platforms_onchange} selected={store.platform.iter().map(|pl| pl.to_string()).collect::<Vec<_>>()} disabled={disable_controls} />
+                                        </div>
+                                        <div class="col-md">
+                                            <fieldset class="row mb-3 col-md">
+                                                <legend class="form-label invisible">{"Pre-sort data"}</legend>
+                                                <InputCheckbox label={"Pre-sort data"} onchange={sort_onchange} value={"sort_data".to_string()} selected={store.sort_data} disabled={disable_controls} />
+                                            </fieldset>
                                         </div>
                                     </div>
                                     <button class="btn btn-primary" type="button" onclick={onsubmit}>{"Run experiment"}</button>

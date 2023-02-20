@@ -399,22 +399,31 @@ impl ProfilingConfiguration {
 
         res
     }
-    pub fn preconfigured_experiment(&mut self) {
+    pub fn set_preconfigured_experiment(&mut self) {
         match self.experiment_type {
             ExperimentType::Throughput => {
+                self.algorithm = Algorithm::iter().collect();
+                self.parameter = Parameter::Threads;
+                self.measurement = Measurement::Throughput;
                 self.min = 2;
                 self.max = 2;
                 self.step = 1;
+                self.dataset = HashSet::from([Dataset::CacheExceed, Dataset::CacheFit]);
+                self.platform = HashSet::from([Platform::Sgx]);
+                self.sort_data = false;
             },
             ExperimentType::EpcPaging => {
-                self.min = 5;
-                self.max = 5;
-                self.step = 1;
+                self.algorithm = HashSet::from([Algorithm::Cht]);
+                self.measurement = Measurement::EpcPaging;
+                self.platform = HashSet::from([Platform::Sgx]);
+                self.sort_data = false;
             },
             ExperimentType::CpuCyclesTuple => {
-                self.min = 15;
-                self.max = 15;
-                self.step = 1;
+                self.algorithm = Algorithm::iter().collect();
+                self.measurement = Measurement::Throughput;
+                self.dataset = HashSet::from([Dataset::CacheExceed, Dataset::CacheFit]);
+                self.platform = HashSet::from([Platform::Sgx]);
+                self.sort_data = false;
             },
             ExperimentType::Custom => (),
         }
@@ -477,16 +486,36 @@ impl std::fmt::Display for Commandline {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::str::FromStr;
+
+    #[test]
+    fn dataset_to_from_string() {
+        let ds_enum = Dataset::CacheExceed;
+        let ds = ds_enum.to_string();
+        assert_eq!(ds, "Cache Exceed");
+        assert_eq!(Dataset::from_str(&ds).unwrap(), ds_enum);
+    }
 
     #[test]
     fn profiling_configuration_to_teebench_cmd_default() {
-        let c = ProfilingConfiguration::default();
+        let c = ProfilingConfiguration::new(
+            vec![Algorithm::Cht],
+            ExperimentType::Custom,
+            Parameter::Threads,
+            Measurement::Throughput,
+            2,
+            2,
+            2,
+            vec![Dataset::CacheFit],
+            vec![Platform::Sgx],
+            false,
+        );
         // let mut cmd = Commandline::new(&Platform::Sgx);
         // cmd.add_args("-a", "CHT");
         // cmd.add_args("-d", "Cache Fit");
         // cmd.add_args("-n", "2");
         let cmd = Commandline::with_args(
-            &Platform::Sgx,
+            Platform::Sgx,
             &vec!["-a", "CHT", "-d", "cache-fit", "-n", "2"],
         );
         for (to_be_tested, expected) in c.to_teebench_cmd().iter().zip(vec![cmd]) {
@@ -510,38 +539,38 @@ mod tests {
         );
         #[rustfmt::skip]
         let cmds = [
-            Commandline::with_args(&Platform::Sgx,   &vec!["-a", "CHT","--sort-r","--sort-s","-d","cache-exceed","-z","2",],),
-            Commandline::with_args(&Platform::Native,&vec!["-a", "CHT","--sort-r","--sort-s","-d","cache-exceed","-z","2",],),
-            Commandline::with_args(&Platform::Sgx,   &vec!["-a", "RHO","--sort-r","--sort-s","-d","cache-exceed","-z","2",],),
-            Commandline::with_args(&Platform::Native,&vec!["-a", "RHO","--sort-r","--sort-s","-d","cache-exceed","-z","2",],),
-            Commandline::with_args(&Platform::Sgx,   &vec!["-a", "CHT","--sort-r","--sort-s","-d","cache-fit"   ,"-z","2",],),
-            Commandline::with_args(&Platform::Native,&vec!["-a", "CHT","--sort-r","--sort-s","-d","cache-fit"   ,"-z","2",],),
-            Commandline::with_args(&Platform::Sgx,   &vec!["-a", "RHO","--sort-r","--sort-s","-d","cache-fit"   ,"-z","2",],),
-            Commandline::with_args(&Platform::Native,&vec!["-a", "RHO","--sort-r","--sort-s","-d","cache-fit"   ,"-z","2",],),
-            Commandline::with_args(&Platform::Sgx,   &vec!["-a", "CHT","--sort-r","--sort-s","-d","cache-exceed","-z","4",],),
-            Commandline::with_args(&Platform::Native,&vec!["-a", "CHT","--sort-r","--sort-s","-d","cache-exceed","-z","4",],),
-            Commandline::with_args(&Platform::Sgx,   &vec!["-a", "RHO","--sort-r","--sort-s","-d","cache-exceed","-z","4",],),
-            Commandline::with_args(&Platform::Native,&vec!["-a", "RHO","--sort-r","--sort-s","-d","cache-exceed","-z","4",],),
-            Commandline::with_args(&Platform::Sgx,   &vec!["-a", "CHT","--sort-r","--sort-s","-d","cache-fit"   ,"-z","4",],),
-            Commandline::with_args(&Platform::Native,&vec!["-a", "CHT","--sort-r","--sort-s","-d","cache-fit"   ,"-z","4",],),
-            Commandline::with_args(&Platform::Sgx,   &vec!["-a", "RHO","--sort-r","--sort-s","-d","cache-fit"   ,"-z","4",],),
-            Commandline::with_args(&Platform::Native,&vec!["-a", "RHO","--sort-r","--sort-s","-d","cache-fit"   ,"-z","4",],),
-            Commandline::with_args(&Platform::Sgx,   &vec!["-a", "CHT","--sort-r","--sort-s","-d","cache-exceed","-z","6",],),
-            Commandline::with_args(&Platform::Native,&vec!["-a", "CHT","--sort-r","--sort-s","-d","cache-exceed","-z","6",],),
-            Commandline::with_args(&Platform::Sgx,   &vec!["-a", "RHO","--sort-r","--sort-s","-d","cache-exceed","-z","6",],),
-            Commandline::with_args(&Platform::Native,&vec!["-a", "RHO","--sort-r","--sort-s","-d","cache-exceed","-z","6",],),
-            Commandline::with_args(&Platform::Sgx,   &vec!["-a", "CHT","--sort-r","--sort-s","-d","cache-fit"   ,"-z","6",],),
-            Commandline::with_args(&Platform::Native,&vec!["-a", "CHT","--sort-r","--sort-s","-d","cache-fit"   ,"-z","6",],),
-            Commandline::with_args(&Platform::Sgx,   &vec!["-a", "RHO","--sort-r","--sort-s","-d","cache-fit"   ,"-z","6",],),
-            Commandline::with_args(&Platform::Native,&vec!["-a", "RHO","--sort-r","--sort-s","-d","cache-fit"   ,"-z","6",],),
-            Commandline::with_args(&Platform::Sgx,   &vec!["-a", "CHT","--sort-r","--sort-s","-d","cache-exceed","-z","8",],),
-            Commandline::with_args(&Platform::Native,&vec!["-a", "CHT","--sort-r","--sort-s","-d","cache-exceed","-z","8",],),
-            Commandline::with_args(&Platform::Sgx,   &vec!["-a", "RHO","--sort-r","--sort-s","-d","cache-exceed","-z","8",],),
-            Commandline::with_args(&Platform::Native,&vec!["-a", "RHO","--sort-r","--sort-s","-d","cache-exceed","-z","8",],),
-            Commandline::with_args(&Platform::Sgx,   &vec!["-a", "CHT","--sort-r","--sort-s","-d","cache-fit"   ,"-z","8",],),
-            Commandline::with_args(&Platform::Native,&vec!["-a", "CHT","--sort-r","--sort-s","-d","cache-fit"   ,"-z","8",],),
-            Commandline::with_args(&Platform::Sgx,   &vec!["-a", "RHO","--sort-r","--sort-s","-d","cache-fit"   ,"-z","8",],),
-            Commandline::with_args(&Platform::Native,&vec!["-a", "RHO","--sort-r","--sort-s","-d","cache-fit"   ,"-z","8",],),
+            Commandline::with_args(Platform::Sgx,   &vec!["-a", "CHT","--sort-r","--sort-s","-d","cache-exceed","-z","2",],),
+            Commandline::with_args(Platform::Native,&vec!["-a", "CHT","--sort-r","--sort-s","-d","cache-exceed","-z","2",],),
+            Commandline::with_args(Platform::Sgx,   &vec!["-a", "RHO","--sort-r","--sort-s","-d","cache-exceed","-z","2",],),
+            Commandline::with_args(Platform::Native,&vec!["-a", "RHO","--sort-r","--sort-s","-d","cache-exceed","-z","2",],),
+            Commandline::with_args(Platform::Sgx,   &vec!["-a", "CHT","--sort-r","--sort-s","-d","cache-fit"   ,"-z","2",],),
+            Commandline::with_args(Platform::Native,&vec!["-a", "CHT","--sort-r","--sort-s","-d","cache-fit"   ,"-z","2",],),
+            Commandline::with_args(Platform::Sgx,   &vec!["-a", "RHO","--sort-r","--sort-s","-d","cache-fit"   ,"-z","2",],),
+            Commandline::with_args(Platform::Native,&vec!["-a", "RHO","--sort-r","--sort-s","-d","cache-fit"   ,"-z","2",],),
+            Commandline::with_args(Platform::Sgx,   &vec!["-a", "CHT","--sort-r","--sort-s","-d","cache-exceed","-z","4",],),
+            Commandline::with_args(Platform::Native,&vec!["-a", "CHT","--sort-r","--sort-s","-d","cache-exceed","-z","4",],),
+            Commandline::with_args(Platform::Sgx,   &vec!["-a", "RHO","--sort-r","--sort-s","-d","cache-exceed","-z","4",],),
+            Commandline::with_args(Platform::Native,&vec!["-a", "RHO","--sort-r","--sort-s","-d","cache-exceed","-z","4",],),
+            Commandline::with_args(Platform::Sgx,   &vec!["-a", "CHT","--sort-r","--sort-s","-d","cache-fit"   ,"-z","4",],),
+            Commandline::with_args(Platform::Native,&vec!["-a", "CHT","--sort-r","--sort-s","-d","cache-fit"   ,"-z","4",],),
+            Commandline::with_args(Platform::Sgx,   &vec!["-a", "RHO","--sort-r","--sort-s","-d","cache-fit"   ,"-z","4",],),
+            Commandline::with_args(Platform::Native,&vec!["-a", "RHO","--sort-r","--sort-s","-d","cache-fit"   ,"-z","4",],),
+            Commandline::with_args(Platform::Sgx,   &vec!["-a", "CHT","--sort-r","--sort-s","-d","cache-exceed","-z","6",],),
+            Commandline::with_args(Platform::Native,&vec!["-a", "CHT","--sort-r","--sort-s","-d","cache-exceed","-z","6",],),
+            Commandline::with_args(Platform::Sgx,   &vec!["-a", "RHO","--sort-r","--sort-s","-d","cache-exceed","-z","6",],),
+            Commandline::with_args(Platform::Native,&vec!["-a", "RHO","--sort-r","--sort-s","-d","cache-exceed","-z","6",],),
+            Commandline::with_args(Platform::Sgx,   &vec!["-a", "CHT","--sort-r","--sort-s","-d","cache-fit"   ,"-z","6",],),
+            Commandline::with_args(Platform::Native,&vec!["-a", "CHT","--sort-r","--sort-s","-d","cache-fit"   ,"-z","6",],),
+            Commandline::with_args(Platform::Sgx,   &vec!["-a", "RHO","--sort-r","--sort-s","-d","cache-fit"   ,"-z","6",],),
+            Commandline::with_args(Platform::Native,&vec!["-a", "RHO","--sort-r","--sort-s","-d","cache-fit"   ,"-z","6",],),
+            Commandline::with_args(Platform::Sgx,   &vec!["-a", "CHT","--sort-r","--sort-s","-d","cache-exceed","-z","8",],),
+            Commandline::with_args(Platform::Native,&vec!["-a", "CHT","--sort-r","--sort-s","-d","cache-exceed","-z","8",],),
+            Commandline::with_args(Platform::Sgx,   &vec!["-a", "RHO","--sort-r","--sort-s","-d","cache-exceed","-z","8",],),
+            Commandline::with_args(Platform::Native,&vec!["-a", "RHO","--sort-r","--sort-s","-d","cache-exceed","-z","8",],),
+            Commandline::with_args(Platform::Sgx,   &vec!["-a", "CHT","--sort-r","--sort-s","-d","cache-fit"   ,"-z","8",],),
+            Commandline::with_args(Platform::Native,&vec!["-a", "CHT","--sort-r","--sort-s","-d","cache-fit"   ,"-z","8",],),
+            Commandline::with_args(Platform::Sgx,   &vec!["-a", "RHO","--sort-r","--sort-s","-d","cache-fit"   ,"-z","8",],),
+            Commandline::with_args(Platform::Native,&vec!["-a", "RHO","--sort-r","--sort-s","-d","cache-fit"   ,"-z","8",],),
         ];
         let to_be_tested = c.to_teebench_cmd();
 

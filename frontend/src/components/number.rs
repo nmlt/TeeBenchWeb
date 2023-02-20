@@ -9,7 +9,14 @@ pub struct InputNumberProps {
 }
 
 #[function_component]
-pub fn InputNumber(InputNumberProps { label, onchange, selected, disabled }: &InputNumberProps) -> Html {
+pub fn InputNumber(
+    InputNumberProps {
+        label,
+        onchange,
+        selected,
+        disabled,
+    }: &InputNumberProps,
+) -> Html {
     html! {
         <div>
             <label class="form-label" for={format!("number-{label}")}>{label.clone()}</label>
