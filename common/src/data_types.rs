@@ -402,7 +402,6 @@ impl ProfilingConfiguration {
     pub fn set_preconfigured_experiment(&mut self) {
         match self.experiment_type {
             ExperimentType::Throughput => {
-                self.algorithm = Algorithm::iter().collect();
                 self.parameter = Parameter::Threads;
                 self.measurement = Measurement::Throughput;
                 self.min = 2;
@@ -413,13 +412,11 @@ impl ProfilingConfiguration {
                 self.sort_data = false;
             },
             ExperimentType::EpcPaging => {
-                self.algorithm = HashSet::from([Algorithm::Cht]);
                 self.measurement = Measurement::EpcPaging;
                 self.platform = HashSet::from([Platform::Sgx]);
                 self.sort_data = false;
             },
             ExperimentType::CpuCyclesTuple => {
-                self.algorithm = Algorithm::iter().collect();
                 self.measurement = Measurement::Throughput;
                 self.dataset = HashSet::from([Dataset::CacheExceed, Dataset::CacheFit]);
                 self.platform = HashSet::from([Platform::Sgx]);
