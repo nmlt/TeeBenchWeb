@@ -33,6 +33,7 @@ async fn upload_commit(State(state): State<Arc<Mutex<ServerState>>>, Json(payloa
 
 async fn get_commits(State(state): State<Arc<Mutex<ServerState>>>) -> Json<Value> {
     let s = state.lock().unwrap();
+    info!("Get commits {:?}", s.commits);
     Json(json!(s.commits))
 }
 
@@ -199,7 +200,7 @@ async fn main() {
     let queue = Arc::new(Mutex::new(VecDeque::new()));
     let (queue_tx, queue_rx) = mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);
     tokio::spawn(profiling_task(profiling_rx, queue.clone(), queue_tx));
-    let state = Arc::new(Mutex::new(ServerState::default()));
+    let state = Arc::new(Mutex::new(ServerState { commits: vec![Commit::new("v1".to_string(), "JOIN".to_string(), time::OffsetDateTime::now_utc(), "auto v1 = true;".to_string(), vec![])]}));
     let profiling_state = Arc::new(ProfilingState {
         channel_tx: profiling_tx.clone(),
     });

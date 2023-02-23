@@ -2,7 +2,7 @@ use gloo_console::log;
 use gloo_file::{futures::read_as_text, File};
 use gloo_net::http::{Method, Request};
 use js_sys;
-use std::{pin::Pin, rc::Rc};
+use std::{rc::Rc};
 use time::OffsetDateTime;
 use wasm_bindgen_futures::spawn_local;
 use web_sys::HtmlInputElement;
@@ -23,6 +23,13 @@ use crate::Route;
 #[derive(Debug, Clone, PartialEq, Default, Store)]
 pub struct CommitState {
     pub commits: Vec<Commit>,
+    // TODO Would it be a good idea to put another field in here that encodes an error to communicate with the server? Depending on its value the commit list could display a field to reload the list.
+}
+
+impl CommitState {
+    pub fn new(commits: Vec<Commit>) -> Self {
+        CommitState { commits }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Store)]
@@ -156,7 +163,7 @@ fn CommitsList(CommitsListProps { commits }: &CommitsListProps) -> Html {
             <b>{format!("{}", commit.title.clone())}</b>
 
             <div class="container d-flex flex-row justify-content-start">
-                <div class="p-2"><button type="button" class="btn btn-light">{commit.operator}</button></div>
+                <div class="p-2"><div class="btn btn-light">{commit.operator}</div></div>
                 <div class="p-2">
                     <button type="button" class="btn btn-secondary" {onclick} data-bs-toggle="modal" data-bs-target="#mainModal">{"Code"}</button>
                 </div>
@@ -175,47 +182,34 @@ fn CommitsList(CommitsListProps { commits }: &CommitsListProps) -> Html {
     }
 }
 
-impl CommitState {
-    fn new(commits: Vec<Commit>) -> Self {
-        CommitState { commits }
-    }
-}
-
 #[function_component]
 pub fn Commits() -> Html {
-    let commit_state = use_store_value::<CommitState>();
-    {
-        let commit_state = commit_state.clone();
-        spawn_local(async move {
-            let mut commit_state = commit_state.clone();
-            let resp: Result<Vec<Commit>, _> = Request::get("/api/profiling")
-                .method(Method::GET)
-                .send()
-                .await
-                .unwrap()
-                .json()
-                .await;
-            match resp {
-                Ok(json) => Pin::new(&mut commit_state).set(Rc::new(CommitState::new(json))),
-                Err(e) => log!("Error getting commit json: ", e.to_string()),
-            }
-        });
-    }
+    let (commit_state, commit_dispatch) = use_store::<CommitState>();
+    use_effect_with_deps(
+        move |_| {
+            let commit_dispatch = commit_dispatch.clone();
+            spawn_local(async move {
+                let commit_dispatch = commit_dispatch.clone();
+                let resp: Result<Vec<Commit>, _> = Request::get("/api/commit")
+                    .method(Method::GET)
+                    .send()
+                    .await
+                    .unwrap()
+                    .json()
+                    .await;
+                //log!(format!("GET /api/commits: Response: {:?}", resp));
+                match resp {
+                    Ok(json) => {
+                        log!(format!("got commits: {json:?}"));
+                        commit_dispatch.set(CommitState::new(json));
+                    },
+                    Err(e) => log!("Error getting commit json: ", e.to_string()),
+                }
+            });
+        },
+        (),
+    );
     let commits = (*commit_state).commits.clone();
-    //     commits.push(Commit::new(
-    //         "v2.1".to_owned(),
-    //         "JOIN".to_owned(),
-    //         OffsetDateTime::now_utc(),
-    //         include_str!("../deps/radix_join.c").to_owned(),
-    //         None,
-    //     ));
-    //     commits.push(Commit::new(
-    //         "v2.2".to_owned(),
-    //         "JOIN".to_owned(),
-    //         OffsetDateTime::now_utc(),
-    //         include_str!("../deps/radix_join.c").to_owned(),
-    //         None,
-    //     ));
     html! {
         <div class="container-fluid">
             <div class="row vh-100">
