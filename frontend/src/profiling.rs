@@ -198,7 +198,7 @@ pub fn profiling() -> Html {
                                 <div class="col-md">
                                     <div class="row g-3">
                                         <div class="col-md">
-                                            <InputSelect options={algs} onchange={algs_onchange} label={"Algorithm (select multiple)"} multiple={true} selected={store.algorithm.iter().map(|a| a.to_string()).collect::<Vec<_>>()} disabled={disable_controls} />
+                                            <InputSelect options={algs} onchange={algs_onchange} label={"Algorithm (select multiple)"} multiple={true} selected={store.algorithm.iter().map(|a| a.to_string()).collect::<Vec<_>>()} disabled={false} />
                                         </div>
                                         <div class="col-md">
                                             <InputSelect options={exps} onchange={exps_onchange} label={"Experiment"} multiple={false} selected={vec![store.experiment_type.to_string()]} disabled={false} />
