@@ -2,10 +2,10 @@ use gloo_console::log;
 use gloo_file::{futures::read_as_text, File};
 use gloo_net::http::{Method, Request};
 use js_sys;
-use std::{rc::Rc};
+use std::rc::Rc;
 use time::OffsetDateTime;
 use wasm_bindgen_futures::spawn_local;
-use web_sys::HtmlInputElement;
+use web_sys::{HtmlFormElement, HtmlInputElement};
 use yew::prelude::*;
 use yewdux::prelude::*;
 
@@ -41,7 +41,7 @@ fn UploadCommit() -> Html {
         let (_store, dispatch) = use_store::<UploadCommitState>();
         dispatch.reduce_mut_future_callback_with(|store, e: Event| {
             Box::pin(async move {
-                log!("UploadCommit: onchange triggered!");
+                //log!("UploadCommit: onchange triggered!");
                 let input = e.target_unchecked_into::<HtmlInputElement>();
                 if let Some(file_list) = input.files() {
                     let file: File = js_sys::try_iter(&file_list)
@@ -60,14 +60,6 @@ fn UploadCommit() -> Html {
                         vec![],
                     );
                     store.0 = Some(commit.clone());
-                    let resp = Request::get("/api/commit")
-                        .method(Method::POST)
-                        .json(&commit)
-                        .unwrap()
-                        .send()
-                        .await
-                        .unwrap();
-                    log!("Sent commit to server, got response: ", format!("{resp:?}"));
                 }
             })
         })
@@ -82,39 +74,52 @@ fn UploadCommit() -> Html {
         })
     };
     let onclick = {
-        let (upload_commit_state, _dispatch) = use_store::<UploadCommitState>();
+        let (upload_commit_state, dispatch_commit_state) = use_store::<UploadCommitState>();
         let (_store, dispatch) = use_store::<CommitState>();
-        dispatch.reduce_mut_future_callback(move |commit_state| {
+        dispatch.reduce_mut_future_callback_with(move |commit_state, e: MouseEvent| {
+            let input = e.target_unchecked_into::<HtmlInputElement>();
+            let form: HtmlFormElement = input.form().unwrap();
+            form.reset();
             let upload_commit_state = upload_commit_state.clone();
+            let dispatch_commit_state = dispatch_commit_state.clone();
             Box::pin(async move {
                 let upload_commit_state = upload_commit_state.clone();
+                let dispatch_commit_state = dispatch_commit_state.clone();
                 if let Some(new_commit) = upload_commit_state.0.clone() {
-                    commit_state.commits.push(new_commit);
-                    // TODO Remove the new_commit from the UploadCommitState. Not possible here, because it's a Rc without a RefCell. Not possible with a callback, because the callback needs the state as argument. And I can't call hooks in here. So maybe I have to use a channel? Or switch this around and make this callback run on UploadCommitState instead of CommitState?
+                    commit_state.commits.push(new_commit.clone());
+                    dispatch_commit_state.set(UploadCommitState(None));
+                    let _resp = Request::get("/api/commit")
+                        .method(Method::POST)
+                        .json(&new_commit)
+                        .unwrap()
+                        .send()
+                        .await
+                        .unwrap();
+                    //log!("Sent commit to server, got response: ", format!("{_resp:?}"));
                 }
             })
         })
     };
     html! {
-        <>
-        <input type="file" {onchange} />
-        <input type="text" onchange={onchange_title} />
-        <select class="custom-select">
-          <option selected=true>{"Select Operator..."}</option>
-          <option value="1">{"JOIN"}</option>
-          <option value="2">{"GROUP BY"}</option>
-          <option value="3">{"PROJECTION"}</option>
-          <option value="4">{"ORDER BY"}</option>
-        </select>
-        <select class="custom-select">
-          <option selected=true>{"Select Baseline..."}</option>
-          <option value="1">{"MWAY"}</option>
-          <option value="2">{"PHT"}</option>
-          <option value="3">{"CHT"}</option>
-          <option value="4">{"RHT"}</option>
-        </select>
-        <button type="button" {onclick}>{"Upload"}</button>
-        </>
+        <form>
+            <input type="file" {onchange} />
+            <input type="text" onchange={onchange_title} />
+            <select class="custom-select">
+                <option selected=true>{"Select Operator..."}</option>
+                <option value="1">{"JOIN"}</option>
+                <option value="2">{"GROUP BY"}</option>
+                <option value="3">{"PROJECTION"}</option>
+                <option value="4">{"ORDER BY"}</option>
+            </select>
+            <select class="custom-select">
+                <option selected=true>{"Select Baseline..."}</option>
+                <option value="1">{"MWAY"}</option>
+                <option value="2">{"PHT"}</option>
+                <option value="3">{"CHT"}</option>
+                <option value="4">{"RHT"}</option>
+            </select>
+            <input type="button" {onclick} value={"Upload"} />
+        </form>
     }
 }
 
@@ -200,9 +205,9 @@ pub fn Commits() -> Html {
                 //log!(format!("GET /api/commits: Response: {:?}", resp));
                 match resp {
                     Ok(json) => {
-                        log!(format!("got commits: {json:?}"));
+                        //log!(format!("got commits: {json:?}"));
                         commit_dispatch.set(CommitState::new(json));
-                    },
+                    }
                     Err(e) => log!("Error getting commit json: ", e.to_string()),
                 }
             });
