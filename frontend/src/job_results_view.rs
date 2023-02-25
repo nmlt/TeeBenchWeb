@@ -8,6 +8,7 @@ use crate::queue::Queue;
 use common::data_types::{FindingStyle, Job, Report};
 
 use crate::chartjs::Chart;
+use crate::components::finding::FindingCardColumn;
 use crate::modal::ModalContent;
 use std::collections::HashSet;
 
@@ -41,47 +42,8 @@ pub fn JobResult(JobResultProps { job }: &JobResultProps) -> Html {
                         };
                         let findings = findings.iter().map(|f| {
                             let f = f.clone();
-                            match f.style {
-                                FindingStyle::Neutral => html! {
-                                    <div class="col-sm-2">
-                                        <div class="card my-4" style="background-color: #FFFFFF;">
-                                            <div class="card-body">
-                                                <h6 class="card-text">{f.title}</h6>
-                                                <h6 class="card-title">{f.message}</h6>
-                                            </div>
-                                        </div>
-                                    </div>
-                                },
-                                FindingStyle::Good => html! {
-                                    <div class="col-sm-2">
-                                        <div class="card my-4" style="background-color: #77DD77;">
-                                            <div class="card-body">
-                                                <h6 class="card-text">{f.title}</h6>
-                                                <h6 class="card-title">{f.message}</h6>
-                                            </div>
-                                        </div>
-                                    </div>
-                                },
-                                FindingStyle::SoSo => html! {
-                                    <div class="col-sm-2">
-                                        <div class="card my-4" style="background-color: #FDE26C;">
-                                            <div class="card-body">
-                                                <h6 class="card-text">{f.title}</h6>
-                                                <h6 class="card-title">{f.message}</h6>
-                                            </div>
-                                        </div>
-                                    </div>
-                                },
-                                FindingStyle::Bad => html! {
-                                    <div class="col-sm-2">
-                                        <div class="card my-4" style="background-color: #FF6961;">
-                                            <div class="card-body">
-                                                <h6 class="card-text">{f.title}</h6>
-                                                <h6 class="card-title">{f.message}</h6>
-                                            </div>
-                                        </div>
-                                    </div>
-                                }
+                            html! {
+                                <FindingCardColumn finding={f} />
                             }
                         });
                         let destroy_onclick = content_dispatch.set_callback(|_| {
