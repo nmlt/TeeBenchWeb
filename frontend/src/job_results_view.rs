@@ -5,10 +5,10 @@ use yewdux::prelude::*;
 
 use common::data_types::{Job, Report};
 
-use crate::queue::Queue;
 use crate::chartjs::Chart;
 use crate::components::finding::FindingCardColumn;
 use crate::modal::ModalContent;
+use crate::queue::Queue;
 
 #[derive(Debug, Clone, PartialEq, Properties)]
 pub struct JobResultProps {
@@ -27,7 +27,12 @@ pub fn JobResult(JobResultProps { job }: &JobResultProps) -> Html {
             runtime,
             result,
         } => {
-            let algs: Vec<_> = config.algorithm.iter().map(|a| a.to_string()).map(|a| html! { <span class="badge text-bg-primary m-1">{a}</span> }).collect();
+            let algs: Vec<_> = config
+                .algorithm
+                .iter()
+                .map(|a| a.to_string())
+                .map(|a| html! { <span class="badge text-bg-primary m-1">{a}</span> })
+                .collect();
             let result = if result.is_ok() {
                 let result = result.clone();
                 let onclick = {
@@ -106,7 +111,7 @@ pub fn JobResultsView() -> Html {
     let jobs = finished_job_store.jobs.iter().map(|j| {
         html! { <JobResult job={j.clone()} /> }
     });
-    
+
     html! {
         <ul class="list-group">
             {for jobs}

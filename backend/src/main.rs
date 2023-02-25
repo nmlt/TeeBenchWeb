@@ -14,12 +14,10 @@ use std::collections::VecDeque;
 use std::sync::Arc;
 use std::sync::Mutex;
 use tokio::sync::mpsc;
-use tracing::{info, instrument, warn, error};
+use tracing::{error, info, instrument, warn};
 
-use common::data_types::{
-    Commit, Job, ProfilingConfiguration, QueueMessage,
-};
 use backend_lib::profiling_task;
+use common::data_types::{Commit, Job, ProfilingConfiguration, QueueMessage};
 
 const DEFAULT_TASK_CHANNEL_SIZE: usize = 5;
 
@@ -200,7 +198,15 @@ async fn main() {
     let queue = Arc::new(Mutex::new(VecDeque::new()));
     let (queue_tx, queue_rx) = mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);
     tokio::spawn(profiling_task(profiling_rx, queue.clone(), queue_tx));
-    let state = Arc::new(Mutex::new(ServerState { commits: vec![Commit::new("v1".to_string(), "JOIN".to_string(), time::OffsetDateTime::now_utc(), "auto v1 = true;".to_string(), vec![])]}));
+    let state = Arc::new(Mutex::new(ServerState {
+        commits: vec![Commit::new(
+            "v1".to_string(),
+            "JOIN".to_string(),
+            time::OffsetDateTime::now_utc(),
+            "auto v1 = true;".to_string(),
+            vec![],
+        )],
+    }));
     let profiling_state = Arc::new(ProfilingState {
         channel_tx: profiling_tx.clone(),
     });

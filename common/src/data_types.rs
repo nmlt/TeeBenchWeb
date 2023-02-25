@@ -3,7 +3,7 @@ use time::{Duration, OffsetDateTime};
 
 use indoc::writedoc;
 pub use strum::VariantNames;
-use strum_macros::{Display, EnumString, EnumIter, EnumVariantNames};
+use strum_macros::{Display, EnumIter, EnumString, EnumVariantNames};
 use thiserror::Error;
 use yewdux::prelude::Store;
 
@@ -384,7 +384,10 @@ impl ProfilingConfiguration {
         for cmd in &mut res {
             cmd.add_args("-d", ds.to_cmd_arg());
         }
-        Commandline::double_cmds_with_different_arg_value(&mut res, &mut dataset_iter.map(|ds| ds.to_cmd_arg()));
+        Commandline::double_cmds_with_different_arg_value(
+            &mut res,
+            &mut dataset_iter.map(|ds| ds.to_cmd_arg()),
+        );
         let mut value_iter = (self.min..=self.max).step_by(self.step as usize); // TODO Verify that these values form a valid range.
         let val = value_iter.next().unwrap();
         let p = match self.parameter {
@@ -410,18 +413,18 @@ impl ProfilingConfiguration {
                 self.dataset = HashSet::from([Dataset::CacheExceed, Dataset::CacheFit]);
                 self.platform = HashSet::from([Platform::Sgx]);
                 self.sort_data = false;
-            },
+            }
             ExperimentType::EpcPaging => {
                 self.measurement = Measurement::EpcPaging;
                 self.platform = HashSet::from([Platform::Sgx]);
                 self.sort_data = false;
-            },
+            }
             ExperimentType::CpuCyclesTuple => {
                 self.measurement = Measurement::Throughput;
                 self.dataset = HashSet::from([Dataset::CacheExceed, Dataset::CacheFit]);
                 self.platform = HashSet::from([Platform::Sgx]);
                 self.sort_data = false;
-            },
+            }
             ExperimentType::Custom => (),
         }
     }
@@ -438,11 +441,17 @@ pub struct Commandline {
 
 impl Commandline {
     pub fn new(platform: Platform) -> Self {
-        Self { app: platform, args: vec![] }
+        Self {
+            app: platform,
+            args: vec![],
+        }
     }
     pub fn with_args(platform: Platform, args: &[&str]) -> Self {
         let args = args.iter().map(|a| a.to_string()).collect();
-        Self { app: platform, args }
+        Self {
+            app: platform,
+            args,
+        }
     }
     pub fn add_args<S: Display>(&mut self, name: &str, value: S) {
         self.args.push(name.to_string());

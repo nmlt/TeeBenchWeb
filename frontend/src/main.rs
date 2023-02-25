@@ -67,8 +67,8 @@ fn app() -> Html {
 fn main() {
     use crate::{commits::CommitState, job_results_view::FinishedJobState};
     use common::data_types::{
-        Algorithm, Dataset, ExperimentType, Finding, Measurement, Parameter, Platform,
-        ProfilingConfiguration, Report, ReportWithFindings, FindingStyle, Job,
+        Algorithm, Dataset, ExperimentType, Finding, FindingStyle, Job, Measurement, Parameter,
+        Platform, ProfilingConfiguration, Report, ReportWithFindings,
     };
     use std::collections::HashSet;
     let default_commits = vec![
