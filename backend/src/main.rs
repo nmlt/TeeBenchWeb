@@ -14,7 +14,7 @@ use std::collections::VecDeque;
 use std::sync::Arc;
 use std::sync::Mutex;
 use tokio::sync::mpsc;
-use tracing::{info, instrument, warn};
+use tracing::{info, instrument, warn, error};
 
 use common::data_types::{
     Commit, Job, ProfilingConfiguration, QueueMessage,
@@ -91,7 +91,7 @@ async fn handle_socket(mut socket: WebSocket, queue_state: Arc<QueueState>) {
                                                 .await
                                                 .is_err()
                                             {
-                                                info!("Client disconnected while sending queue items.");
+                                                error!("Client disconnected while sending queue items.");
                                                 return;
                                             }
                                         }
@@ -120,12 +120,12 @@ async fn handle_socket(mut socket: WebSocket, queue_state: Arc<QueueState>) {
                             info!("Socket pong.");
                         }
                         Message::Close(_) => {
-                            info!("Client disconnected.");
+                            info!("Client disconnected from socket.");
                             return;
                         }
                     }
                 } else {
-                    info!("Client disconnected.");
+                    error!("Could not receive message on websocket: {msg:?}");
                     return;
                 }
             },
@@ -133,8 +133,8 @@ async fn handle_socket(mut socket: WebSocket, queue_state: Arc<QueueState>) {
                 info!("Queue receiver got a new running or finished job.");
                 match job {
                     Job::Running(c) => {
-                        if socket.send(Message::Binary(serde_json::to_vec(&QueueMessage::AddQueueItem(c)).unwrap())).await.is_err() {
-                            info!("Client disconnected.");
+                        if let Err(e) = socket.send(Message::Binary(serde_json::to_vec(&QueueMessage::AddQueueItem(c)).unwrap())).await {
+                            error!("Sending new queue job added to client failed: {e}");
                             return;
                         }
                     },
@@ -152,7 +152,7 @@ async fn handle_socket(mut socket: WebSocket, queue_state: Arc<QueueState>) {
                                 .unwrap()
                             )).await
                             .is_err() {
-                            info!("Client disconnected.");
+                            error!("Sending finished queue job to client failed: Client disconnected.");
                             return;
                         }
                     }
@@ -193,7 +193,7 @@ struct AppState {
 async fn main() {
     // If I use Level::DEBUG, I get lots of log messages from hyper/mio/etc.
     tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::INFO)
+        .with_max_level(tracing::Level::DEBUG)
         .init();
 
     let (profiling_tx, profiling_rx) = mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);

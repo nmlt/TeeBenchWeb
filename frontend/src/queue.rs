@@ -74,82 +74,87 @@ struct QueueState {
 
 #[function_component]
 pub fn Queue() -> Html {
-    let ws = match WebSocket::open("ws://localhost:3000/api/queue") {
-        // `ws://` is required, otherwise there's an error.
-        Ok(ws) => ws,
-        Err(e) => {
-            log!(format!("Error opening websocket: {:?}", e));
-            panic!();
-        }
-    };
-
-    // Send requestqueue
-    // receive queue
-    // loop: listen for remove queue
-
-    let (mut write, mut read) = ws.split();
-
-    spawn_local(async move {
-        //log!("sending first...");
-        write
-            .send(Message::Bytes(
-                serde_json::to_vec(&QueueMessage::RequestQueue).unwrap(),
-            ))
-            .await
-            .unwrap();
-        //log!("Done!\nAwait-ing answer...");
-        let queue_state_dispatch = Dispatch::<QueueState>::new();
-        let finished_job_dispatch = Dispatch::<FinishedJobState>::new();
-        let commit_dispatch = Dispatch::<CommitState>::new();
-        while let Some(Ok(Message::Bytes(msg))) = read.next().await {
-            let msg = serde_json::from_slice(&msg).unwrap();
-            log!(format!("Got msg {msg:?}"));
-            match msg {
-                QueueMessage::AddQueueItem(conf) => {
-                    queue_state_dispatch.reduce_mut(|queue_state| {
-                        queue_state.queue.push_back(conf);
-                    });
+    use_effect_with_deps(
+        move |_| {
+            let ws = match WebSocket::open("ws://localhost:3000/api/queue") {
+                // `ws://` is required, otherwise there's an error.
+                Ok(ws) => ws,
+                Err(e) => {
+                    log!(format!("Error opening websocket: {:?}", e));
+                    panic!();
                 }
-                QueueMessage::RemoveQueueItem(finished_job) => {
-                    // TODO Put the finished_job into another hook to enable viewing it somewhere else.
-                    finished_job_dispatch.reduce_mut(|finished_job_state| {
-                        finished_job_state.jobs.push(finished_job.clone());
-                    });
-                    queue_state_dispatch.reduce_mut(|queue_state| {
-                        if queue_state.queue.pop_front().is_none() {
-                            log!("Error: Queue out of sync!");
+            };
+
+            // Send requestqueue
+            // receive queue
+            // loop: listen for remove queue
+
+            let (mut write, mut read) = ws.split();
+
+            spawn_local(async move {
+                //log!("sending first...");
+                write
+                    .send(Message::Bytes(
+                        serde_json::to_vec(&QueueMessage::RequestQueue).unwrap(),
+                    ))
+                    .await
+                    .unwrap();
+                //log!("Done!\nAwait-ing answer...");
+                let queue_state_dispatch = Dispatch::<QueueState>::new();
+                let finished_job_dispatch = Dispatch::<FinishedJobState>::new();
+                let commit_dispatch = Dispatch::<CommitState>::new();
+                while let Some(Ok(Message::Bytes(msg))) = read.next().await {
+                    let msg = serde_json::from_slice(&msg).unwrap();
+                    log!(format!("Got msg {msg:?}"));
+                    match msg {
+                        QueueMessage::AddQueueItem(conf) => {
+                            queue_state_dispatch.reduce_mut(|queue_state| {
+                                queue_state.queue.push_back(conf);
+                            });
                         }
-                    });
-                    commit_dispatch.reduce_mut(|commit_state| {
-                        commit_state.commits.iter_mut().for_each(|c| {
-                            log!(format!("iterating through commitstate: {}", c.title));
-                            if let Job::Finished { config, result, .. } = &finished_job {
-                                if config
-                                    .algorithm
-                                    .iter()
-                                    .map(|a| a.to_string())
-                                    .any(|a| a == c.title)
-                                {
-                                    // TODO Special case if algorithm is a commit. Or not, depending on how strum serializes it to string.
-                                    log!(format!(
-                                        "finished job: iterating through commits: {}\n",
-                                        c.title
-                                    ));
-                                    if let Ok(report) = result {
-                                        c.reports.push(report.report.clone());
-                                    }
+                        QueueMessage::RemoveQueueItem(finished_job) => {
+                            // TODO Put the finished_job into another hook to enable viewing it somewhere else.
+                            finished_job_dispatch.reduce_mut(|finished_job_state| {
+                                finished_job_state.jobs.push(finished_job.clone());
+                            });
+                            queue_state_dispatch.reduce_mut(|queue_state| {
+                                if queue_state.queue.pop_front().is_none() {
+                                    log!("Error: Queue out of sync!");
                                 }
-                            }
-                        });
-                    });
+                            });
+                            commit_dispatch.reduce_mut(|commit_state| {
+                                commit_state.commits.iter_mut().for_each(|c| {
+                                    log!(format!("iterating through commitstate: {}", c.title));
+                                    if let Job::Finished { config, result, .. } = &finished_job {
+                                        if config
+                                            .algorithm
+                                            .iter()
+                                            .map(|a| a.to_string())
+                                            .any(|a| a == c.title)
+                                        {
+                                            // TODO Special case if algorithm is a commit. Or not, depending on how strum serializes it to string.
+                                            log!(format!(
+                                                "finished job: iterating through commits: {}\n",
+                                                c.title
+                                            ));
+                                            if let Ok(report) = result {
+                                                c.reports.push(report.report.clone());
+                                            }
+                                        }
+                                    }
+                                });
+                            });
+                        }
+                        _ => {
+                            log!("Error: Unexpected websocket message received!");
+                        }
+                    }
                 }
-                _ => {
-                    log!("Error: Unexpected websocket message received!");
-                }
-            }
-        }
-        //log!("Done!");
-    });
+                //log!("Done!");
+            });
+        },
+        (),
+    );
 
     let (queue_store, _dispatch) = use_store::<QueueState>();
     let queue: Vec<Html> = queue_store
