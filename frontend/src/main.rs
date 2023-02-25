@@ -11,11 +11,11 @@ mod perf_report;
 mod profiling;
 mod queue;
 
-use crate::commits::{CommitState, Commits};
+use crate::commits::Commits;
 use crate::perf_report::PerfReport;
 use crate::profiling::Profiling;
 
-use common::data_types::{Commit, Report};
+use common::data_types::Commit;
 use time::OffsetDateTime;
 use yewdux::prelude::Dispatch;
 
@@ -65,6 +65,12 @@ fn app() -> Html {
 }
 
 fn main() {
+    use crate::{commits::CommitState, job_results_view::FinishedJobState};
+    use common::data_types::{
+        Algorithm, Dataset, ExperimentType, Finding, Measurement, Parameter, Platform,
+        ProfilingConfiguration, Report, ReportWithFindings, FindingStyle, Job,
+    };
+    use std::collections::HashSet;
     let default_commits = vec![
         Commit::new(
             "RHT".to_owned(),
@@ -95,8 +101,95 @@ fn main() {
             vec![Report::Throughput { findings: vec![] }],
         ),
     ];
+    let default_job_results = vec![
+        Job::Finished {
+            config: ProfilingConfiguration {
+                algorithm: HashSet::from([Algorithm::Cht]),
+                experiment_type: ExperimentType::EpcPaging,
+                parameter: Parameter::Threads,
+                measurement: Measurement::Throughput,
+                min: 3,
+                max: 3,
+                step: 3,
+                dataset: HashSet::from([Dataset::CacheExceed]),
+                platform: HashSet::from([Platform::Sgx]),
+                sort_data: true,
+            },
+            submitted: time::OffsetDateTime::now_utc() - time::Duration::new(4000, 0),
+            runtime: time::Duration::new(5, 0),
+            result: Ok(ReportWithFindings {
+                report: Report::EpcCht { findings: vec![] },
+                findings: Vec::from([
+                    Finding {
+                        title: "MaxThroughput".to_owned(),
+                        message: "64.22 M".to_owned(),
+                        style: FindingStyle::Neutral,
+                    },
+                    Finding {
+                        title: "Severe EPC Paging".to_owned(),
+                        message: "Max EPC misses: 1870652".to_owned(),
+                        style: FindingStyle::Bad,
+                    },
+                    Finding {
+                        title: "Low throughput".to_owned(),
+                        message: "Lowest throughput [M rec/s]: 0.97".to_owned(),
+                        style: FindingStyle::Bad,
+                    },
+                ]),
+            }),
+        },
+        Job::Finished {
+            config: ProfilingConfiguration {
+                algorithm: HashSet::from([Algorithm::Rho]),
+                experiment_type: ExperimentType::EpcPaging,
+                parameter: Parameter::Threads,
+                measurement: Measurement::Throughput,
+                min: 1,
+                max: 8,
+                step: 1,
+                dataset: HashSet::from([Dataset::CacheFit]),
+                platform: HashSet::from([Platform::Sgx]),
+                sort_data: false,
+            },
+            submitted: time::OffsetDateTime::now_utc() - time::Duration::new(3600, 0),
+            runtime: time::Duration::new(180, 0),
+            result: Ok(ReportWithFindings {
+                report: Report::ScalabilityNativeSgxExample { findings: vec![] },
+                findings: Vec::from([
+                    Finding {
+                        title: "Throughput ratio (Native/SGX)".to_owned(),
+                        message: "7x - 31x".to_owned(),
+                        style: FindingStyle::Neutral,
+                    },
+                    Finding {
+                        title: "Best CPU cores Native".to_owned(),
+                        message: "6 / 8".to_owned(),
+                        style: FindingStyle::SoSo,
+                    },
+                    Finding {
+                        title: "Best CPU cores SGX".to_owned(),
+                        message: "2 / 8".to_owned(),
+                        style: FindingStyle::Bad,
+                    },
+                    Finding {
+                        title: "CPU context-switch - High".to_owned(),
+                        message: "SGX".to_owned(),
+                        style: FindingStyle::Bad,
+                    },
+                    Finding {
+                        title: "EPC Paging - Medium".to_owned(),
+                        message: "SGX".to_owned(),
+                        style: FindingStyle::SoSo,
+                    },
+                ]),
+            }),
+        },
+    ];
     Dispatch::<CommitState>::new().set(CommitState {
         commits: default_commits,
+    });
+    Dispatch::<FinishedJobState>::new().set(FinishedJobState {
+        jobs: default_job_results,
     });
     yew::Renderer::<App>::new().render();
 }
