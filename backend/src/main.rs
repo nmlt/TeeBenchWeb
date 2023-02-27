@@ -80,6 +80,7 @@ async fn handle_socket(mut socket: WebSocket, queue_state: Arc<QueueState>) {
                                             queue_state.queue.lock().unwrap().clone()
                                         };
                                         for item in queue {
+                                            info!("Sending queue item: {item:?}");
                                             if socket
                                                 .send(Message::Binary(
                                                     serde_json::to_vec(&QueueMessage::AddQueueItem(

@@ -7,7 +7,7 @@ use yew::prelude::*;
 use yewdux::prelude::*;
 
 use common::data_types::{
-    Job,
+    // Job,
     //     Algorithm,
     //     Dataset,
     //     ExperimentType,
@@ -17,7 +17,6 @@ use common::data_types::{
     QueueMessage,
 };
 
-use crate::commits::CommitState;
 use crate::job_results_view::FinishedJobState;
 
 #[derive(Debug, PartialEq, Properties)]
@@ -102,7 +101,6 @@ pub fn Queue() -> Html {
                 //log!("Done!\nAwait-ing answer...");
                 let queue_state_dispatch = Dispatch::<QueueState>::new();
                 let finished_job_dispatch = Dispatch::<FinishedJobState>::new();
-                let commit_dispatch = Dispatch::<CommitState>::new();
                 while let Some(Ok(Message::Bytes(msg))) = read.next().await {
                     let msg = serde_json::from_slice(&msg).unwrap();
                     log!(format!("Got msg {msg:?}"));
@@ -121,28 +119,6 @@ pub fn Queue() -> Html {
                                 if queue_state.queue.pop_front().is_none() {
                                     log!("Error: Queue out of sync!");
                                 }
-                            });
-                            commit_dispatch.reduce_mut(|commit_state| {
-                                commit_state.commits.iter_mut().for_each(|c| {
-                                    log!(format!("iterating through commitstate: {}", c.title));
-                                    if let Job::Finished { config, result, .. } = &finished_job {
-                                        if config
-                                            .algorithm
-                                            .iter()
-                                            .map(|a| a.to_string())
-                                            .any(|a| a == c.title)
-                                        {
-                                            // TODO Special case if algorithm is a commit. Or not, depending on how strum serializes it to string.
-                                            log!(format!(
-                                                "finished job: iterating through commits: {}\n",
-                                                c.title
-                                            ));
-                                            if let Ok(report) = result {
-                                                c.reports.push(report.report.clone());
-                                            }
-                                        }
-                                    }
-                                });
                             });
                         }
                         _ => {

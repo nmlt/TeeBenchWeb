@@ -36,8 +36,9 @@ async fn compile_and_run(conf: ProfilingConfiguration) -> Report {
                 .output()
                 .await
                 .expect("Failed to run TeeBench");
-            let output = String::from_utf8(output.stdout).expect("Could not decode command output");
             info!("Running `{cmd}`");
+            let output = String::from_utf8(output.stdout).expect("Could not decode command output");
+            tokio::time::sleep(tokio::time::Duration::from_millis(5000)).await;
             output
         }));
     }
