@@ -1,5 +1,5 @@
 use std::collections::VecDeque;
-use std::env::{set_current_dir, var};
+use std::env::var;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -9,35 +9,42 @@ use tokio::sync::{mpsc, oneshot};
 use tracing::{info, instrument, warn};
 
 use common::data_types::{
-    Commandline, ExperimentType, Job, Platform, ProfilingConfiguration, Report, ReportWithFindings,
+    Commandline, Job, Platform, ProfilingConfiguration, Report, ReportWithFindings,
 };
 
 async fn compile_and_run(conf: ProfilingConfiguration) -> Report {
-    let mut tee_bench_dir =
+    let tee_bench_dir =
         PathBuf::from(var("TEEBENCHWEB_RUN_DIR").expect("TEEBENCHWEB_RUN_DIR not set"));
     let cmds = conf.to_teebench_cmd();
-    let mut outputs = vec![];
+    let mut tasks = vec![];
     for cmd in cmds {
-        // match cmd.app {
-        //     Platform::Sgx => {
-        //         tee_bench_dir.push("sgx");
-        //     }
-        //     Platform::Native => {
-        //         tee_bench_dir.push("native");
-        //     }
-        // }
-        set_current_dir(&tee_bench_dir).expect("Failed to change to TeeBench dir");
-        // Command::new("make").args(["clean"]).status().await.expect("Failed to run make clean");
-        // Command::new("make").args(["-B", "sgx"]).status().await.expect("Failed to compile sgx version of TeeBench");
-        // This assumes that the Makefile of TeeBench has a different app name ("sgx")
-        info!("Now running `{cmd}`...");
-        let output = to_command(cmd)
-            .output()
-            .await
-            .expect("Failed to run TeeBench");
-        outputs.push(output);
+        let mut tee_bench_dir = tee_bench_dir.clone();
+        tasks.push(tokio::spawn(async move {
+            // match cmd.app {
+            //     Platform::Sgx => {
+            //         tee_bench_dir.push("sgx");
+            //     }
+            //     Platform::Native => {
+            //         tee_bench_dir.push("native");
+            //     }
+            // }
+            // Command::new("make").current_dir(tee_bench_dir).args(["clean"]).status().await.expect("Failed to run make clean");
+            // Command::new("make").current_dir(tee_bench_dir).args(["-B", "sgx"]).status().await.expect("Failed to compile sgx version of TeeBench");
+            // This assumes that the Makefile of TeeBench has a different app name ("sgx"). See common::data_types::CommandLine::app_string().
+            let output = to_command(cmd.clone())
+                .current_dir(tee_bench_dir)
+                .output()
+                .await
+                .expect("Failed to run TeeBench");
+            let output = String::from_utf8(output.stdout).expect("Could not decode command output");
+            info!("Running `{cmd}`");
+            output
+        }));
     }
-    println!("{outputs:#?}");
+    for task in tasks {
+        let res = task.await.unwrap();
+        info!("Task output:\n```\n{res}\n```");
+    }
     Report::default()
 }
 

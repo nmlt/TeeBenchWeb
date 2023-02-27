@@ -60,6 +60,7 @@ async fn handle_socket(mut socket: WebSocket, queue_state: Arc<QueueState>) {
     loop {
         let mut guard = queue_state.queue_rx.lock().await;
         // TODO Check if data loss could happen due to cancelation.
+        info!("Looping back to select socket or queue_state channel receiver");
         tokio::select! {
             Some(msg) = socket.recv() => {
                 info!("Socket received.");
@@ -191,7 +192,7 @@ struct AppState {
 async fn main() {
     // If I use Level::DEBUG, I get lots of log messages from hyper/mio/etc.
     tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::DEBUG)
+        .with_max_level(tracing::Level::INFO)
         .init();
 
     let (profiling_tx, profiling_rx) = mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);
