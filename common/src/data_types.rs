@@ -234,7 +234,7 @@ impl Dataset {
         match string {
             "cache-fit" | "Cache Fit" | "CacheFit" => Ok(Dataset::CacheFit),
             "cache-exceed" | "Cache Exceed" | "CacheExceed" => Ok(Dataset::CacheExceed),
-            _ => Err("Dataset can only be Cache Fit or Cache Exceed!"),//panic!("Dataset can only be Cache Fit or Cache Exceed!"),
+            _ => Err("Dataset can only be Cache Fit or Cache Exceed!"), //panic!("Dataset can only be Cache Fit or Cache Exceed!"),
         }
     }
 }

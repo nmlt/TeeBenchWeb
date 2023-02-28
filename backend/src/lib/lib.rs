@@ -6,7 +6,7 @@ use std::sync::Mutex;
 use time::{Duration, OffsetDateTime};
 use tokio::process::Command as TokioCommand;
 use tokio::sync::{mpsc, oneshot};
-use tracing::{info, instrument, warn, error};
+use tracing::{error, info, instrument, warn};
 
 use common::data_types::{
     Commandline, Job, Platform, ProfilingConfiguration, Report, ReportWithFindings,
@@ -46,7 +46,8 @@ async fn compile_and_run(conf: ProfilingConfiguration) -> Report {
             // tokio::time::sleep(tokio::time::Duration::from_millis(5000)).await;
             //std::thread::sleep(std::time::Duration::from_millis(5000));
             output
-        }).await;
+        })
+        .await;
         tasks.push(handle);
     }
     for task in tasks {
@@ -77,7 +78,7 @@ async fn work_on_queue(
         let finished_job = Job::Finished {
             config: current_conf,
             submitted: OffsetDateTime::now_utc(), // TODO Fix this.
-            runtime: Duration::new(5, 0), // TODO Get actual runtime from teebench output.
+            runtime: Duration::new(5, 0),         // TODO Get actual runtime from teebench output.
             result: Ok(ReportWithFindings {
                 report: report,
                 findings: Vec::new(),
