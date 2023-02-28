@@ -40,12 +40,18 @@ fn QueueItem(QueueItemProps { config, running }: &QueueItemProps) -> Html {
             </div>
         }
     };
+    let algs: Vec<_> = config
+        .algorithm
+        .iter()
+        .map(|a| a.to_string())
+        .map(|a| html! { <span class="badge text-bg-primary m-1">{a}</span> })
+        .collect();
     html! {
         <li class="list-group-item" title={format!("{config}")}>
             {spinner}
             //{"Submitted at: "}<span class="fw-bold">{format!("{} ", submitted.format(time_format).unwrap())}</span>
             {" "}
-            <span class="badge text-bg-primary">{format!("{:?}", config.algorithm)}</span>
+            {for algs}
             <span>{" running... "}</span>
         </li>
     }
