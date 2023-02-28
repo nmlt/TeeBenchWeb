@@ -3,10 +3,11 @@ use std::env::var;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::process::Command;
 use time::{Duration, OffsetDateTime};
-use tokio::process::Command;
+use tokio::process::Command as TokioCommand;
 use tokio::sync::{mpsc, oneshot};
-use tracing::{info, instrument, warn};
+use tracing::{info, instrument, warn, error};
 
 use common::data_types::{
     Commandline, Job, Platform, ProfilingConfiguration, Report, ReportWithFindings,
@@ -19,7 +20,9 @@ async fn compile_and_run(conf: ProfilingConfiguration) -> Report {
     let mut tasks = vec![];
     for cmd in cmds {
         let mut tee_bench_dir = tee_bench_dir.clone();
-        tasks.push(tokio::spawn(async move {
+        // Each task should get the full "power" of the machine, so don't run them at parallel.
+
+        let handle = tokio::task::spawn(async move {
             // match cmd.app {
             //     Platform::Sgx => {
             //         tee_bench_dir.push("sgx");
@@ -28,8 +31,8 @@ async fn compile_and_run(conf: ProfilingConfiguration) -> Report {
             //         tee_bench_dir.push("native");
             //     }
             // }
-            // Command::new("make").current_dir(tee_bench_dir).args(["clean"]).status().await.expect("Failed to run make clean");
-            // Command::new("make").current_dir(tee_bench_dir).args(["-B", "sgx"]).status().await.expect("Failed to compile sgx version of TeeBench");
+            // TokioCommand::new("make").current_dir(tee_bench_dir).args(["clean"]).status().await.expect("Failed to run make clean");
+            // TokioCommand::new("make").current_dir(tee_bench_dir).args(["-B", "sgx"]).status().await.expect("Failed to compile sgx version of TeeBench");
             // This assumes that the Makefile of TeeBench has a different app name ("sgx"). See common::data_types::CommandLine::app_string().
             let output = to_command(cmd.clone())
                 .current_dir(tee_bench_dir)
@@ -37,13 +40,18 @@ async fn compile_and_run(conf: ProfilingConfiguration) -> Report {
                 .await
                 .expect("Failed to run TeeBench");
             info!("Running `{cmd}`");
+            if !output.status.success() {
+                error!("Command failed with {output:#?}");
+            }
             let output = String::from_utf8(output.stdout).expect("Could not decode command output");
             tokio::time::sleep(tokio::time::Duration::from_millis(5000)).await;
+            //std::thread::sleep(std::time::Duration::from_millis(5000));
             output
-        }));
+        }).await;
+        tasks.push(handle);
     }
     for task in tasks {
-        let res = task.await.unwrap();
+        let res = task.unwrap();
         info!("Task output:\n```\n{res}\n```");
     }
     Report::default()
@@ -130,8 +138,8 @@ pub async fn profiling_task(
 }
 
 /// Consumes `Commandline` and makes a tokio process out of it.
-fn to_command(cmdline: Commandline) -> tokio::process::Command {
-    let mut cmd = Command::new(cmdline.app_string());
+fn to_command(cmdline: Commandline) -> TokioCommand {
+    let mut cmd = TokioCommand::new(cmdline.app_string());
     cmd.args(cmdline.args);
     cmd
 }

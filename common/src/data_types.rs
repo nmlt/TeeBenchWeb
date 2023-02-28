@@ -145,7 +145,7 @@ pub enum QueueMessage {
 pub enum Algorithm {
     #[default]
     // #[strum(to_string = "JOIN - CHT")]
-    Cht,
+    Rho,
     // #[strum(to_string = "JOIN - PHT")]
     Pht,
     // #[strum(to_string = "JOIN - PSM")]
@@ -155,15 +155,13 @@ pub enum Algorithm {
     // #[strum(to_string = "JOIN - RHT")]
     Rht,
     // #[strum(to_string = "JOIN - RHO")]
-    Rho,
+    Cht,
     // #[strum(to_string = "JOIN - RSM")]
     Rsm,
     // #[strum(to_string = "JOIN - INL")]
     Inl,
-    // #[strum(to_string = "JOIN - v2.1")]
-    V21,
-    // #[strum(to_string = "JOIN - v2.2")]
-    V22,
+    // #[strum(to_string = "JOIN - CRKJ")]
+    Crkj,
     // #[strum(to_string = "JOIN - NestedLoopJoin")]
     Nlj,
     //     #[strum(to_string = "Latest Commit")]
@@ -232,7 +230,33 @@ impl Dataset {
             Dataset::CacheExceed => "cache-exceed".to_string(),
         }
     }
+    pub fn from_cmd_arg(string: &str) -> Result<Self, &'static str> {
+        match string {
+            "cache-fit" | "Cache Fit" | "CacheFit" => Ok(Dataset::CacheFit),
+            "cache-exceed" | "Cache Exceed" | "CacheExceed" => Ok(Dataset::CacheExceed),
+            _ => Err("Dataset can only be Cache Fit or Cache Exceed!"),//panic!("Dataset can only be Cache Fit or Cache Exceed!"),
+        }
+    }
 }
+
+// TODO Remove strum's EnumString and Display and use this instead. But it doesn't work...
+// impl From<String> for Dataset {
+//     fn from(string: String) -> Self {
+//         //Dataset::try_from(string).unwrap()
+//         Dataset::CacheFit
+//     }
+// }
+// impl TryFrom<String> for Dataset {
+//     type Error = &'static str;
+
+//     fn try_from(string: String) -> std::result::Result<Self, Self::Error> {
+//         match string.as_str() {
+//             "cache-fit" | "Cache Fit" | "CacheFit" => Ok(Dataset::CacheFit),
+//             "cache-exceed" | "Cache Exceed" | "CacheExceed" => Ok(Dataset::CacheExceed),
+//             _ => Err("Dataset can only be Cache Fit or Cache Exceed!"),
+//         }
+//     }
+// }
 
 #[derive(
     Debug,
@@ -400,6 +424,9 @@ impl ProfilingConfiguration {
         }
         Commandline::double_cmds_with_different_arg_value(&mut res, &mut value_iter);
 
+        for cmd in &mut res {
+            cmd.add_flag("--csv");
+        }
         res
     }
     pub fn set_preconfigured_experiment(&mut self) {
@@ -456,6 +483,9 @@ impl Commandline {
     pub fn add_args<S: Display>(&mut self, name: &str, value: S) {
         self.args.push(name.to_string());
         self.args.push(value.to_string());
+    }
+    pub fn add_flag(&mut self, name: &str) {
+        self.args.push(name.to_string());
     }
     /// Adds all the values in `iter` as values of the last option of the `Commandline`s in `cmds` for each item in `cmds`.
     /// Example: `cmds` =  `["./app -a CHT"]` becomes `["./app -a CHT", "./app -a RHO"] if `iter` contains "RHO".
