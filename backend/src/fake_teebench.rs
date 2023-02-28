@@ -7,6 +7,8 @@ use anyhow::{anyhow, Result};
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::time::Duration;
+use std::thread::sleep;
 
 
 use common::data_types::{Algorithm, Dataset, Platform};
@@ -89,6 +91,12 @@ fn main() -> Result<()> {
         },
     };
     if let Some(output) = CSV_OUTPUT.get(&(platform, opt.algorithm.clone(), opt.dataset.clone())) {
+        let mut rdr = csv::Reader::from_reader(output.as_bytes());
+        let mut iter = rdr.records();
+        // iter.next(); // First line is skipped anyway because a header is expected.
+        let data_record = iter.next().unwrap()?;
+        let time_total_usec: u64 = data_record.get(7).unwrap().parse()?;
+        sleep(Duration::from_micros(time_total_usec));
         print!("{output}");
     } else {
         return Err(anyhow!("Could not find the combination of platform, algorithm and dataset: {opt:?}"));
@@ -100,164 +108,164 @@ static CSV_OUTPUT: Lazy<HashMap<(Platform, Algorithm, Dataset), &str>> = Lazy::n
     HashMap::from([
         ((Platform::Sgx, Algorithm::Rho, Dataset::CacheFit), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            5242880,0,530802580,0,85,0,0,164574,39.8216
+            5242880,0,530802580,0,85,0,0,164574,39.8100000016
         "}),
         ((Platform::Sgx, Algorithm::Rho, Dataset::CacheExceed), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            52428800,0,8161090876,0,127,0,0,2461427,26.6252
+            52428800,0,8161090876,0,127,0,0,2461427,26.6500000052
         "}),
         ((Platform::Sgx, Algorithm::Crkj, Dataset::CacheFit), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            5242880,0,0,0,166,13520,306410,319930,20.4845
+            5242880,0,0,0,166,13520,306410,319930,20.4100000045
         "}),
         ((Platform::Sgx, Algorithm::Crkj, Dataset::CacheExceed), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            52428800,0,0,0,123,198162,2170082,2368244,27.6728
+            52428800,0,0,0,123,198162,2170082,2368244,27.6500000028
         "}),
         ((Platform::Sgx, Algorithm::Pht, Dataset::CacheFit), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,0,0
+            0,0,0,0,0,0,0,1000000,0
         "}),
         ((Platform::Sgx, Algorithm::Pht, Dataset::CacheExceed), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,0,0
+            0,0,0,0,0,0,0,5000000,0
         "}),
         ((Platform::Sgx, Algorithm::Psm, Dataset::CacheFit), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,0,0
+            0,0,0,0,0,0,0,1000000,0
         "}),
         ((Platform::Sgx, Algorithm::Psm, Dataset::CacheExceed), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,0,0
+            0,0,0,0,0,0,0,5000000,0
         "}),
         ((Platform::Sgx, Algorithm::Mway, Dataset::CacheFit), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,0,0
+            0,0,0,0,0,0,0,1000000,0
         "}),
         ((Platform::Sgx, Algorithm::Mway, Dataset::CacheExceed), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,0,0
+            0,0,0,0,0,0,0,5000000,0
         "}),
         ((Platform::Sgx, Algorithm::Rht, Dataset::CacheFit), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,0,0
+            0,0,0,0,0,0,0,1000000,0
         "}),
         ((Platform::Sgx, Algorithm::Rht, Dataset::CacheExceed), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,0,0
+            0,0,0,0,0,0,0,5000000,0
         "}),
         ((Platform::Sgx, Algorithm::Cht, Dataset::CacheFit), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,0,0
+            0,0,0,0,0,0,0,1000000,0
         "}),
         ((Platform::Sgx, Algorithm::Cht, Dataset::CacheExceed), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,0,0
+            0,0,0,0,0,0,0,5000000,0
         "}),
         ((Platform::Sgx, Algorithm::Rsm, Dataset::CacheFit), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,0,0
+            0,0,0,0,0,0,0,1000000,0
         "}),
         ((Platform::Sgx, Algorithm::Rsm, Dataset::CacheExceed), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,0,0
+            0,0,0,0,0,0,0,5000000,0
         "}),
         ((Platform::Sgx, Algorithm::Inl, Dataset::CacheFit), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,0,0
+            0,0,0,0,0,0,0,1000000,0
         "}),
         ((Platform::Sgx, Algorithm::Inl, Dataset::CacheExceed), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,0,0
+            0,0,0,0,0,0,0,5000000,0
         "}),
         ((Platform::Sgx, Algorithm::Nlj, Dataset::CacheFit), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,0,0
+            0,0,0,0,0,0,0,1000000,0
         "}),
         ((Platform::Sgx, Algorithm::Nlj, Dataset::CacheExceed), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,0,0
+            0,0,0,0,0,0,0,5000000,0
         "}),
         // native:
         ((Platform::Native, Algorithm::Rho, Dataset::CacheFit), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,0,0
+            0,0,0,0,0,0,0,1000000,0
         "}),
         ((Platform::Native, Algorithm::Rho, Dataset::CacheExceed), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,0,0
+            0,0,0,0,0,0,0,5000000,0
         "}),
         ((Platform::Native, Algorithm::Crkj, Dataset::CacheFit), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,0,0
+            0,0,0,0,0,0,0,1000000,0
         "}),
         ((Platform::Native, Algorithm::Crkj, Dataset::CacheExceed), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,0,0
+            0,0,0,0,0,0,0,5000000,0
         "}),
         ((Platform::Native, Algorithm::Pht, Dataset::CacheFit), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,0,0
+            0,0,0,0,0,0,0,1000000,0
         "}),
         ((Platform::Native, Algorithm::Pht, Dataset::CacheExceed), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,0,0
+            0,0,0,0,0,0,0,5000000,0
         "}),
         ((Platform::Native, Algorithm::Psm, Dataset::CacheFit), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,0,0
+            0,0,0,0,0,0,0,1000000,0
         "}),
         ((Platform::Native, Algorithm::Psm, Dataset::CacheExceed), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,0,0
+            0,0,0,0,0,0,0,5000000,0
         "}),
         ((Platform::Native, Algorithm::Mway, Dataset::CacheFit), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,0,0
+            0,0,0,0,0,0,0,1000000,0
         "}),
         ((Platform::Native, Algorithm::Mway, Dataset::CacheExceed), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,0,0
+            0,0,0,0,0,0,0,5000000,0
         "}),
         ((Platform::Native, Algorithm::Rht, Dataset::CacheFit), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,0,0
+            0,0,0,0,0,0,0,1000000,0
         "}),
         ((Platform::Native, Algorithm::Rht, Dataset::CacheExceed), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,0,0
+            0,0,0,0,0,0,0,5000000,0
         "}),
         ((Platform::Native, Algorithm::Cht, Dataset::CacheFit), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,0,0
+            0,0,0,0,0,0,0,1000000,0
         "}),
         ((Platform::Native, Algorithm::Cht, Dataset::CacheExceed), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,0,0
+            0,0,0,0,0,0,0,5000000,0
         "}),
         ((Platform::Native, Algorithm::Rsm, Dataset::CacheFit), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,0,0
+            0,0,0,0,0,0,0,1000000,0
         "}),
         ((Platform::Native, Algorithm::Rsm, Dataset::CacheExceed), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,0,0
+            0,0,0,0,0,0,0,5000000,0
         "}),
         ((Platform::Native, Algorithm::Inl, Dataset::CacheFit), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,0,0
+            0,0,0,0,0,0,0,1000000,0
         "}),
         ((Platform::Native, Algorithm::Inl, Dataset::CacheExceed), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,0,0
+            0,0,0,0,0,0,0,5000000,0
         "}),
         ((Platform::Native, Algorithm::Nlj, Dataset::CacheFit), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,0,0
+            0,0,0,0,0,0,0,1000000,0
         "}),
         ((Platform::Native, Algorithm::Nlj, Dataset::CacheExceed), indoc! {"
             matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,0,0
+            0,0,0,0,0,0,0,5000000,0
         "}),
     ])
 });

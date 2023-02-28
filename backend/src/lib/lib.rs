@@ -3,7 +3,6 @@ use std::env::var;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::Mutex;
-use std::process::Command;
 use time::{Duration, OffsetDateTime};
 use tokio::process::Command as TokioCommand;
 use tokio::sync::{mpsc, oneshot};
@@ -44,7 +43,7 @@ async fn compile_and_run(conf: ProfilingConfiguration) -> Report {
                 error!("Command failed with {output:#?}");
             }
             let output = String::from_utf8(output.stdout).expect("Could not decode command output");
-            tokio::time::sleep(tokio::time::Duration::from_millis(5000)).await;
+            // tokio::time::sleep(tokio::time::Duration::from_millis(5000)).await;
             //std::thread::sleep(std::time::Duration::from_millis(5000));
             output
         }).await;
