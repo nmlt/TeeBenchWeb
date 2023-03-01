@@ -41,10 +41,11 @@ pub fn JobResult(JobResultProps { job }: &JobResultProps) -> Html {
                     content_dispatch.set_callback(move |_| {
                         let content_dispatch = move_content_dispatch.clone();
                         let result = result.clone();
-                        let (report,findings) = match result {
-                            Ok(r) => (r.report, r.findings),
-                            Err(_) => (Report::default(), Vec::new()),
+                        let report = match result {
+                            Ok(r) => r,
+                            Err(_) => Report::default(),
                         };
+                        let findings = report.findings.clone();
                         let findings = findings.iter().map(|f| {
                             let f = f.clone();
                             html! {

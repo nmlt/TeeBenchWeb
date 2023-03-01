@@ -9,7 +9,7 @@ use tokio::sync::{mpsc, oneshot};
 use tracing::{error, info, instrument, warn};
 
 use common::data_types::{
-    Commandline, Job, Platform, ProfilingConfiguration, Report, ReportWithFindings,
+    Commandline, Job, Platform, ProfilingConfiguration, Report, ExperimentResult,
 };
 
 async fn compile_and_run(conf: ProfilingConfiguration) -> Report {
@@ -19,8 +19,7 @@ async fn compile_and_run(conf: ProfilingConfiguration) -> Report {
     let mut tasks = vec![];
     for cmd in cmds {
         let mut tee_bench_dir = tee_bench_dir.clone();
-        // Each task should get the full "power" of the machine, so don't run them at parallel.
-
+        // Each task should get the full "power" of the machine, so don't run them in parallel.
         let handle = tokio::task::spawn(async move {
             // match cmd.app {
             //     Platform::Sgx => {
@@ -42,19 +41,27 @@ async fn compile_and_run(conf: ProfilingConfiguration) -> Report {
             if !output.status.success() {
                 error!("Command failed with {output:#?}");
             }
-            let output = String::from_utf8(output.stdout).expect("Could not decode command output");
-            // tokio::time::sleep(tokio::time::Duration::from_millis(5000)).await;
-            //std::thread::sleep(std::time::Duration::from_millis(5000));
-            output
+            output.stdout
         })
         .await;
         tasks.push(handle);
     }
+    let mut report = Report {
+        config: conf,
+        results: vec![],
+        findings: vec![],
+    };
     for task in tasks {
         let res = task.unwrap();
-        info!("Task output:\n```\n{res}\n```");
+        let human_readable = String::from_utf8(res.clone()).unwrap();
+        info!("Task output:\n```\n{human_readable}\n```");
+        let mut rdr = csv::Reader::from_reader(&*res);
+        let mut iter = rdr.deserialize();
+        // iter.next(); // First line is skipped anyway because a header is expected.
+        let exp_result: ExperimentResult = iter.next().unwrap().unwrap();
+        report.results.push(exp_result);
     }
-    Report::default()
+    report
 }
 
 #[instrument(skip(queue, oneshot_tx, queue_tx))]
@@ -79,10 +86,7 @@ async fn work_on_queue(
             config: current_conf,
             submitted: OffsetDateTime::now_utc(), // TODO Fix this.
             runtime: Duration::new(5, 0),         // TODO Get actual runtime from teebench output.
-            result: Ok(ReportWithFindings {
-                report: report,
-                findings: Vec::new(),
-            }),
+            result: Ok(report),
         };
         {
             let mut guard = queue.lock().unwrap();

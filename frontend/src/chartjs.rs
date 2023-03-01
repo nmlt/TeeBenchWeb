@@ -1,4 +1,4 @@
-use common::data_types::Report;
+use common::data_types::{ExperimentType, Report, Measurement};
 //use gloo_console::log;
 use js_sys::Object;
 use serde_json::json;
@@ -49,8 +49,69 @@ pub fn Chart(ChartProps { report }: &ChartProps) -> Html {
             let plugins;
             let scales;
             let options;
-            match report {
-                Report::Epc { findings: _ } => {
+            match report.config.experiment_type {
+                ExperimentType::Custom => {
+                    chart_type = match report.config.measurement {
+                        Measurement::EpcPaging => "bar",
+                        Measurement::Throughput => "line",
+                    };
+                    let steps: Vec<_> = report.config.param_value_iter().collect();
+                    labels = json!(steps);
+                    datasets = json!([
+                        {
+                            "label": "v2.1",
+                            "data": [11.54,16.73,19.05,18.78,18.32,17.97,17.58,16.39],
+                            "backgroundColor": "#de3d82",
+                            "borderColor": "#de3d82",
+                            "yAxisID": "y",
+                            "borderWidth":5
+                        },
+                        {
+                            "label": "v2.2",
+                            "data": [12.84,17.03,21.05,21.78,19.32,18.54,18.01,17.09],
+                            "backgroundColor": "#72e06a",
+                            "borderColor": "#72e06a",
+                            "yAxisID": "y",
+                            "borderWidth":5
+                        }
+                    ]);
+                    plugins = json!({
+                        "title": {
+                            "display": true,
+                            "text": "Scalability cache-exceed",
+                            "font": {
+                                "size": 60
+                            }
+                        }
+                    });
+                    scales = json!({
+                        "x": {
+                            "ticks": {
+                                "font": {
+                                    "size": 40
+                                }
+                            }
+                        },
+                        "y": {
+                            "ticks": {
+                                "font": {
+                                    "size": 40
+                                },
+                                "min": 0
+                            },
+                            "text": "Throughput [M rec/s]",
+                            "type": "linear",
+                            "display": true,
+                            "position": "left"
+                        }
+                    });
+                    options = json!({
+                        "responsive": true,
+                        "plugins": plugins,
+                        "scales": scales,
+                    });
+                }
+                ExperimentType::EpcPaging => {
                     chart_type = "bar";
                     labels =
                         json!([8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128]);
@@ -136,147 +197,7 @@ pub fn Chart(ChartProps { report }: &ChartProps) -> Html {
                         "scales": scales,
                     });
                 }
-                Report::EpcCht { findings: _ } => {
-                    chart_type = "bar";
-                    labels =
-                        json!([8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128]);
-                    datasets = json!([
-                        {
-                          "label": "Throughput",
-                          "data": [64.22,26.54,23.16,22.0,21.32,19.29,16.59,15.68,13.61,12.65,12.07,1.37,0.97,1.0,1.04,1.15],
-                          "borderColor": "#de3d82",
-                          "backgroundColor": "#de3d82",
-                          "order": 0,
-                          "type": "line",
-                          "yAxisID": "y",
-                          "borderWidth":5
-                        },
-                        {
-                          "label": "EPC Paging",
-                          "data": [289860,293995,298271,302353,306725,318300,332876,341882,359938,372715,386494,1283342,1838011,1851572,1862953,1870652],
-                          "borderColor": "#7e84fa",
-                          "backgroundColor": "#7e84fa",
-                          "order": 1,
-                          "yAxisID": "y1",
-                        }
-                    ]);
-                    plugins = json!({
-                        "legend": {
-                            "position": "top",
-                        },
-                        "title": {
-                            "display": true,
-                            "text": "EPC Paging",
-                            "font": {"size":40}
-                        }
-                    });
-                    scales = json!({
-                        "x": {
-                            "ticks": {"font": {"size":20}},
-                            "title" : {
-                                "display": true,
-                                "text": "Size of R [MB]",
-                                "font": {
-                                    "size": 25
-                                }
-                            }
-                        },
-                        "y": {
-                            "text": "Throughput [M rec/s]",
-                            "type": "linear",
-                            "display": true,
-                            "position": "left",
-                            "ticks": {"font": {"size": 20}},
-                            "title" : {
-                                "display": true,
-                                "text": "Throughput [M rec/s]",
-                                "font": {
-                                    "size": 25
-                                }
-                            }
-                        },
-                        "y1": {
-                            "type": "linear",
-                            "display": true,
-                            "position": "right",
-                            "ticks": {"font": {"size": 20}},
-                            // grid line settings
-                            "grid": {
-                                "drawOnChartArea": false, // only want the grid lines for one axis to show up
-                            },
-                            "title" : {
-                                "display": true,
-                                "text": "EPC Misses",
-                                "font": {
-                                    "size": 25
-                                }
-                            }
-                        }
-                    });
-                    options = json!({
-                        "responsive": true,
-                        "plugins": plugins,
-                        "scales": scales,
-                    });
-                }
-                Report::Scalability { findings: _ } => {
-                    chart_type = "line";
-                    labels = json!([1, 2, 3, 4, 5, 6, 7, 8]);
-                    datasets = json!([
-                        {
-                            "label": "v2.1",
-                            "data": [11.54,16.73,19.05,18.78,18.32,17.97,17.58,16.39],
-                            "backgroundColor": "#de3d82",
-                            "borderColor": "#de3d82",
-                            "yAxisID": "y",
-                            "borderWidth":5
-                        },
-                        {
-                            "label": "v2.2",
-                            "data": [12.84,17.03,21.05,21.78,19.32,18.54,18.01,17.09],
-                            "backgroundColor": "#72e06a",
-                            "borderColor": "#72e06a",
-                            "yAxisID": "y",
-                            "borderWidth":5
-                        }
-                    ]);
-                    plugins = json!({
-                        "title": {
-                            "display": true,
-                            "text": "Scalability cache-exceed",
-                            "font": {
-                                "size": 60
-                            }
-                        }
-                    });
-                    scales = json!({
-                        "x": {
-                            "ticks": {
-                                "font": {
-                                    "size": 40
-                                }
-                            }
-                        },
-                        "y": {
-                            "ticks": {
-                                "font": {
-                                    "size": 40
-                                },
-                                "min": 0
-                            },
-                            "text": "Throughput [M rec/s]",
-                            "type": "linear",
-                            "display": true,
-                            "position": "left"
-                        }
-                    });
-                    options = json!({
-                        "responsive": true,
-                        "plugins": plugins,
-                        "scales": scales,
-                    });
-                }
-                Report::ScalabilityNativeSgxExample { findings: _ } => {
+                ExperimentType::CpuCyclesTuple => {
                     chart_type = "line";
                     labels = json!([1, 2, 3, 4, 5, 6, 7, 8]);
                     datasets = json!([
@@ -346,7 +267,7 @@ pub fn Chart(ChartProps { report }: &ChartProps) -> Html {
                         "scales": scales,
                     });
                 }
-                Report::Throughput { findings: _ } => {
+                ExperimentType::Throughput => {
                     chart_type = "bar";
                     labels = json!(["native", "sgx"]);
                     datasets = json!([
@@ -383,6 +304,146 @@ pub fn Chart(ChartProps { report }: &ChartProps) -> Html {
                         "scales": scales,
                     });
                 }
+                // ExperimentType::EpcPaging => {
+                //     chart_type = "bar";
+                //     labels =
+                //         json!([8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128]);
+                //     datasets = json!([
+                //         {
+                //           "label": "Throughput",
+                //           "data": [64.22,26.54,23.16,22.0,21.32,19.29,16.59,15.68,13.61,12.65,12.07,1.37,0.97,1.0,1.04,1.15],
+                //           "borderColor": "#de3d82",
+                //           "backgroundColor": "#de3d82",
+                //           "order": 0,
+                //           "type": "line",
+                //           "yAxisID": "y",
+                //           "borderWidth":5
+                //         },
+                //         {
+                //           "label": "EPC Paging",
+                //           "data": [289860,293995,298271,302353,306725,318300,332876,341882,359938,372715,386494,1283342,1838011,1851572,1862953,1870652],
+                //           "borderColor": "#7e84fa",
+                //           "backgroundColor": "#7e84fa",
+                //           "order": 1,
+                //           "yAxisID": "y1",
+                //         }
+                //     ]);
+                //     plugins = json!({
+                //         "legend": {
+                //             "position": "top",
+                //         },
+                //         "title": {
+                //             "display": true,
+                //             "text": "EPC Paging",
+                //             "font": {"size":40}
+                //         }
+                //     });
+                //     scales = json!({
+                //         "x": {
+                //             "ticks": {"font": {"size":20}},
+                //             "title" : {
+                //                 "display": true,
+                //                 "text": "Size of R [MB]",
+                //                 "font": {
+                //                     "size": 25
+                //                 }
+                //             }
+                //         },
+                //         "y": {
+                //             "text": "Throughput [M rec/s]",
+                //             "type": "linear",
+                //             "display": true,
+                //             "position": "left",
+                //             "ticks": {"font": {"size": 20}},
+                //             "title" : {
+                //                 "display": true,
+                //                 "text": "Throughput [M rec/s]",
+                //                 "font": {
+                //                     "size": 25
+                //                 }
+                //             }
+                //         },
+                //         "y1": {
+                //             "type": "linear",
+                //             "display": true,
+                //             "position": "right",
+                //             "ticks": {"font": {"size": 20}},
+                //             // grid line settings
+                //             "grid": {
+                //                 "drawOnChartArea": false, // only want the grid lines for one axis to show up
+                //             },
+                //             "title" : {
+                //                 "display": true,
+                //                 "text": "EPC Misses",
+                //                 "font": {
+                //                     "size": 25
+                //                 }
+                //             }
+                //         }
+                //     });
+                //     options = json!({
+                //         "responsive": true,
+                //         "plugins": plugins,
+                //         "scales": scales,
+                //     });
+                // }
+                // ExperimentType::Custom => {
+                //     chart_type = "line";
+                //     labels = json!([1, 2, 3, 4, 5, 6, 7, 8]);
+                //     datasets = json!([
+                //         {
+                //             "label": "v2.1",
+                //             "data": [11.54,16.73,19.05,18.78,18.32,17.97,17.58,16.39],
+                //             "backgroundColor": "#de3d82",
+                //             "borderColor": "#de3d82",
+                //             "yAxisID": "y",
+                //             "borderWidth":5
+                //         },
+                //         {
+                //             "label": "v2.2",
+                //             "data": [12.84,17.03,21.05,21.78,19.32,18.54,18.01,17.09],
+                //             "backgroundColor": "#72e06a",
+                //             "borderColor": "#72e06a",
+                //             "yAxisID": "y",
+                //             "borderWidth":5
+                //         }
+                //     ]);
+                //     plugins = json!({
+                //         "title": {
+                //             "display": true,
+                //             "text": "Scalability cache-exceed",
+                //             "font": {
+                //                 "size": 60
+                //             }
+                //         }
+                //     });
+                //     scales = json!({
+                //         "x": {
+                //             "ticks": {
+                //                 "font": {
+                //                     "size": 40
+                //                 }
+                //             }
+                //         },
+                //         "y": {
+                //             "ticks": {
+                //                 "font": {
+                //                     "size": 40
+                //                 },
+                //                 "min": 0
+                //             },
+                //             "text": "Throughput [M rec/s]",
+                //             "type": "linear",
+                //             "display": true,
+                //             "position": "left"
+                //         }
+                //     });
+                //     options = json!({
+                //         "responsive": true,
+                //         "plugins": plugins,
+                //         "scales": scales,
+                //     });
+                // }
             }
             let config = json!({
                 "type": chart_type,
