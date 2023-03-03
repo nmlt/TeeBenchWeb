@@ -51,7 +51,7 @@ async fn compile_and_run(conf: ProfilingConfiguration) -> Report {
     }
     let mut report = Report {
         config: conf,
-        results: HashMap::new(),
+        results: vec![],
         findings: vec![],
     };
     for (args, task) in tasks {
@@ -62,7 +62,7 @@ async fn compile_and_run(conf: ProfilingConfiguration) -> Report {
         let mut iter = rdr.deserialize();
         // iter.next(); // First line is skipped anyway because a header is expected.
         let exp_result: ExperimentResult = iter.next().unwrap().unwrap();
-        report.results.insert(args, exp_result);
+        report.results.push((args, exp_result));
     }
     report
 }

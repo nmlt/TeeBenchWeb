@@ -26,7 +26,11 @@ extern "C" {
     pub fn hljs_highlight(code: String) -> String;
 }
 
-const COLORS: [&str; 3] = ["#de3d82", "#72e06a", "#e6ab48"];
+//const COLORS: [&str; 2] = ["#de3d82", "#72e06a"]; // Original colors
+const COLORS: [&str; 15] = [
+    "#359B73", "#f0e442", "#000000", "#2271B2", "#AA0DB4", "#FF54ED", "#F748A5", "#00B19F",
+    "#EB057A", "#d55e00", "#F8071D", "#3DB7E9", "#e69f00", "#FF8D1A", "#9EFF37",
+];
 
 #[derive(Clone, PartialEq, Default, Store)]
 pub struct ChartState(MyChart, bool);

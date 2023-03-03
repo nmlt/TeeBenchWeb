@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use serde_with::serde_as;
 use time::{Duration, OffsetDateTime};
 
 use indoc::writedoc;
@@ -54,12 +53,10 @@ impl Commit {
     }
 }
 
-#[serde_as]
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Report {
     pub config: ProfilingConfiguration,
-    #[serde_as(as = "Vec<(_, _)>")]
-    pub results: HashMap<TeebenchArgs, ExperimentResult>,
+    pub results: Vec<(TeebenchArgs, ExperimentResult)>,
     pub findings: Vec<Finding>,
 }
 
@@ -645,13 +642,13 @@ mod tests {
     fn serde_json_report() {
         let mut report_struct = Report {
             config: ProfilingConfiguration::default(),
-            results: HashMap::new(),
+            results: vec![],
             findings: vec![],
         };
         report_struct
             .results
-            .insert(TeebenchArgs::default(), ExperimentResult::default());
-        let report_json = serde_json::to_string(&report_struct).unwrap();
+            .push((TeebenchArgs::default(), ExperimentResult::default()));
+        let _report_json = serde_json::to_string(&report_struct).unwrap();
     }
 
     #[test]
