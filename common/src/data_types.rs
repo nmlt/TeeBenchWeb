@@ -110,7 +110,6 @@ impl Finding {
     }
 }
 
-
 pub type JobResult = Result<Report, TeeBenchWebError>;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -574,13 +573,13 @@ impl std::fmt::Display for Commandline {
     }
 }
 
-use structopt::StructOpt;
 use std::path::PathBuf;
+use structopt::StructOpt;
 
 #[derive(Debug, Clone, StructOpt, PartialEq, Eq, Hash, Default, Deserialize, Serialize)]
 #[structopt(
     name = "teebench",
-    about = "fake placeholder for testing that outputs teebench output. Because I don't have SGX on my dev machine.",
+    about = "fake placeholder for testing that outputs teebench output. Because I don't have SGX on my dev machine."
 )]
 pub struct TeebenchArgs {
     /// The name of the application. Used to determine whether it is simulating Sgx or native.
@@ -639,8 +638,8 @@ pub struct TeebenchArgs {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::str::FromStr;
     use serde_json::json;
+    use std::str::FromStr;
 
     #[test]
     fn serde_json_report() {
@@ -649,7 +648,9 @@ mod tests {
             results: HashMap::new(),
             findings: vec![],
         };
-        report_struct.results.insert(TeebenchArgs::default(), ExperimentResult::default());
+        report_struct
+            .results
+            .insert(TeebenchArgs::default(), ExperimentResult::default());
         let report_json = serde_json::to_string(&report_struct).unwrap();
     }
 

@@ -1,5 +1,5 @@
-use std::collections::VecDeque;
 use std::collections::HashMap;
+use std::collections::VecDeque;
 use std::env::var;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -10,7 +10,7 @@ use tokio::sync::{mpsc, oneshot};
 use tracing::{error, info, instrument, warn};
 
 use common::data_types::{
-    Commandline, Job, Platform, ProfilingConfiguration, Report, ExperimentResult,
+    Commandline, ExperimentResult, Job, Platform, ProfilingConfiguration, Report,
 };
 
 async fn compile_and_run(conf: ProfilingConfiguration) -> Report {
