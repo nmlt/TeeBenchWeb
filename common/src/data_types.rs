@@ -307,8 +307,8 @@ impl Platform {
     }
     pub fn to_app_name(&self) -> String {
         match self {
-            Self::Sgx => "./fake_teebench".to_string(),
-            Self::Native => "./fake_teebench".to_string(),
+            Self::Sgx => "./sgx".to_string(),
+            Self::Native => "./native".to_string(),
         }
     }
     pub fn arg0_to_platform() -> Platform {

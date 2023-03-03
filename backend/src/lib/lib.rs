@@ -24,17 +24,17 @@ async fn compile_and_run(conf: ProfilingConfiguration) -> Report {
         // Each task should get the full "power" of the machine, so don't run them in parallel.
         let handle = tokio::task::spawn(async move {
             let cmd = cmd_moved.clone();
-            // match cmd.app {
-            //     Platform::Sgx => {
-            //         tee_bench_dir.push("sgx");
-            //     }
-            //     Platform::Native => {
-            //         tee_bench_dir.push("native");
-            //     }
-            // }
+            match cmd.app {
+                Platform::Sgx => {
+                    tee_bench_dir.push("sgx");
+                }
+                Platform::Native => {
+                    tee_bench_dir.push("native");
+                }
+            }
+            // This assumes that the Makefile of TeeBench has a different app name ("sgx" or "native"). See `common::data_types::Platform::to_app_name()`.
             // TokioCommand::new("make").current_dir(tee_bench_dir).args(["clean"]).status().await.expect("Failed to run make clean");
             // TokioCommand::new("make").current_dir(tee_bench_dir).args(["-B", "sgx"]).status().await.expect("Failed to compile sgx version of TeeBench");
-            // This assumes that the Makefile of TeeBench has a different app name ("sgx"). See common::data_types::CommandLine::app.to_app_name().
             let output = to_command(cmd.clone())
                 .current_dir(tee_bench_dir)
                 .output()
