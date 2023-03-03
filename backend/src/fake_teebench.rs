@@ -5,73 +5,13 @@ use anyhow::{anyhow, Result};
 use indoc::indoc;
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
-use std::path::PathBuf;
 use std::thread::sleep;
 use std::time::Duration;
 use structopt::StructOpt;
 
 use common::data_types::{Algorithm, Dataset, Platform};
 
-#[derive(Debug, StructOpt, PartialEq, Eq, Default)]
-// #[allow(dead_code)]
-#[structopt(
-    name = "teebench",
-    about = "fake placeholder for testing that outputs teebench output. Because I don't have SGX on my dev machine."
-)]
-struct TeebenchArgs {
-    /// The name of the application. Used to determine whether it is simulating Sgx or native.
-    #[structopt(skip = std::env::args().next().unwrap())]
-    app_name: PathBuf,
-    ///`-a` - join algorithm name. Currently working: `CHT`, `PHT`, `PSM`, `RHO`, `RHT`, `RSM`. Default: `RHO`
-    #[structopt(short = "a", long, default_value = "RHO")]
-    algorithm: Algorithm,
-    ///`-c` - seal chunk size in kBs. if set to 0 then seal everything at once. Default: `0`
-    #[structopt(short = "c", long, default_value = "0")]
-    seal_chunk_size: u32,
-    ///`-d` - name of pre-defined dataset. Currently working: `cache-fit`, `cache-exceed`, `L`. Default: `cache-fit`
-    #[structopt(short = "d", long, parse(try_from_str = Dataset::from_cmd_arg), default_value = "CacheFit")]
-    //#[structopt(skip = Dataset::CacheFit)]
-    dataset: Dataset,
-    ///`-l` - join selectivity. Should be a number between 0 and 100. Default: `100`
-    #[structopt(short = "l", long, default_value = "100")]
-    selectivity: u8,
-    ///`-n` - number of threads used to execute the join algorithm. Default: `2`
-    #[structopt(short = "n", long, default_value = "2")]
-    threads: u8,
-    ///`-r` - number of tuples of R relation. Default: `2097152`
-    #[structopt(short = "r", long, default_value = "2097152")]
-    r_tuples: u32,
-    ///`-s` - number of tuples of S relation. Default: `2097152`
-    #[structopt(short = "s", long, default_value = "2097152")]
-    s_tuples: u32,
-    ///`-t | --r-path` - filepath to build R relation. Default: `none`
-    #[structopt(short = "t", long)]
-    r_path: Option<String>,
-    ///`-u | --s-path` - filepath to build S relation. Default `none`
-    #[structopt(short = "u", long)]
-    s_path: Option<String>,
-    ///`-x` - size of R in MBs. Default: `none`
-    #[structopt(short = "x", long)]
-    r_size: Option<u32>,
-    ///`-y` - size of S in MBs. Default: `none`
-    #[structopt(short = "y", long)]
-    s_size: Option<u32>,
-    ///`-z` - data skew. Default: `0`
-    #[structopt(short = "z", long, default_value = "0")]
-    data_skew: u32,
-    ///`--seal` - flag to seal join input data. Default: `false`
-    #[structopt(long = "seal")]
-    seal: bool,
-    ///`--sort-r` - flag to pre-sort relation R. Default: `false`
-    #[structopt(long = "sort-r")]
-    sort_r: bool,
-    ///`--sort-s` - flag to pre-sort relation S. Default: `false`
-    #[structopt(long = "sort-s")]
-    sort_s: bool,
-    ///Change output to only print out data in csv format
-    #[structopt(long)]
-    csv: bool,
-}
+use common::data_types::TeebenchArgs;
 
 fn main() -> Result<()> {
     let opt = TeebenchArgs::from_args();
@@ -79,16 +19,7 @@ fn main() -> Result<()> {
     if !opt.csv {
         return Err(anyhow!("Only CSV output supported"));
     }
-    let platform = match opt.app_name.file_name() {
-        None => unreachable!(), // The application has to have a name, right?
-        Some(name) => match name.to_str().unwrap() {
-            "fake_teebench" | "sgx" => Platform::Sgx,
-            "native" => Platform::Native,
-            name => {
-                return Err(anyhow!("Unknown app name: {name:?}"));
-            }
-        },
-    };
+    let platform = opt.app_name;
     if let Some(output) = CSV_OUTPUT.get(&(platform, opt.algorithm.clone(), opt.dataset.clone())) {
         let mut rdr = csv::Reader::from_reader(output.as_bytes());
         let mut iter = rdr.records();

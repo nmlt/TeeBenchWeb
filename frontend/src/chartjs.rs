@@ -1,11 +1,12 @@
-use common::data_types::{ExperimentType, Report, Measurement};
-//use gloo_console::log;
+use common::data_types::{ExperimentType, Report, Measurement, Parameter};
+use gloo_console::log;
 use js_sys::Object;
 use serde_json::json;
 use wasm_bindgen::prelude::wasm_bindgen;
 use web_sys::HtmlCanvasElement;
 use yew::prelude::*;
 use yewdux::prelude::*;
+use std::collections::HashMap;
 
 #[allow(non_snake_case)]
 #[wasm_bindgen(module = "/deps/MyChart.js")]
@@ -51,34 +52,53 @@ pub fn Chart(ChartProps { report }: &ChartProps) -> Html {
             let options;
             match report.config.experiment_type {
                 ExperimentType::Custom => {
-                    chart_type = match report.config.measurement {
-                        Measurement::EpcPaging => "bar",
-                        Measurement::Throughput => "line",
-                    };
+                    let mut heading;
+                    match report.config.measurement {
+                        Measurement::EpcPaging => {
+                            chart_type = "line";
+                            heading = String::from("EPC Paging with varying ");
+                        } // TODO Not actually supported yet.
+                        Measurement::Throughput => {
+                            chart_type = "line";
+                            heading = String::from("Throughput with varying ");
+                        }
+                    }
+                    match report.config.parameter {
+                        Parameter::Threads => {
+                            heading.push_str("Threads");
+                        }
+                        Parameter::DataSkew => {
+                            heading.push_str("Data Skew");
+                        }
+                        Parameter::JoinSelectivity => {
+                            heading.push_str("Join Selectivity");
+                        }
+                    }
                     let steps: Vec<_> = report.config.param_value_iter().collect();
                     labels = json!(steps);
-                    datasets = json!([
-                        {
-                            "label": "v2.1",
-                            "data": [11.54,16.73,19.05,18.78,18.32,17.97,17.58,16.39],
-                            "backgroundColor": "#de3d82",
-                            "borderColor": "#de3d82",
+                    let mut data = HashMap::new();
+                    // TODO sort report.results by alg (first) and param (second)
+                    for (args, result) in report.results {
+                        let v = data.entry(args.algorithm).or_insert(vec![]);
+                        v.push(result.throughput);
+                    }
+                    let colors = ["#de3d82", "#72e06a", "#e6ab48"];
+                    let mut datasets_prep = vec![];
+                    for (i, (alg, throughputs)) in data.iter().enumerate() {
+                        datasets_prep.push(json!({
+                            "label": alg.to_string(),
+                            "data": throughputs,
+                            "backgroundColor": colors[i],
+                            "borderColor": colors[i],
                             "yAxisID": "y",
                             "borderWidth":5
-                        },
-                        {
-                            "label": "v2.2",
-                            "data": [12.84,17.03,21.05,21.78,19.32,18.54,18.01,17.09],
-                            "backgroundColor": "#72e06a",
-                            "borderColor": "#72e06a",
-                            "yAxisID": "y",
-                            "borderWidth":5
-                        }
-                    ]);
+                        }));
+                    }
+                    datasets = json!(datasets_prep);
                     plugins = json!({
                         "title": {
                             "display": true,
-                            "text": "Scalability cache-exceed",
+                            "text": heading,
                             "font": {
                                 "size": 60
                             }

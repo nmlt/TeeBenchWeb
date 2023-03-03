@@ -139,19 +139,14 @@ async fn handle_socket(mut socket: WebSocket, queue_state: Arc<QueueState>) {
                         }
                     },
                     Job::Finished { config, submitted, runtime, result } => {
-                        if socket.send(
-                            Message::Binary(
-                                serde_json::to_vec(
-                                    &QueueMessage::RemoveQueueItem(Job::Finished {
+                        let msg = QueueMessage::RemoveQueueItem(Job::Finished {
                                         config,
                                         submitted,
                                         runtime,
                                         result
-                                    })
-                                )
-                                .unwrap()
-                            )).await
-                            .is_err() {
+                                    });
+                        let serialized = serde_json::to_vec(&msg).unwrap();
+                        if socket.send(Message::Binary(serialized)).await.is_err() {
                             error!("Sending finished queue job to client failed: Client disconnected.");
                             return;
                         }

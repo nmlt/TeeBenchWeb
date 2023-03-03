@@ -6,7 +6,7 @@ export class MyChart {
     draw(context, config) {
         let obj_config = JSON.parse(config);
         if (this.chart) {
-            console.log("this.chart wasn't undefined.");
+            console.log("(This should not happen) this.chart wasn't undefined.");
             let data = obj_config.data;
             let options = obj_config.options;
             this.chart.data = data;

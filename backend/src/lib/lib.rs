@@ -1,4 +1,5 @@
 use std::collections::VecDeque;
+use std::collections::HashMap;
 use std::env::var;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -16,11 +17,13 @@ async fn compile_and_run(conf: ProfilingConfiguration) -> Report {
     let tee_bench_dir =
         PathBuf::from(var("TEEBENCHWEB_RUN_DIR").expect("TEEBENCHWEB_RUN_DIR not set"));
     let cmds = conf.to_teebench_cmd();
-    let mut tasks = vec![];
+    let mut tasks = HashMap::new();
     for cmd in cmds {
         let mut tee_bench_dir = tee_bench_dir.clone();
+        let cmd_moved = cmd.clone();
         // Each task should get the full "power" of the machine, so don't run them in parallel.
         let handle = tokio::task::spawn(async move {
+            let cmd = cmd_moved.clone();
             // match cmd.app {
             //     Platform::Sgx => {
             //         tee_bench_dir.push("sgx");
@@ -31,7 +34,7 @@ async fn compile_and_run(conf: ProfilingConfiguration) -> Report {
             // }
             // TokioCommand::new("make").current_dir(tee_bench_dir).args(["clean"]).status().await.expect("Failed to run make clean");
             // TokioCommand::new("make").current_dir(tee_bench_dir).args(["-B", "sgx"]).status().await.expect("Failed to compile sgx version of TeeBench");
-            // This assumes that the Makefile of TeeBench has a different app name ("sgx"). See common::data_types::CommandLine::app_string().
+            // This assumes that the Makefile of TeeBench has a different app name ("sgx"). See common::data_types::CommandLine::app.to_app_name().
             let output = to_command(cmd.clone())
                 .current_dir(tee_bench_dir)
                 .output()
@@ -44,14 +47,14 @@ async fn compile_and_run(conf: ProfilingConfiguration) -> Report {
             output.stdout
         })
         .await;
-        tasks.push(handle);
+        tasks.insert(cmd.to_teebench_args(), handle);
     }
     let mut report = Report {
         config: conf,
-        results: vec![],
+        results: HashMap::new(),
         findings: vec![],
     };
-    for task in tasks {
+    for (args, task) in tasks {
         let res = task.unwrap();
         let human_readable = String::from_utf8(res.clone()).unwrap();
         info!("Task output:\n```\n{human_readable}\n```");
@@ -59,7 +62,7 @@ async fn compile_and_run(conf: ProfilingConfiguration) -> Report {
         let mut iter = rdr.deserialize();
         // iter.next(); // First line is skipped anyway because a header is expected.
         let exp_result: ExperimentResult = iter.next().unwrap().unwrap();
-        report.results.push(exp_result);
+        report.results.insert(args, exp_result);
     }
     report
 }
@@ -143,7 +146,7 @@ pub async fn profiling_task(
 
 /// Consumes `Commandline` and makes a tokio process out of it.
 fn to_command(cmdline: Commandline) -> TokioCommand {
-    let mut cmd = TokioCommand::new(cmdline.app_string());
+    let mut cmd = TokioCommand::new(cmdline.app.to_app_name());
     cmd.args(cmdline.args);
     cmd
 }

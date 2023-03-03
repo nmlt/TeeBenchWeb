@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
 use time::{Duration, OffsetDateTime};
 
 use indoc::writedoc;
@@ -7,7 +8,7 @@ use strum_macros::{Display, EnumIter, EnumString, EnumVariantNames};
 use thiserror::Error;
 use yewdux::prelude::Store;
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 
 #[derive(Error, Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
@@ -53,10 +54,12 @@ impl Commit {
     }
 }
 
+#[serde_as]
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Report {
     pub config: ProfilingConfiguration,
-    pub results: Vec<ExperimentResult>, // TODO Possibly switch to a HashMap of TeeBenchArgs, ExperimentResult
+    #[serde_as(as = "Vec<(_, _)>")]
+    pub results: HashMap<TeebenchArgs, ExperimentResult>,
     pub findings: Vec<Finding>,
 }
 
@@ -184,12 +187,12 @@ pub enum Algorithm {
 )]
 #[strum(serialize_all = "title_case")]
 pub enum ExperimentType {
-    #[default]
     #[strum(to_string = "EPC Paging")]
     EpcPaging,
     Throughput,
     #[strum(to_string = "CPU Cycles/Tuple")]
     CpuCyclesTuple,
+    #[default]
     Custom,
 }
 
@@ -291,6 +294,37 @@ pub enum Platform {
     Native,
 }
 
+impl Platform {
+    pub fn from_app_name(s: &str) -> Result<Self, String> {
+        match s {
+            "fake_teebench" | "sgx" | "app" => Ok(Self::Sgx),
+            "native" => Ok(Self::Native),
+            name => {
+                let msg = format!("Platform cannot be {name}");
+                Err(msg)
+            }
+        }
+    }
+    pub fn to_app_name(&self) -> String {
+        match self {
+            Self::Sgx => "./fake_teebench".to_string(),
+            Self::Native => "./fake_teebench".to_string(),
+        }
+    }
+    pub fn arg0_to_platform() -> Platform {
+        // A program always has a name (right?).
+        let arg0: String = std::env::args().next().unwrap();
+        let p = PathBuf::from(arg0);
+        // Impossible for the file name not to be valid utf-8, we just converted it from a (valid utf-8) String.
+        let name = p.file_name().unwrap().to_str().unwrap();
+        let Ok(pl) = Platform::from_app_name(name) else {
+            // TODO Fix this. But ignore for now.
+            return Platform::Sgx;
+        };
+        pl
+    }
+}
+
 pub type StepType = i64;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Store)]
@@ -357,7 +391,7 @@ impl Default for ProfilingConfiguration {
             parameter: Parameter::default(),
             measurement: Measurement::default(),
             min: 2,
-            max: 2,
+            max: 8,
             step: 1,
             dataset: HashSet::from([Dataset::CacheExceed, Dataset::CacheFit]),
             platform: HashSet::from([Platform::default()]),
@@ -378,6 +412,7 @@ impl std::fmt::Display for ProfilingConfiguration {
                     min: {}
                     max: {}
                     step: {}
+                Measurement: {}
                 Dataset: {:?}
                 Platform: {:?}
                 Pre-sort data: {}
@@ -388,6 +423,7 @@ impl std::fmt::Display for ProfilingConfiguration {
             self.min,
             self.max,
             self.step,
+            self.measurement,
             self.dataset,
             self.platform,
             self.sort_data
@@ -445,28 +481,30 @@ impl ProfilingConfiguration {
         }
         res
     }
+    /// Set default values for preconfigured experiment types. These then overwrite the values previously entered in the config form (if called in the frontend/profiling.rs in a dispatch). Not useful for now, as the config form can not represent the preconfigured experiments.
+    // TODO This actually does not work for the <select> elements (at least it doesn't display the change. The store value changes).
     pub fn set_preconfigured_experiment(&mut self) {
         match self.experiment_type {
             ExperimentType::Throughput => {
-                self.parameter = Parameter::Threads;
+                // self.parameter = Parameter::Threads;
                 self.measurement = Measurement::Throughput;
-                self.min = 2;
-                self.max = 2;
-                self.step = 1;
-                self.dataset = HashSet::from([Dataset::CacheExceed, Dataset::CacheFit]);
-                self.platform = HashSet::from([Platform::Sgx]);
-                self.sort_data = false;
+                // self.min = 2;
+                // self.max = 2;
+                // self.step = 1;
+                // self.dataset = HashSet::from([Dataset::CacheExceed, Dataset::CacheFit]);
+                // self.platform = HashSet::from([Platform::Sgx]);
+                // self.sort_data = false;
             }
             ExperimentType::EpcPaging => {
                 self.measurement = Measurement::EpcPaging;
-                self.platform = HashSet::from([Platform::Sgx]);
-                self.sort_data = false;
+                // self.platform = HashSet::from([Platform::Sgx]);
+                // self.sort_data = false;
             }
             ExperimentType::CpuCyclesTuple => {
                 self.measurement = Measurement::Throughput;
-                self.dataset = HashSet::from([Dataset::CacheExceed, Dataset::CacheFit]);
-                self.platform = HashSet::from([Platform::Sgx]);
-                self.sort_data = false;
+                // self.dataset = HashSet::from([Dataset::CacheExceed, Dataset::CacheFit]);
+                // self.platform = HashSet::from([Platform::Sgx]);
+                // self.sort_data = false;
             }
             ExperimentType::Custom => (),
         }
@@ -520,25 +558,100 @@ impl Commandline {
             }
         }
     }
-    pub fn app_string(&self) -> String {
-        match self.app {
-            Platform::Sgx => "./fake_teebench".to_string(),
-            Platform::Native => "./fake_teebench".to_string(),
-        }
+    pub fn to_teebench_args(&self) -> TeebenchArgs {
+        let app_name = vec![self.app.to_app_name()];
+        let iter = app_name.iter().chain(self.args.iter());
+        let mut args = TeebenchArgs::from_iter_safe(iter).unwrap();
+        args.app_name = self.app;
+        args
     }
 }
 
 impl std::fmt::Display for Commandline {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let args_joined = self.args.join(" ");
-        write!(f, "{} {}", self.app_string(), args_joined)
+        write!(f, "{} {}", self.app.to_app_name(), args_joined)
     }
+}
+
+use structopt::StructOpt;
+use std::path::PathBuf;
+
+#[derive(Debug, Clone, StructOpt, PartialEq, Eq, Hash, Default, Deserialize, Serialize)]
+#[structopt(
+    name = "teebench",
+    about = "fake placeholder for testing that outputs teebench output. Because I don't have SGX on my dev machine.",
+)]
+pub struct TeebenchArgs {
+    /// The name of the application. Used to determine whether it is simulating Sgx or native.
+    #[structopt(skip = Platform::arg0_to_platform())]
+    pub app_name: Platform,
+    ///`-a` - join algorithm name. Currently working: see `common::data_types::Algorithm`.
+    #[structopt(short = "a", long, default_value = "RHO")]
+    pub algorithm: Algorithm,
+    ///`-c` - seal chunk size in kBs. if set to 0 then seal everything at once. Default: `0`
+    #[structopt(short = "c", long, default_value = "0")]
+    pub seal_chunk_size: u32,
+    ///`-d` - name of pre-defined dataset. Currently working: `cache-fit`, `cache-exceed`. Default: `cache-fit`
+    #[structopt(short = "d", long, parse(try_from_str = Dataset::from_cmd_arg), default_value = "cache-fit")]
+    pub dataset: Dataset,
+    ///`-l` - join selectivity. Should be a number between 0 and 100. Default: `100`
+    #[structopt(short = "l", long, default_value = "100")]
+    pub selectivity: u8,
+    ///`-n` - number of threads used to execute the join algorithm. Default: `2`
+    #[structopt(short = "n", long, default_value = "2")]
+    pub threads: u8,
+    ///`-r` - number of tuples of R relation. Default: `2097152`
+    #[structopt(short = "r", long, default_value = "2097152")]
+    pub r_tuples: u32,
+    ///`-s` - number of tuples of S relation. Default: `2097152`
+    #[structopt(short = "s", long, default_value = "2097152")]
+    pub s_tuples: u32,
+    ///`-t | --r-path` - filepath to build R relation. Default: `none`
+    #[structopt(short = "t", long)]
+    pub r_path: Option<String>,
+    ///`-u | --s-path` - filepath to build S relation. Default `none`
+    #[structopt(short = "u", long)]
+    pub s_path: Option<String>,
+    ///`-x` - size of R in MBs. Default: `none`
+    #[structopt(short = "x", long)]
+    pub r_size: Option<u32>,
+    ///`-y` - size of S in MBs. Default: `none`
+    #[structopt(short = "y", long)]
+    pub s_size: Option<u32>,
+    ///`-z` - data skew. Default: `0`
+    #[structopt(short = "z", long, default_value = "0")]
+    pub data_skew: u32,
+    ///`--seal` - flag to seal join input data. Default: `false`
+    #[structopt(long = "seal")]
+    pub seal: bool,
+    ///`--sort-r` - flag to pre-sort relation R. Default: `false`
+    #[structopt(long = "sort-r")]
+    pub sort_r: bool,
+    ///`--sort-s` - flag to pre-sort relation S. Default: `false`
+    #[structopt(long = "sort-s")]
+    pub sort_s: bool,
+    ///Change output to only print out data in csv format
+    #[structopt(long)]
+    pub csv: bool,
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::str::FromStr;
+    use serde_json::json;
+
+    #[test]
+    fn serde_json_report() {
+        let mut report_struct = Report {
+            config: ProfilingConfiguration::default(),
+            results: HashMap::new(),
+            findings: vec![],
+        };
+        report_struct.results.insert(TeebenchArgs::default(), ExperimentResult::default());
+        let report_json = serde_json::to_string(&report_struct).unwrap();
+    }
 
     #[test]
     fn dataset_to_from_string() {
