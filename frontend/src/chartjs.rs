@@ -26,6 +26,8 @@ extern "C" {
     pub fn hljs_highlight(code: String) -> String;
 }
 
+const COLORS: [&str; 3] = ["#de3d82", "#72e06a", "#e6ab48"];
+
 #[derive(Clone, PartialEq, Default, Store)]
 pub struct ChartState(MyChart, bool);
 
@@ -53,14 +55,17 @@ pub fn Chart(ChartProps { report }: &ChartProps) -> Html {
             match report.config.experiment_type {
                 ExperimentType::Custom => {
                     let mut heading;
+                    let y_axis_text;
                     match report.config.measurement {
                         Measurement::EpcPaging => {
-                            chart_type = "line";
+                            chart_type = "bar";
                             heading = String::from("EPC Paging with varying ");
+                            y_axis_text = "EPC Misses";
                         } // TODO Not actually supported yet.
                         Measurement::Throughput => {
                             chart_type = "line";
                             heading = String::from("Throughput with varying ");
+                            y_axis_text = "Throughput [M rec/s]";
                         }
                     }
                     match report.config.parameter {
@@ -77,19 +82,18 @@ pub fn Chart(ChartProps { report }: &ChartProps) -> Html {
                     let steps: Vec<_> = report.config.param_value_iter().collect();
                     labels = json!(steps);
                     let mut data = HashMap::new();
-                    // TODO sort report.results by alg (first) and param (second)
+                    // TODO sort report.results by dataset, platform, alg and param
                     for (args, result) in report.results {
                         let v = data.entry(args.algorithm).or_insert(vec![]);
                         v.push(result.throughput);
                     }
-                    let colors = ["#de3d82", "#72e06a", "#e6ab48"];
                     let mut datasets_prep = vec![];
                     for (i, (alg, throughputs)) in data.iter().enumerate() {
                         datasets_prep.push(json!({
                             "label": alg.to_string(),
                             "data": throughputs,
-                            "backgroundColor": colors[i],
-                            "borderColor": colors[i],
+                            "backgroundColor": COLORS[i],
+                            "borderColor": COLORS[i],
                             "yAxisID": "y",
                             "borderWidth":5
                         }));
@@ -119,7 +123,7 @@ pub fn Chart(ChartProps { report }: &ChartProps) -> Html {
                                 },
                                 "min": 0
                             },
-                            "text": "Throughput [M rec/s]",
+                            "text": y_axis_text,
                             "type": "linear",
                             "display": true,
                             "position": "left"
@@ -323,146 +327,7 @@ pub fn Chart(ChartProps { report }: &ChartProps) -> Html {
                         "plugins": plugins,
                         "scales": scales,
                     });
-                } // ExperimentType::EpcPaging => {
-                  //     chart_type = "bar";
-                  //     labels =
-                  //         json!([8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128]);
-                  //     datasets = json!([
-                  //         {
-                  //           "label": "Throughput",
-                  //           "data": [64.22,26.54,23.16,22.0,21.32,19.29,16.59,15.68,13.61,12.65,12.07,1.37,0.97,1.0,1.04,1.15],
-                  //           "borderColor": "#de3d82",
-                  //           "backgroundColor": "#de3d82",
-                  //           "order": 0,
-                  //           "type": "line",
-                  //           "yAxisID": "y",
-                  //           "borderWidth":5
-                  //         },
-                  //         {
-                  //           "label": "EPC Paging",
-                  //           "data": [289860,293995,298271,302353,306725,318300,332876,341882,359938,372715,386494,1283342,1838011,1851572,1862953,1870652],
-                  //           "borderColor": "#7e84fa",
-                  //           "backgroundColor": "#7e84fa",
-                  //           "order": 1,
-                  //           "yAxisID": "y1",
-                  //         }
-                  //     ]);
-                  //     plugins = json!({
-                  //         "legend": {
-                  //             "position": "top",
-                  //         },
-                  //         "title": {
-                  //             "display": true,
-                  //             "text": "EPC Paging",
-                  //             "font": {"size":40}
-                  //         }
-                  //     });
-                  //     scales = json!({
-                  //         "x": {
-                  //             "ticks": {"font": {"size":20}},
-                  //             "title" : {
-                  //                 "display": true,
-                  //                 "text": "Size of R [MB]",
-                  //                 "font": {
-                  //                     "size": 25
-                  //                 }
-                  //             }
-                  //         },
-                  //         "y": {
-                  //             "text": "Throughput [M rec/s]",
-                  //             "type": "linear",
-                  //             "display": true,
-                  //             "position": "left",
-                  //             "ticks": {"font": {"size": 20}},
-                  //             "title" : {
-                  //                 "display": true,
-                  //                 "text": "Throughput [M rec/s]",
-                  //                 "font": {
-                  //                     "size": 25
-                  //                 }
-                  //             }
-                  //         },
-                  //         "y1": {
-                  //             "type": "linear",
-                  //             "display": true,
-                  //             "position": "right",
-                  //             "ticks": {"font": {"size": 20}},
-                  //             // grid line settings
-                  //             "grid": {
-                  //                 "drawOnChartArea": false, // only want the grid lines for one axis to show up
-                  //             },
-                  //             "title" : {
-                  //                 "display": true,
-                  //                 "text": "EPC Misses",
-                  //                 "font": {
-                  //                     "size": 25
-                  //                 }
-                  //             }
-                  //         }
-                  //     });
-                  //     options = json!({
-                  //         "responsive": true,
-                  //         "plugins": plugins,
-                  //         "scales": scales,
-                  //     });
-                  // }
-                  // ExperimentType::Custom => {
-                  //     chart_type = "line";
-                  //     labels = json!([1, 2, 3, 4, 5, 6, 7, 8]);
-                  //     datasets = json!([
-                  //         {
-                  //             "label": "v2.1",
-                  //             "data": [11.54,16.73,19.05,18.78,18.32,17.97,17.58,16.39],
-                  //             "backgroundColor": "#de3d82",
-                  //             "borderColor": "#de3d82",
-                  //             "yAxisID": "y",
-                  //             "borderWidth":5
-                  //         },
-                  //         {
-                  //             "label": "v2.2",
-                  //             "data": [12.84,17.03,21.05,21.78,19.32,18.54,18.01,17.09],
-                  //             "backgroundColor": "#72e06a",
-                  //             "borderColor": "#72e06a",
-                  //             "yAxisID": "y",
-                  //             "borderWidth":5
-                  //         }
-                  //     ]);
-                  //     plugins = json!({
-                  //         "title": {
-                  //             "display": true,
-                  //             "text": "Scalability cache-exceed",
-                  //             "font": {
-                  //                 "size": 60
-                  //             }
-                  //         }
-                  //     });
-                  //     scales = json!({
-                  //         "x": {
-                  //             "ticks": {
-                  //                 "font": {
-                  //                     "size": 40
-                  //                 }
-                  //             }
-                  //         },
-                  //         "y": {
-                  //             "ticks": {
-                  //                 "font": {
-                  //                     "size": 40
-                  //                 },
-                  //                 "min": 0
-                  //             },
-                  //             "text": "Throughput [M rec/s]",
-                  //             "type": "linear",
-                  //             "display": true,
-                  //             "position": "left"
-                  //         }
-                  //     });
-                  //     options = json!({
-                  //         "responsive": true,
-                  //         "plugins": plugins,
-                  //         "scales": scales,
-                  //     });
-                  // }
+                }
             }
             let config = json!({
                 "type": chart_type,
@@ -478,19 +343,9 @@ pub fn Chart(ChartProps { report }: &ChartProps) -> Html {
                 .get_context("2d")
                 .unwrap()
                 .unwrap();
-            // let my_chart = if store.1 {
-            //     store.0.clone()
-            // } else {
-            //     MyChart::new()
-            // };
             let my_chart = MyChart::new();
             my_chart.draw(context, &config.to_string());
 
-            // dispatch.reduce_mut(|state| {
-            //     log!("async Chart dispatch running.");
-            //     state.0 = my_chart.clone();
-            //     state.1 = true;
-            // });
             move || my_chart.destroy()
         },
         (),
