@@ -7,7 +7,7 @@ use strum_macros::{Display, EnumIter, EnumString, EnumVariantNames};
 use thiserror::Error;
 use yewdux::prelude::Store;
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::fmt::Display;
 
 #[derive(Error, Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
@@ -143,6 +143,8 @@ pub enum QueueMessage {
     Serialize,
     Deserialize,
     Default,
+    PartialOrd,
+    Ord,
     PartialEq,
     EnumString,
     Display,
@@ -219,6 +221,8 @@ pub enum Measurement {
     Serialize,
     Deserialize,
     Default,
+    PartialOrd,
+    Ord,
     PartialEq,
     Eq,
     Hash,
@@ -275,6 +279,8 @@ impl Dataset {
     Serialize,
     Deserialize,
     Default,
+    PartialOrd,
+    Ord,
     PartialEq,
     Eq,
     Hash,
@@ -573,7 +579,9 @@ impl std::fmt::Display for Commandline {
 use std::path::PathBuf;
 use structopt::StructOpt;
 
-#[derive(Debug, Clone, StructOpt, PartialEq, Eq, Hash, Default, Deserialize, Serialize)]
+#[derive(
+    Debug, Clone, StructOpt, PartialOrd, Ord, PartialEq, Eq, Hash, Default, Deserialize, Serialize,
+)]
 #[structopt(
     name = "teebench",
     about = "fake placeholder for testing that outputs teebench output. Because I don't have SGX on my dev machine."
@@ -582,15 +590,15 @@ pub struct TeebenchArgs {
     /// The name of the application. Used to determine whether it is simulating Sgx or native.
     #[structopt(skip = Platform::arg0_to_platform())]
     pub app_name: Platform,
+    ///`-d` - name of pre-defined dataset. Currently working: `cache-fit`, `cache-exceed`. Default: `cache-fit`
+    #[structopt(short = "d", long, parse(try_from_str = Dataset::from_cmd_arg), default_value = "cache-fit")]
+    pub dataset: Dataset,
     ///`-a` - join algorithm name. Currently working: see `common::data_types::Algorithm`.
     #[structopt(short = "a", long, default_value = "RHO")]
     pub algorithm: Algorithm,
     ///`-c` - seal chunk size in kBs. if set to 0 then seal everything at once. Default: `0`
     #[structopt(short = "c", long, default_value = "0")]
     pub seal_chunk_size: u32,
-    ///`-d` - name of pre-defined dataset. Currently working: `cache-fit`, `cache-exceed`. Default: `cache-fit`
-    #[structopt(short = "d", long, parse(try_from_str = Dataset::from_cmd_arg), default_value = "cache-fit")]
-    pub dataset: Dataset,
     ///`-l` - join selectivity. Should be a number between 0 and 100. Default: `100`
     #[structopt(short = "l", long, default_value = "100")]
     pub selectivity: u8,
@@ -635,7 +643,6 @@ pub struct TeebenchArgs {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::json;
     use std::str::FromStr;
 
     #[test]

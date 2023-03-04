@@ -1,5 +1,5 @@
 use common::data_types::{ExperimentType, Measurement, Parameter, Report};
-use gloo_console::log;
+// use gloo_console::log;
 use js_sys::Object;
 use serde_json::json;
 use std::collections::HashMap;
@@ -48,7 +48,7 @@ pub fn Chart(ChartProps { report }: &ChartProps) -> Html {
     //let (store, dispatch) = use_store::<ChartState>();
     use_effect_with_deps(
         move |_| {
-            let report = report.clone();
+            let mut report = report.clone();
             let canvas_ref = move_canvas_ref.clone();
             let chart_type;
             let labels;
@@ -86,18 +86,26 @@ pub fn Chart(ChartProps { report }: &ChartProps) -> Html {
                     let steps: Vec<_> = report.config.param_value_iter().collect();
                     labels = json!(steps);
                     let mut data = HashMap::new();
-                    // TODO sort report.results by dataset, platform, alg and param
+                    report.results.sort_unstable_by(|(a, _), (b, _)| a.cmp(b));
                     for (args, result) in report.results {
-                        let v = data.entry(args.algorithm).or_insert(vec![]);
-                        v.push(result.throughput);
+                        let v = data
+                            .entry((args.algorithm, args.app_name, args.dataset))
+                            .or_insert(vec![]);
+                        v.push(match report.config.measurement {
+                            Measurement::EpcPaging => result.throughput, // TODO Add EPC Paging.
+                            Measurement::Throughput => result.throughput,
+                        });
                     }
                     let mut datasets_prep = vec![];
-                    for (i, (alg, throughputs)) in data.iter().enumerate() {
+
+                    for (((alg, platform, ds), data_value), color) in
+                        data.iter().zip(COLORS.iter().cycle())
+                    {
                         datasets_prep.push(json!({
-                            "label": alg.to_string(),
-                            "data": throughputs,
-                            "backgroundColor": COLORS[i],
-                            "borderColor": COLORS[i],
+                            "label": format!("{alg} on {platform} with dataset {ds}"),
+                            "data": data_value,
+                            "backgroundColor": color,
+                            "borderColor": color,
                             "yAxisID": "y",
                             "borderWidth":5
                         }));

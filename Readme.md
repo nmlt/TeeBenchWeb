@@ -13,13 +13,15 @@ Requirements
 Running the server app with the web app
 ---------------------------------------
 
-Use `run.sh` and set the environment variable `TEEBENCHWEB_RUN_DIR` to the directory of TeeBench:
+Use `run.sh`. You can set the environment variable `TEEBENCHWEB_RUN_DIR` to a directory with two versions of TeeBench: one folder, called "sgx" with an SGX version of TeeBench, where the executable is called `sgx`. And another folder, called "native" with the executable called `native`.
+
+If you do not set this environment variable, TeeBenchWeb will use a fake version of TeeBench which outputs precomputed results.
 
 ```sh
 export TEEBENCHWEB_RUN_DIR="<path to TeeBench>"; ./run.sh
 ```
 
-Or, first build the web app while in the `frontend` directory with `trunk build`. Then change to the `backend` directory and run the axum server: `cargo run` (This part needs the environment variable `TEEBENCHWEB_RUN_DIR` set to the directory of TeeBench).
+Or, first build the web app while in the `frontend` directory with `trunk build`. Then change to the `backend` directory and run the axum server: `cargo run` (This part needs the environment variable `TEEBENCHWEB_RUN_DIR` set to the directory of TeeBench, as explained above).
 
 Running the axum server from the workspace does not work, as the path to the `dist` directory that trunk created is then wrong. Just switch to the `backend` directory or use the `run.sh` script.
 
