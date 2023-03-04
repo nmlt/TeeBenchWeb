@@ -39,7 +39,7 @@ pub struct Commit {
     pub operator: Operator,
     pub datetime: OffsetDateTime,
     pub code: String,
-    pub reports: Vec<Report>,
+    pub reports: Vec<Report>, // TODO Change to JobResult and save baseline somewhere (per report? no several reports per baseline)
     /// Top level findings (diplayed above all the charts in the performance report).
     pub findings: Vec<Finding>,
     // TODO Add an ID that the server generates to uniquely identify a commit, independently of the user supplied title.
@@ -59,14 +59,18 @@ impl Commit {
             datetime,
             code,
             reports,
-            findings: vec![],
+            findings: vec![Finding::new("Performance Difference", "+ 3.6 %", FindingStyle::Good),
+        Finding::new("Phase 1: Partition", "180/191 (+0)", FindingStyle::SoSo),
+        Finding::new("Phase 2: Join", "11/191 (-4)", FindingStyle::Good),
+        Finding::new("EPC Paging", "- 0.4 %", FindingStyle::Good),],
         }
     }
 }
 
+/// One report can be transformed to one chart with findings
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct Report {
-    pub config: ProfilingConfiguration,
+    pub config: ProfilingConfiguration, // TODO Either restructure ProfilingConfiguration to be an enum depending on ExperimentType or make this an enum: one for profiling jobs and one for commit performance reports
     pub results: Vec<(TeebenchArgs, ExperimentResult)>,
     pub findings: Vec<Finding>,
 }

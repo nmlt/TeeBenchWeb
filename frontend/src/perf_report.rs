@@ -5,7 +5,7 @@ use crate::{
     chartjs::Chart, commits::CommitState, components::finding::FindingCardColumn, modal::Modal,
     navigation::Navigation,
 };
-use common::data_types::{Finding, FindingStyle, Report};
+use common::data_types::Report;
 
 #[derive(Debug, PartialEq, Properties)]
 pub struct CardChartColumnProps {
@@ -50,13 +50,7 @@ pub fn PerfReport(PerfReportProps { commit: current }: &PerfReportProps) -> Html
             <h1>{format!("Error getting commit with title {current:?}!")}</h1>
         }
     };
-    let findings = vec![
-        Finding::new("Performance Difference", "+ 3.6 %", FindingStyle::Good),
-        Finding::new("Phase 1: Partition", "180/191 (+0)", FindingStyle::SoSo),
-        Finding::new("Phase 2: Join", "11/191 (-4)", FindingStyle::Good),
-        Finding::new("EPC Paging", "- 0.4 %", FindingStyle::Good),
-    ];
-    let findings = findings.iter().map(|f| {
+    let findings = commit.findings.iter().map(|f| {
         html! {
             <FindingCardColumn finding={f.clone()} />
         }
