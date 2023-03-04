@@ -583,7 +583,7 @@ use structopt::StructOpt;
     Debug, Clone, StructOpt, PartialOrd, Ord, PartialEq, Eq, Hash, Default, Deserialize, Serialize,
 )]
 #[structopt(
-    name = "teebench",
+    name = "TeeBench",
     about = "fake placeholder for testing that outputs teebench output. Because I don't have SGX on my dev machine."
 )]
 pub struct TeebenchArgs {
@@ -596,15 +596,18 @@ pub struct TeebenchArgs {
     ///`-a` - join algorithm name. Currently working: see `common::data_types::Algorithm`.
     #[structopt(short = "a", long, default_value = "RHO")]
     pub algorithm: Algorithm,
-    ///`-c` - seal chunk size in kBs. if set to 0 then seal everything at once. Default: `0`
-    #[structopt(short = "c", long, default_value = "0")]
-    pub seal_chunk_size: u32,
-    ///`-l` - join selectivity. Should be a number between 0 and 100. Default: `100`
-    #[structopt(short = "l", long, default_value = "100")]
-    pub selectivity: u8,
     ///`-n` - number of threads used to execute the join algorithm. Default: `2`
     #[structopt(short = "n", long, default_value = "2")]
     pub threads: u8,
+    ///`-l` - join selectivity. Should be a number between 0 and 100. Default: `100`
+    #[structopt(short = "l", long, default_value = "100")]
+    pub selectivity: u8,
+    ///`-z` - data skew. Default: `0`
+    #[structopt(short = "z", long, default_value = "0")]
+    pub data_skew: u32,
+    ///`-c` - seal chunk size in kBs. if set to 0 then seal everything at once. Default: `0`
+    #[structopt(short = "c", long, default_value = "0")]
+    pub seal_chunk_size: u32,
     ///`-r` - number of tuples of R relation. Default: `2097152`
     #[structopt(short = "r", long, default_value = "2097152")]
     pub r_tuples: u32,
@@ -623,9 +626,6 @@ pub struct TeebenchArgs {
     ///`-y` - size of S in MBs. Default: `none`
     #[structopt(short = "y", long)]
     pub s_size: Option<u32>,
-    ///`-z` - data skew. Default: `0`
-    #[structopt(short = "z", long, default_value = "0")]
-    pub data_skew: u32,
     ///`--seal` - flag to seal join input data. Default: `false`
     #[structopt(long = "seal")]
     pub seal: bool,
