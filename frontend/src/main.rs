@@ -15,10 +15,6 @@ use crate::commits::Commits;
 use crate::perf_report::PerfReport;
 use crate::profiling::Profiling;
 
-use common::data_types::Commit;
-use time::OffsetDateTime;
-use yewdux::prelude::Dispatch;
-
 #[derive(Debug, Clone, Routable, PartialEq)]
 pub enum Route {
     #[at("/")]
@@ -65,42 +61,46 @@ fn app() -> Html {
 }
 
 fn main() {
-    use crate::commits::CommitState;
+    // use yewdux::prelude::Dispatch;
 
-    use common::data_types::Report;
-    let default_commits = vec![
-        Commit::new(
-            "RHT".to_owned(),
-            "JOIN".to_owned(),
-            OffsetDateTime::now_utc(),
-            include_str!("../deps/radix_join.c").to_owned(),
-            vec![Report::default()],
-        ),
-        Commit::new(
-            "CHT".to_owned(),
-            "JOIN".to_owned(),
-            OffsetDateTime::now_utc(),
-            "blah".to_owned(),
-            vec![Report::default()],
-        ),
-        Commit::new(
-            "PHT".to_owned(),
-            "JOIN".to_owned(),
-            OffsetDateTime::now_utc(),
-            "blah".to_owned(),
-            vec![Report::default()],
-        ),
-        Commit::new(
-            "MWAY".to_owned(),
-            "JOIN".to_owned(),
-            OffsetDateTime::now_utc(),
-            "blah".to_owned(),
-            vec![Report::default()],
-        ),
-    ];
-    Dispatch::<CommitState>::new().set(CommitState {
-        commits: default_commits,
-    });
+    // use common::data_types::Commit;
+    // use time::OffsetDateTime;
+    // use crate::commits::CommitState;
+    // use common::data_types::Report;
+    // let default_commits = vec![
+    //     Commit::new(
+    //         "RHT".to_owned(),
+    //         "JOIN".to_owned(),
+    //         OffsetDateTime::now_utc(),
+    //         include_str!("../deps/radix_join.c").to_owned(),
+    //         vec![Report::default()],
+    //     ),
+    //     Commit::new(
+    //         "CHT".to_owned(),
+    //         "JOIN".to_owned(),
+    //         OffsetDateTime::now_utc(),
+    //         "blah".to_owned(),
+    //         vec![Report::default()],
+    //     ),
+    //     Commit::new(
+    //         "PHT".to_owned(),
+    //         "JOIN".to_owned(),
+    //         OffsetDateTime::now_utc(),
+    //         "blah".to_owned(),
+    //         vec![Report::default()],
+    //     ),
+    //     Commit::new(
+    //         "MWAY".to_owned(),
+    //         "JOIN".to_owned(),
+    //         OffsetDateTime::now_utc(),
+    //         "blah".to_owned(),
+    //         vec![Report::default()],
+    //     ),
+    // ];
+    // Dispatch::<CommitState>::new().set(CommitState {
+    //     commits: default_commits,
+    // });
+
     // use crate::job_results_view::FinishedJobState;
     // use common::data_types::{
     //     Algorithm, Dataset, ExperimentType, Finding, FindingStyle, Job, Measurement, Parameter,

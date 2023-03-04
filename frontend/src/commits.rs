@@ -14,7 +14,7 @@ use crate::modal::Modal;
 use crate::modal::ModalContent;
 use crate::navigation::Navigation;
 
-use common::data_types::Commit;
+use common::data_types::{Commit, Operator};
 
 use yew_router::components::Link;
 
@@ -54,7 +54,7 @@ fn UploadCommit() -> Html {
                     let code = read_as_text(&file).await.unwrap();
                     let commit = Commit::new(
                         "placeholder".to_owned(),
-                        "JOIN".to_owned(),
+                        Operator::Join,
                         OffsetDateTime::now_utc(),
                         code,
                         vec![],

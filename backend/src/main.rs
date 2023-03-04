@@ -17,7 +17,7 @@ use tokio::sync::mpsc;
 use tracing::{error, info, instrument, warn};
 
 use backend_lib::profiling_task;
-use common::data_types::{Commit, Job, ProfilingConfiguration, QueueMessage};
+use common::data_types::{Commit, Job, Operator, ProfilingConfiguration, QueueMessage};
 
 const DEFAULT_TASK_CHANNEL_SIZE: usize = 5;
 
@@ -198,7 +198,7 @@ async fn main() {
     let state = Arc::new(Mutex::new(ServerState {
         commits: vec![Commit::new(
             "v1".to_string(),
-            "JOIN".to_string(),
+            Operator::Join,
             time::OffsetDateTime::now_utc(),
             "auto v1 = true;".to_string(),
             vec![],

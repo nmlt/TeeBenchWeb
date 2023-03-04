@@ -19,13 +19,24 @@ pub enum TeeBenchWebError {
     Unknown,
 }
 
+#[derive(
+    Debug, Clone, PartialEq, Serialize, Deserialize, EnumString, Display, EnumVariantNames,
+)]
+#[strum(serialize_all = "UPPERCASE")]
+pub enum Operator {
+    Join,
+    #[strum(to_string = "GROUP BY")]
+    GroupBy,
+    Projection,
+    #[strum(to_string = "ORDER BY")]
+    OrderBy,
+}
+
 /// A commit represents an algorithm and its profiling results.
-///
-/// The `reports` field contain all profiling jobs that included this algorithm. So if a profiling job compared algorithm A and B, the both commits' `report` field contains the result.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Commit {
     pub title: String,
-    pub operator: String,
+    pub operator: Operator,
     pub datetime: OffsetDateTime,
     pub code: String,
     pub reports: Vec<Report>,
@@ -37,7 +48,7 @@ pub struct Commit {
 impl Commit {
     pub fn new(
         title: String,
-        operator: String,
+        operator: Operator,
         datetime: OffsetDateTime,
         code: String,
         reports: Vec<Report>,
