@@ -81,7 +81,8 @@ fn UploadCommit() -> Html {
             form.reset();
             let upload_commit_state = upload_commit_state.clone();
             Box::pin(async move {
-                let new_commit = upload_commit_state.0.clone();
+                let mut new_commit = upload_commit_state.0.clone();
+                new_commit.datetime = OffsetDateTime::now_utc();
                 commit_state.commits.push(new_commit.clone());
                 let _resp = Request::get("/api/commit")
                     .method(Method::POST)
