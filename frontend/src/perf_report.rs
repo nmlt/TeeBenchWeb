@@ -40,7 +40,7 @@ pub fn PerfReport(PerfReportProps { commit: current }: &PerfReportProps) -> Html
             None => {
                 return html! {
                     <h1>{"No operators! Upload some in the Operator tab."}</h1> // TODO Would be nice to provide a link to the Operator tab.
-                }
+                };
             }
         },
     };

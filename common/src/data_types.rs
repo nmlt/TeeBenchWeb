@@ -10,6 +10,7 @@ use yewdux::prelude::Store;
 use std::collections::HashSet;
 use std::fmt::Display;
 
+/// Error type for Experiments.
 #[derive(Error, Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub enum TeeBenchWebError {
     #[error("Could not retrieve results")]
