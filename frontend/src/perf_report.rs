@@ -35,16 +35,15 @@ pub fn PerfReport(PerfReportProps { commit: current }: &PerfReportProps) -> Html
     let commit_store = use_store_value::<CommitState>();
     let current = match current {
         Some(c) => c,
-        None => &commit_store.commits.iter().last().unwrap().title, // Latest commit
+        None => match commit_store.commits.iter().last() {
+            Some(c) => &c.title,
+            None => {
+                return html! {
+                    <h1>{"No operators! Upload some in the Operator tab."}</h1> // TODO Would be nice to provide a link to the Operator tab.
+                }
+            }
+        },
     };
-    if commit_store.commits.len() == 0 {
-        return html! {
-            <h1>{"No data! Run some experiments."}</h1> // TODO Would be nice to provide a link to the Profiling tab.
-        };
-    }
-    // TODO THE QUESTION IS: What do I show, depending on how we store experiment results?
-    // - Simply all graphs that were generated in the profiling tab. But how do I select which algorithm? If the user goes to perf_report/MWAY do I show the comparison of MWAY to RHO _and_ MWAY to CHT? Seems like I need a database and precise queries.
-    // - For now, I'm not splitting comparison experiments. So each experiment that contains eg. CHT will get added to CHT algorithm commit state, and displayed here.
     let Some(commit) = commit_store.commits.iter().filter(|c| &c.title == current).next() else {
         return html! {
             <h1>{format!("Error getting commit with title {current:?}!")}</h1>

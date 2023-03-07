@@ -2,19 +2,21 @@ use gloo_console::log;
 use gloo_file::{futures::read_as_text, File};
 use gloo_net::http::{Method, Request};
 use js_sys;
-use std::rc::Rc;
 use time::OffsetDateTime;
 use wasm_bindgen_futures::spawn_local;
-use web_sys::{HtmlFormElement, HtmlInputElement};
+use web_sys::{HtmlFormElement, HtmlInputElement, HtmlSelectElement};
 use yew::prelude::*;
 use yewdux::prelude::*;
 
+use std::str::FromStr;
+
 use crate::chartjs::hljs_highlight;
+use crate::components::select::{InputSelect, SelectDataOption};
 use crate::modal::Modal;
 use crate::modal::ModalContent;
 use crate::navigation::Navigation;
 
-use common::data_types::{Commit, Operator};
+use common::data_types::{Algorithm, Commit, Operator, VariantNames};
 
 use yew_router::components::Link;
 
@@ -32,13 +34,19 @@ impl CommitState {
     }
 }
 
+/// Holds the data from the upload form.
+// It's not useful for this to be an Option, because as soon as there is eg. an uploaded file, that Option becomes Some. But that doesn't mean that the title field has been filled in, so the commit might still have bogus in the title field, even though the code field is already ok.
 #[derive(Debug, Clone, PartialEq, Default, Store)]
-pub struct UploadCommitState(Option<Commit>);
+pub struct UploadCommitState(Commit);
+
+/// Holds the selected baseline from the upload form.
+#[derive(Debug, Clone, PartialEq, Default, Store)]
+pub struct BaselineState(Algorithm);
 
 #[function_component]
 fn UploadCommit() -> Html {
     let onchange = {
-        let (_store, dispatch) = use_store::<UploadCommitState>();
+        let dispatch = Dispatch::<UploadCommitState>::new();
         dispatch.reduce_mut_future_callback_with(|store, e: Event| {
             Box::pin(async move {
                 //log!("UploadCommit: onchange triggered!");
@@ -52,73 +60,89 @@ fn UploadCommit() -> Html {
                         .map(File::from)
                         .unwrap();
                     let code = read_as_text(&file).await.unwrap();
-                    let commit = Commit::new(
-                        "placeholder".to_owned(),
-                        Operator::Join,
-                        OffsetDateTime::now_utc(),
-                        code,
-                        vec![],
-                    );
-                    store.0 = Some(commit.clone());
+                    store.0.code = code;
                 }
             })
         })
     };
     let onchange_title = {
-        let (_state, dispatch) = use_store::<UploadCommitState>();
-        dispatch.reduce_callback_with(|s, e: Event| {
+        let dispatch = Dispatch::<UploadCommitState>::new();
+        dispatch.reduce_mut_callback_with(|store, e: Event| {
             let input_elem = e.target_unchecked_into::<HtmlInputElement>();
-            let mut c = s.0.clone().unwrap();
-            c.title = input_elem.value();
-            Rc::new(UploadCommitState(Some(c)))
+            store.0.title = input_elem.value();
         })
     };
     let onclick = {
-        let (upload_commit_state, dispatch_commit_state) = use_store::<UploadCommitState>();
-        let (_store, dispatch) = use_store::<CommitState>();
+        let upload_commit_state = use_store_value::<UploadCommitState>();
+        let dispatch = Dispatch::<CommitState>::new();
         dispatch.reduce_mut_future_callback_with(move |commit_state, e: MouseEvent| {
             let input = e.target_unchecked_into::<HtmlInputElement>();
             let form: HtmlFormElement = input.form().unwrap();
             form.reset();
             let upload_commit_state = upload_commit_state.clone();
-            let dispatch_commit_state = dispatch_commit_state.clone();
             Box::pin(async move {
-                let upload_commit_state = upload_commit_state.clone();
-                let dispatch_commit_state = dispatch_commit_state.clone();
-                if let Some(new_commit) = upload_commit_state.0.clone() {
-                    commit_state.commits.push(new_commit.clone());
-                    dispatch_commit_state.set(UploadCommitState(None));
-                    let _resp = Request::get("/api/commit")
-                        .method(Method::POST)
-                        .json(&new_commit)
-                        .unwrap()
-                        .send()
-                        .await
-                        .unwrap();
-                    //log!("Sent commit to server, got response: ", format!("{_resp:?}"));
-                }
+                let new_commit = upload_commit_state.0.clone();
+                commit_state.commits.push(new_commit.clone());
+                let _resp = Request::get("/api/commit")
+                    .method(Method::POST)
+                    .json(&new_commit)
+                    .unwrap()
+                    .send()
+                    .await
+                    .unwrap();
+                //log!("Sent commit to server, got response: ", format!("{_resp:?}"));
             })
         })
     };
+    let operators = Operator::VARIANTS;
+    let operators = SelectDataOption::options_vec(&operators);
+    let operators_onchange = {
+        let (_, dispatch) = use_store::<UploadCommitState>();
+        dispatch.reduce_mut_callback_with(|store, e: Event| {
+            let select_elem = e.target_unchecked_into::<HtmlSelectElement>();
+            let value = select_elem.value();
+            store.0.operator = Operator::from_str(&value).unwrap();
+        })
+    };
+    let upload_commit_store = use_store_value::<UploadCommitState>();
+    let algs = Algorithm::VARIANTS;
+    let algs = SelectDataOption::options_vec(&algs);
+    let algs_onchange = {
+        let dispatch = Dispatch::<BaselineState>::new();
+        dispatch.reduce_mut_callback_with(|store, e: Event| {
+            let select_elem = e.target_unchecked_into::<HtmlSelectElement>();
+            let value = select_elem.value();
+            store.0 = Algorithm::from_str(&value).unwrap();
+        })
+    };
+    let baseline_store = use_store_value::<BaselineState>();
     html! {
-        <form>
-            <input type="file" {onchange} />
-            <input type="text" onchange={onchange_title} />
-            <select class="custom-select">
-                <option selected=true>{"Select Operator..."}</option>
-                <option value="1">{"JOIN"}</option>
-                <option value="2">{"GROUP BY"}</option>
-                <option value="3">{"PROJECTION"}</option>
-                <option value="4">{"ORDER BY"}</option>
-            </select>
-            <select class="custom-select">
-                <option selected=true>{"Select Baseline..."}</option>
-                <option value="1">{"MWAY"}</option>
-                <option value="2">{"PHT"}</option>
-                <option value="3">{"CHT"}</option>
-                <option value="4">{"RHT"}</option>
-            </select>
-            <input type="button" {onclick} value={"Upload"} />
+        <form class="row g-3">
+            <div class="col-md">
+                <div class="row g-3">
+                    <div class="col-md">
+                        <div>
+                            <label for="uploadFormFile" class="form-label">{"Source code file"}</label>
+                            <input id="uploadFormFile" class="form-control" type="file" {onchange} />
+                        </div>
+                    </div>
+                    <div class="col-md">
+                        <div>
+                            <label for="titleFormInput" class="form-label">{"Commit message"}</label>
+                            <input id="titleFormInput" class="form-control" type="text" onchange={onchange_title} />
+                        </div>
+                    </div>
+                    <div class="col-md">
+                        <InputSelect options={operators} onchange={operators_onchange} label={"Operator"} multiple={false} selected={vec![upload_commit_store.0.operator.to_string()]} disabled={false} />
+                    </div>
+                    <div class="col-md">
+                        <InputSelect options={algs} onchange={algs_onchange} label={"Baseline"} multiple={false} selected={vec![baseline_store.0.to_string()]} disabled={false} />
+                    </div>
+                    <div class="col-auto">
+                        <input class="btn btn-primary" type="button" {onclick} value={"Upload"} />
+                    </div>
+                </div>
+            </div>
         </form>
     }
 }

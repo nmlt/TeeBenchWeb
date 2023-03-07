@@ -20,10 +20,11 @@ pub enum TeeBenchWebError {
 }
 
 #[derive(
-    Debug, Clone, PartialEq, Serialize, Deserialize, EnumString, Display, EnumVariantNames,
+    Debug, Clone, PartialEq, Serialize, Deserialize, Default, EnumString, Display, EnumVariantNames,
 )]
 #[strum(serialize_all = "UPPERCASE")]
 pub enum Operator {
+    #[default]
     Join,
     #[strum(to_string = "GROUP BY")]
     GroupBy,
@@ -32,17 +33,34 @@ pub enum Operator {
     OrderBy,
 }
 
-/// A commit represents an algorithm and its profiling results.
+/// A commit represents an algorithm/operator and its performance report.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Commit {
     pub title: String,
+    /// Type of the operator.
     pub operator: Operator,
+    /// Time this operator was uploaded.
     pub datetime: OffsetDateTime,
+    /// C or C++ code.
     pub code: String,
-    pub reports: Vec<Report>, // TODO Change to JobResult and save baseline somewhere (per report? no several reports per baseline)
+    /// Holds the finished Performance Report experiments. Baseline is first stored in a hook, and after the reports are done, in the reports.
+    pub reports: Vec<Report>, // TODO Change to JobResult in case there is an error.
     /// Top level findings (diplayed above all the charts in the performance report).
     pub findings: Vec<Finding>,
     // TODO Add an ID that the server generates to uniquely identify a commit, independently of the user supplied title.
+}
+
+impl Default for Commit {
+    fn default() -> Self {
+        Self {
+            title: String::default(),
+            operator: Operator::default(),
+            datetime: OffsetDateTime::now_utc(),
+            code: String::default(),
+            reports: Vec::default(),
+            findings: Vec::default(),
+        }
+    }
 }
 
 impl Commit {
@@ -59,18 +77,21 @@ impl Commit {
             datetime,
             code,
             reports,
-            findings: vec![Finding::new("Performance Difference", "+ 3.6 %", FindingStyle::Good),
-        Finding::new("Phase 1: Partition", "180/191 (+0)", FindingStyle::SoSo),
-        Finding::new("Phase 2: Join", "11/191 (-4)", FindingStyle::Good),
-        Finding::new("EPC Paging", "- 0.4 %", FindingStyle::Good),],
+            findings: vec![
+                Finding::new("Performance Difference", "+ 3.6 %", FindingStyle::Good),
+                Finding::new("Phase 1: Partition", "180/191 (+0)", FindingStyle::SoSo),
+                Finding::new("Phase 2: Join", "11/191 (-4)", FindingStyle::Good),
+                Finding::new("EPC Paging", "- 0.4 %", FindingStyle::Good),
+            ],
         }
     }
 }
 
 /// One report can be transformed to one chart with findings
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+// To make ProfilingConfiguration an enum depending on ExperimentType is a bad idea maybe, because then we'd have to match in every dispatch callback modifying the config. So instead we continue using the ExperimentType in the ProfilingConfig.
 pub struct Report {
-    pub config: ProfilingConfiguration, // TODO Either restructure ProfilingConfiguration to be an enum depending on ExperimentType or make this an enum: one for profiling jobs and one for commit performance reports
+    pub config: ProfilingConfiguration,
     pub results: Vec<(TeebenchArgs, ExperimentResult)>,
     pub findings: Vec<Finding>,
 }
@@ -203,10 +224,29 @@ pub enum ExperimentType {
     #[strum(to_string = "EPC Paging")]
     EpcPaging,
     Throughput,
-    #[strum(to_string = "CPU Cycles/Tuple")]
-    CpuCyclesTuple,
+    // #[strum(to_string = "CPU Cycles/Tuple")]
+    // CpuCyclesTuple,
     #[default]
     Custom,
+}
+
+impl ExperimentType {
+    pub fn description(&self) -> &str {
+        match self {
+            Self::EpcPaging => {
+                "View the first selected algorithm/operator's throughput and EPC misses in relation to the dataset size"
+            }
+            Self::Throughput => {
+                "Compares througput of all selected algorithms for the selected dataset"
+            }
+            // Self::CpuCyclesTuple => {
+
+            // }
+            Self::Custom => {
+                "A custom experiment"
+            }
+        }
+    }
 }
 
 #[derive(
@@ -344,17 +384,23 @@ impl Platform {
 
 pub type StepType = i64;
 
+/// Represents either a Profiling Experiment or a Performance Report Experiment.
+///
+/// - Depending on the `experiment_type` it's either a predefined experiment (those in the performance report, but also choosable in the profiling menu, although then it won't appear in the performance report tab) or a custom profiling experiment (those appear only in the profiling tab under in the job results view).
+/// - For predefined experiments, many fields are not relevant:
+///     - But the `algorithm` field always defines the current operator/algorithm and its baseline.
+///     - `dataset` and `platform` might be sometimes relevant: `ExperimentType::Throughput` allows one dataset to be choosen.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Store)]
 pub struct ProfilingConfiguration {
-    pub algorithm: HashSet<Algorithm>,
+    pub algorithm: HashSet<Algorithm>, // TODO Rename to plural.
     pub experiment_type: ExperimentType,
     pub parameter: Parameter,
     pub measurement: Measurement,
     pub min: StepType,
     pub max: StepType,
     pub step: StepType,
-    pub dataset: HashSet<Dataset>,
-    pub platform: HashSet<Platform>,
+    pub dataset: HashSet<Dataset>,   // TODO Rename to plural.
+    pub platform: HashSet<Platform>, // TODO Rename to plural.
     pub sort_data: bool,
 }
 
@@ -517,12 +563,12 @@ impl ProfilingConfiguration {
                 // self.platform = HashSet::from([Platform::Sgx]);
                 // self.sort_data = false;
             }
-            ExperimentType::CpuCyclesTuple => {
-                self.measurement = Measurement::Throughput;
-                // self.dataset = HashSet::from([Dataset::CacheExceed, Dataset::CacheFit]);
-                // self.platform = HashSet::from([Platform::Sgx]);
-                // self.sort_data = false;
-            }
+            // ExperimentType::CpuCyclesTuple => {
+            //     self.measurement = Measurement::Throughput;
+            //     // self.dataset = HashSet::from([Dataset::CacheExceed, Dataset::CacheFit]);
+            //     // self.platform = HashSet::from([Platform::Sgx]);
+            //     // self.sort_data = false;
+            // }
             ExperimentType::Custom => (),
         }
     }

@@ -49,3 +49,18 @@ curl --header "Content-Type:application/json" \
 --data '{"title": "first commit", "datetime": "2020-03-28T16:29:04.644008111Z", "code": "auto a = 2", "report": null }' \
 http://localhost:3000/api/commit
 ```
+
+TODO
+----
+
+A collection of thoughts of what could be improved in the project.
+
+- Form validation:
+    - To represent a not finished form with a struct in rust would require all fields to be possibly empty, so to be Options. That seems bothersome. Instead validate on the client side (not a security problem, because axum will not accept empty forms (except empty vec/hashsets, that i still have to fix)), maybe by storing in some form of "form config" which fields need to be selected (for the platform, at least one, for baseline one, etc).
+- Offline:
+    - Commits are added to the local CommitState even when the server connection fails (or might, I didn't actually check). That's good, except they should be sent to the server, when it reconnects
+    - For the Profiling Queue that's not the case. The queue is only filled after the server answers. Would be better user experience if you could queue jobs offline (and as above sent them, when reconnected).
+- Layout component:
+    - Make a layout component that takes all the other elements as children, so that I don't have to repeat the bootstrap css classes for each tab and can make nice error messages eg. for the performance report.
+- Explanations:
+    - Eg. under the experiment type select in the ProfilingUI, have a short description of what this type of experiment does.
