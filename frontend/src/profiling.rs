@@ -1,5 +1,6 @@
 use gloo_console::log;
 use gloo_net::http::{Method, Request};
+use time::OffsetDateTime;
 use wasm_bindgen_futures::spawn_local;
 use web_sys::{HtmlInputElement, HtmlOptionElement, HtmlSelectElement};
 use yew::prelude::*;
@@ -8,7 +9,7 @@ use yewdux_input::{Checkbox, InputDispatch};
 
 use common::data_types::{
     Algorithm, Dataset, ExperimentType, Measurement, Parameter, Platform, ProfilingConfiguration,
-    VariantNames,
+    VariantNames, Job,
 };
 use std::collections::HashSet;
 use std::str::FromStr;
@@ -163,14 +164,19 @@ pub fn profiling() -> Html {
     };
     let onsubmit = {
         // send some request to server
-        let (store, _dispatch) = use_store::<ProfilingConfiguration>();
+        let store = use_store_value::<ProfilingConfiguration>();
         Callback::from(move |_| {
             //e.prevent_default(); // Doesn't seem to work with type="submit".
-            let store = store.clone();
+            let store = ProfilingConfiguration::clone(&store);
+            let job = Job {
+                config: store.into(),
+                submitted: OffsetDateTime::now_utc(),
+                ..Job::default()
+            };
             spawn_local(async move {
                 let resp = Request::get("/api/profiling")
                     .method(Method::POST)
-                    .json(&store)
+                    .json(&job)
                     .unwrap()
                     .send()
                     .await

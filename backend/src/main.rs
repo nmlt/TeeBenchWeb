@@ -17,7 +17,7 @@ use tokio::sync::mpsc;
 use tracing::{error, info, instrument, warn};
 
 use backend_lib::profiling_task;
-use common::data_types::{Commit, Job, Operator, ProfilingConfiguration, QueueMessage};
+use common::data_types::{Commit, Job, JobStatus, Operator, ProfilingConfiguration, QueueMessage};
 
 const DEFAULT_TASK_CHANNEL_SIZE: usize = 5;
 
@@ -39,7 +39,7 @@ async fn get_commits(State(state): State<Arc<Mutex<ServerState>>>) -> Json<Value
 #[axum_macros::debug_handler]
 async fn run_experiment(
     State(profiling_state): State<Arc<ProfilingState>>,
-    Json(payload): Json<ProfilingConfiguration>,
+    Json(payload): Json<Job>,
 ) -> Result<(), StatusCode> {
     info!("Received: {:?}", payload);
     profiling_state.channel_tx.send(payload).await.unwrap();
@@ -84,7 +84,7 @@ async fn handle_socket(mut socket: WebSocket, queue_state: Arc<QueueState>) {
                                             if socket
                                                 .send(Message::Binary(
                                                     serde_json::to_vec(&QueueMessage::AddQueueItem(
-                                                        item,
+                                                        item.config,
                                                     ))
                                                     .unwrap(),
                                                 ))
@@ -131,20 +131,17 @@ async fn handle_socket(mut socket: WebSocket, queue_state: Arc<QueueState>) {
             },
             Some(job) = guard.recv() => {
                 info!("Queue receiver got a new running or finished job.");
-                match job {
-                    Job::Running(c) => {
-                        if let Err(e) = socket.send(Message::Binary(serde_json::to_vec(&QueueMessage::AddQueueItem(c)).unwrap())).await {
+                match job.status {
+                    JobStatus::Waiting => {
+                        let msg = QueueMessage::AddQueueItem(job.config.clone());
+                        let serialized = serde_json::to_vec(&msg).unwrap();
+                        if let Err(e) = socket.send(Message::Binary(serialized)).await {
                             error!("Sending new queue job added to client failed: {e}");
                             return;
                         }
                     },
-                    Job::Finished { config, submitted, runtime, result } => {
-                        let msg = QueueMessage::RemoveQueueItem(Job::Finished {
-                                        config,
-                                        submitted,
-                                        runtime,
-                                        result
-                                    });
+                    JobStatus::Done { .. } => {
+                        let msg = QueueMessage::RemoveQueueItem(job.clone());
                         let serialized = serde_json::to_vec(&msg).unwrap();
                         if socket.send(Message::Binary(serialized)).await.is_err() {
                             error!("Sending finished queue job to client failed: Client disconnected.");
@@ -165,12 +162,12 @@ struct ServerState {
 #[derive(Debug, Clone)]
 struct ProfilingState {
     /// Channel transmitter to send newly arrived Jobs to the async worker task (which has the corresponding receiver).
-    channel_tx: mpsc::Sender<ProfilingConfiguration>,
+    channel_tx: mpsc::Sender<Job>,
 }
 
 #[derive(Debug)]
 struct QueueState {
-    queue: Arc<Mutex<VecDeque<ProfilingConfiguration>>>,
+    queue: Arc<Mutex<VecDeque<Job>>>,
     /// Channel receiver to get notified if new items were queued or unqueued.
     // TODO There's only one receiver, right?
     queue_rx: Arc<tokio::sync::Mutex<mpsc::Receiver<Job>>>,

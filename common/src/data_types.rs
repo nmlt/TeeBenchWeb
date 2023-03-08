@@ -146,15 +146,31 @@ impl Finding {
 
 pub type JobResult = Result<Report, TeeBenchWebError>;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum Job {
-    Running(ProfilingConfiguration),
-    Finished {
-        config: ProfilingConfiguration, // TODO This doesn't even have to be here. We know it's the first item in the queue. Better to be sure, I guess.
-        submitted: OffsetDateTime,
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+pub enum JobStatus {
+    #[default]
+    Waiting,
+    Done {
         runtime: Duration,
         result: JobResult,
     },
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Job {
+    pub config: ProfilingConfiguration,
+    pub submitted: OffsetDateTime,
+    pub status: JobStatus,
+}
+
+impl Default for Job {
+    fn default() -> Self {
+        Self {
+            config: ProfilingConfiguration::default(),
+            submitted: OffsetDateTime::now_utc(),
+            status: JobStatus::default(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

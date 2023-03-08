@@ -10,7 +10,7 @@ use tokio::sync::{mpsc, oneshot};
 use tracing::{error, info, instrument, warn};
 
 use common::data_types::{
-    Commandline, ExperimentResult, Job, Platform, ProfilingConfiguration, Report,
+    Commandline, ExperimentResult, Job, JobStatus, Platform, ProfilingConfiguration, Report,
 };
 
 async fn compile_and_run(conf: ProfilingConfiguration) -> Report {
@@ -69,27 +69,28 @@ async fn compile_and_run(conf: ProfilingConfiguration) -> Report {
 
 #[instrument(skip(queue, oneshot_tx, queue_tx))]
 async fn work_on_queue(
-    queue: Arc<Mutex<VecDeque<ProfilingConfiguration>>>,
+    queue: Arc<Mutex<VecDeque<Job>>>,
     oneshot_tx: oneshot::Sender<()>,
     queue_tx: mpsc::Sender<Job>,
 ) {
     fn peek_queue(
-        queue: Arc<Mutex<VecDeque<ProfilingConfiguration>>>,
-    ) -> Option<ProfilingConfiguration> {
+        queue: Arc<Mutex<VecDeque<Job>>>,
+    ) -> Option<Job> {
         let guard = queue.lock().unwrap();
-        guard.front().map(ProfilingConfiguration::clone)
+        guard.front().map(Job::clone)
     }
     // TODO Do not clone the queue. It should be always the same arc, but how to make it work with the borrow checker?
     // Probably by making the above function a closure, which would also be more idiomatic.
-    while let Some(current_conf) = peek_queue(queue.clone()) {
-        info!("Working on {current_conf:#?}...");
-        let report = compile_and_run(current_conf.clone()).await;
+    while let Some(current_job) = peek_queue(queue.clone()) {
+        info!("Working on {current_job:#?}...");
+        let report = compile_and_run(current_job.config.clone()).await;
         info!("Process completed with {report:?}.");
-        let finished_job = Job::Finished {
-            config: current_conf,
-            submitted: OffsetDateTime::now_utc(), // TODO Fix this.
-            runtime: Duration::new(5, 0),         // TODO Get actual runtime from teebench output.
-            result: Ok(report),
+        let finished_job = Job {
+            status: JobStatus::Done {
+                runtime: Duration::new(5, 0), // TODO Get actual runtime from teebench output.
+                result: Ok(report),
+            },
+            ..current_job
         };
         {
             let mut guard = queue.lock().unwrap();
@@ -100,28 +101,40 @@ async fn work_on_queue(
     oneshot_tx.send(()).unwrap();
 }
 
+/// Receives the new job and notifies websocket about the new job
+// TODO that's weird... The websocket received the job, so why can't it react to the new job without a notification from here? So that it can select! what to do?
+/// 
+/// - queue: still the actual queue, to queue new jobs
+/// - rx: channel to webserver, to receive new jobs from the websocket
+/// - queue_tx: notify webserver of new jobs
 async fn receive_confs(
-    queue: Arc<Mutex<VecDeque<ProfilingConfiguration>>>,
-    rx: Arc<tokio::sync::Mutex<mpsc::Receiver<ProfilingConfiguration>>>,
+    queue: Arc<Mutex<VecDeque<Job>>>,
+    rx: Arc<tokio::sync::Mutex<mpsc::Receiver<Job>>>,
     queue_tx: mpsc::Sender<Job>,
 ) {
     let mut rx_guard = rx.lock().await;
     match rx_guard.recv().await {
-        Some(conf) => {
-            info!("New task came in!");
-            let running_job = Job::Running(conf.clone());
-            queue_tx.send(running_job).await.unwrap();
+        Some(job) => {
+            info!("New job came in!");
+            queue_tx.send(job.clone()).await.unwrap();
             let mut guard = queue.lock().unwrap();
-            guard.push_back(conf);
+            guard.push_back(job);
         }
         None => warn!("Received None!"), // TODO Why would this happen?
     }
 }
 
+/// Runs and compiles the all the experiments, and sends the results back to the server (which sends the results to the client).
+/// 
+/// Wait for new jobs in a loop. When a new job arrives, queue it and start a task to work on the queue. Then start a new loop to receive new jobs or receive the notification that there are no more jobs in the queue. When that notification arrives, break that loop and restart the outer one.
+///
+/// rx: incoming new profiling configs
+/// queue: the actual queue, shared with the server, so it can send the queue to any newly connecting client
+/// queue_tx: this channel notifies the server of any changes in the queue.
 #[instrument(skip(rx, queue, queue_tx))]
 pub async fn profiling_task(
-    rx: mpsc::Receiver<ProfilingConfiguration>,
-    queue: Arc<Mutex<VecDeque<ProfilingConfiguration>>>,
+    rx: mpsc::Receiver<Job>,
+    queue: Arc<Mutex<VecDeque<Job>>>,
     queue_tx: mpsc::Sender<Job>,
 ) {
     // Using a tokio Mutex here to make it Send. Which is required...

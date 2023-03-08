@@ -3,7 +3,7 @@ use time::macros::format_description;
 use yew::prelude::*;
 use yewdux::prelude::*;
 
-use common::data_types::{Job, Report};
+use common::data_types::{Job, JobStatus, Report};
 
 use crate::chartjs::Chart;
 use crate::components::finding::FindingCardColumn;
@@ -19,15 +19,13 @@ pub struct JobResultProps {
 pub fn JobResult(JobResultProps { job }: &JobResultProps) -> Html {
     let (_content_store, content_dispatch) = use_store::<ModalContent>();
     let time_format = format_description!("[hour]:[minute]");
-    match job {
-        Job::Running(_) => html! { <span>{"Error!"}</span> },
-        Job::Finished {
-            config,
-            submitted,
+    match &job.status {
+        JobStatus::Waiting => html! { <span>{"Error!"}</span> },
+        JobStatus::Done {
             runtime,
             result,
         } => {
-            let algs: Vec<_> = config
+            let algs: Vec<_> = job.config
                 .algorithm
                 .iter()
                 .map(|a| a.to_string())
@@ -89,8 +87,8 @@ pub fn JobResult(JobResultProps { job }: &JobResultProps) -> Html {
                 html! {{"Error! No results."}}
             };
             html! {
-                <li class="list-group-item" title={format!("{config}")}>
-                    {"Submitted at: "}<span class="fw-bold">{format!("{} ", submitted.format(time_format).unwrap())}</span>
+                <li class="list-group-item" title={format!("{}", job.config)}>
+                    {"Submitted at: "}<span class="fw-bold">{format!("{} ", job.submitted.format(time_format).unwrap())}</span>
                     {for algs}
                     <span>{format!(" took {runtime} ")}</span>
                     {result}
