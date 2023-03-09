@@ -73,9 +73,7 @@ async fn work_on_queue(
     oneshot_tx: oneshot::Sender<()>,
     queue_tx: mpsc::Sender<Job>,
 ) {
-    fn peek_queue(
-        queue: Arc<Mutex<VecDeque<Job>>>,
-    ) -> Option<Job> {
+    fn peek_queue(queue: Arc<Mutex<VecDeque<Job>>>) -> Option<Job> {
         let guard = queue.lock().unwrap();
         guard.front().map(Job::clone)
     }
@@ -103,7 +101,7 @@ async fn work_on_queue(
 
 /// Receives the new job and notifies websocket about the new job
 // TODO that's weird... The websocket received the job, so why can't it react to the new job without a notification from here? So that it can select! what to do?
-/// 
+///
 /// - queue: still the actual queue, to queue new jobs
 /// - rx: channel to webserver, to receive new jobs from the websocket
 /// - queue_tx: notify webserver of new jobs
@@ -125,7 +123,7 @@ async fn receive_confs(
 }
 
 /// Runs and compiles the all the experiments, and sends the results back to the server (which sends the results to the client).
-/// 
+///
 /// Wait for new jobs in a loop. When a new job arrives, queue it and start a task to work on the queue. Then start a new loop to receive new jobs or receive the notification that there are no more jobs in the queue. When that notification arrives, break that loop and restart the outer one.
 ///
 /// rx: incoming new profiling configs

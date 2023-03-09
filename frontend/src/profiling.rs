@@ -8,8 +8,8 @@ use yewdux::prelude::*;
 use yewdux_input::{Checkbox, InputDispatch};
 
 use common::data_types::{
-    Algorithm, Dataset, ExperimentType, Measurement, Parameter, Platform, ProfilingConfiguration,
-    VariantNames, Job,
+    Algorithm, Dataset, ExperimentType, Job, Measurement, Parameter, Platform,
+    ProfilingConfiguration, VariantNames,
 };
 use std::collections::HashSet;
 use std::str::FromStr;

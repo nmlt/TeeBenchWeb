@@ -21,11 +21,9 @@ pub fn JobResult(JobResultProps { job }: &JobResultProps) -> Html {
     let time_format = format_description!("[hour]:[minute]");
     match &job.status {
         JobStatus::Waiting => html! { <span>{"Error!"}</span> },
-        JobStatus::Done {
-            runtime,
-            result,
-        } => {
-            let algs: Vec<_> = job.config
+        JobStatus::Done { runtime, result } => {
+            let algs: Vec<_> = job
+                .config
                 .algorithm
                 .iter()
                 .map(|a| a.to_string())
