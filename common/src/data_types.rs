@@ -174,13 +174,17 @@ impl Default for Job {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum QueueMessage {
+pub enum ClientMessage {
     /// Frontend wants to get the current queue
     RequestQueue, // TODO Do I even need that? Can the server just send its queue when the socket opens
     /// Frontend wants to clear the queue
     RequestClear,
     // Frontend received message
     Acknowledge, // TODO Can I trust that transmission succeeds?
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum ServerMessage {
     // TODO Either merge the next two messages and use the Job enum or remove that enum.
     /// Backend has a new job (or the frontend just requested the queue)
     /// This message gets send for each item in the queue.

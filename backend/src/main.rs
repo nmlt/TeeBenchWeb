@@ -17,7 +17,9 @@ use tokio::sync::mpsc;
 use tracing::{error, info, instrument, warn};
 
 use backend_lib::profiling_task;
-use common::data_types::{Commit, Job, JobStatus, Operator, ProfilingConfiguration, QueueMessage};
+use common::data_types::{
+    ClientMessage, Commit, Job, JobStatus, Operator, ProfilingConfiguration, ServerMessage,
+};
 
 const DEFAULT_TASK_CHANNEL_SIZE: usize = 5;
 
@@ -73,7 +75,7 @@ async fn handle_socket(mut socket: WebSocket, queue_state: Arc<QueueState>) {
                             info!("Client sent binary data.");
                             if let Ok(request) = serde_json::from_slice(&b) {
                                 match request {
-                                    QueueMessage::RequestQueue => {
+                                    ClientMessage::RequestQueue => {
                                         let queue = {
                                             // TODO This is probably not required to immediately drop the read_guard.
                                             info!("Locking queue_state...");
@@ -83,7 +85,7 @@ async fn handle_socket(mut socket: WebSocket, queue_state: Arc<QueueState>) {
                                             info!("Sending queue item: {item:?}");
                                             if socket
                                                 .send(Message::Binary(
-                                                    serde_json::to_vec(&QueueMessage::AddQueueItem(
+                                                    serde_json::to_vec(&ServerMessage::AddQueueItem(
                                                         item.config,
                                                     ))
                                                     .unwrap(),
@@ -97,18 +99,13 @@ async fn handle_socket(mut socket: WebSocket, queue_state: Arc<QueueState>) {
                                         }
                                         info!("Sent queue to frontend!");
                                     }
-                                    QueueMessage::RequestClear => {
+                                    ClientMessage::RequestClear => {
                                         // Cancel current job and clear queue
                                         warn!("Unimplemented clear queue request received.");
                                     }
-                                    QueueMessage::Acknowledge => {
+                                    ClientMessage::Acknowledge => {
                                         // TODO I don't think I need this.
                                         warn!("Acknowledge received.");
-                                    }
-                                    QueueMessage::AddQueueItem(_)
-                                    | QueueMessage::RemoveQueueItem(_) => {
-                                        // TODO The frontend shouldn't sent those messages!
-                                        warn!("Currently not supported Message received.");
                                     }
                                 }
                             }
@@ -133,7 +130,7 @@ async fn handle_socket(mut socket: WebSocket, queue_state: Arc<QueueState>) {
                 info!("Queue receiver got a new running or finished job.");
                 match job.status {
                     JobStatus::Waiting => {
-                        let msg = QueueMessage::AddQueueItem(job.config.clone());
+                        let msg = ServerMessage::AddQueueItem(job.config.clone());
                         let serialized = serde_json::to_vec(&msg).unwrap();
                         if let Err(e) = socket.send(Message::Binary(serialized)).await {
                             error!("Sending new queue job added to client failed: {e}");
@@ -141,7 +138,7 @@ async fn handle_socket(mut socket: WebSocket, queue_state: Arc<QueueState>) {
                         }
                     },
                     JobStatus::Done { .. } => {
-                        let msg = QueueMessage::RemoveQueueItem(job.clone());
+                        let msg = ServerMessage::RemoveQueueItem(job.clone());
                         let serialized = serde_json::to_vec(&msg).unwrap();
                         if socket.send(Message::Binary(serialized)).await.is_err() {
                             error!("Sending finished queue job to client failed: Client disconnected.");

@@ -81,8 +81,27 @@ pub fn Queue() -> Html {
         //     <ul class="list-group">
         <>
             {for queue}
+            <ClearQueueButton />
         </>
         //     </ul>
         // </div>
+    }
+}
+
+use common::data_types::ClientMessage;
+use crate::components::websocket::WebsocketState;
+#[function_component]
+pub fn ClearQueueButton() -> Html {
+    let queue_store = use_store_value::<QueueState>();
+    let empty = queue_store.queue.is_empty();
+    let onclick = {
+        let websocket_store = use_store_value::<WebsocketState>();
+        Callback::from(move |_| {
+            let websocket_store = websocket_store.clone();
+            websocket_store.send(ClientMessage::RequestClear);
+        })
+    };
+    html! {
+        <button class="btn btn-danger" disabled={empty} {onclick}>{"Clear Queue"}</button>
     }
 }

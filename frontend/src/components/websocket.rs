@@ -4,7 +4,7 @@ use yew::platform::pinned::mpsc::{unbounded, UnboundedReceiver, UnboundedSender}
 use yew::prelude::*;
 use yewdux::prelude::*;
 
-use common::data_types::QueueMessage;
+use common::data_types::{ClientMessage, ServerMessage};
 use futures::{SinkExt, StreamExt};
 use gloo_console::log;
 use gloo_net::websocket::{futures::WebSocket, Message};
@@ -18,7 +18,7 @@ use crate::queue::QueueState;
 
 #[derive(Debug, Clone, Default, Store)]
 pub struct WebsocketState {
-    pub transmitter: Option<Rc<UnboundedSender<QueueMessage>>>,
+    pub transmitter: Option<Rc<UnboundedSender<ClientMessage>>>,
 }
 
 impl PartialEq for WebsocketState {
@@ -28,9 +28,16 @@ impl PartialEq for WebsocketState {
 }
 
 impl WebsocketState {
-    fn new(tx: UnboundedSender<QueueMessage>) -> Self {
+    fn new(tx: UnboundedSender<ClientMessage>) -> Self {
         Self {
             transmitter: Some(Rc::new(tx)),
+        }
+    }
+    pub fn send(&self, msg: ClientMessage) {
+        if let Some(tx) = &self.transmitter {
+            tx.send_now(msg).unwrap();
+        } else {
+            panic!();
         }
     }
 }
@@ -38,7 +45,8 @@ impl WebsocketState {
 // Idea: create channel in this component, put transmitter into hook (maybe use_state instead of use_store if that helps with PartialEq requirement?). receiver is moved into the use_effect_with_deps (no deps for only on first render) hook. in there I spawn_local, once for the receiver: whenever it receives, i write to the websocket. The other spawn_local receives from the websocket and writes the received data into the appropriate hooks.
 #[function_component]
 pub fn Websocket() -> Html {
-    let (tx, mut rx) = unbounded::<QueueMessage>();
+    log!("Establishing Websocket...");
+    let (tx, mut rx) = unbounded::<ClientMessage>();
     let dispatch = Dispatch::<WebsocketState>::new();
     dispatch.set(WebsocketState::new(tx));
     use_effect_with_deps(
@@ -59,7 +67,7 @@ pub fn Websocket() -> Html {
                 //log!("sending first...");
                 write
                     .send(Message::Bytes(
-                        serde_json::to_vec(&QueueMessage::RequestQueue).unwrap(),
+                        serde_json::to_vec(&ClientMessage::RequestQueue).unwrap(),
                     ))
                     .await
                     .unwrap();
@@ -78,12 +86,12 @@ pub fn Websocket() -> Html {
                     let msg = serde_json::from_slice(&msg).unwrap();
                     log!(format!("Got msg {msg:?}"));
                     match msg {
-                        QueueMessage::AddQueueItem(conf) => {
+                        ServerMessage::AddQueueItem(conf) => {
                             queue_state_dispatch.reduce_mut(|queue_state| {
                                 queue_state.queue.push_back(conf);
                             });
                         }
-                        QueueMessage::RemoveQueueItem(finished_job) => {
+                        ServerMessage::RemoveQueueItem(finished_job) => {
                             // TODO Put the finished_job into another hook to enable viewing it somewhere else.
                             finished_job_dispatch.reduce_mut(|finished_job_state| {
                                 finished_job_state.jobs.push(finished_job.clone());

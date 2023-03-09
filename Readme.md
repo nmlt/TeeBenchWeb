@@ -64,4 +64,3 @@ A collection of thoughts of what could be improved in the project.
     - Make a layout component that takes all the other elements as children, so that I don't have to repeat the bootstrap css classes for each tab and can make nice error messages eg. for the performance report.
 - Explanations:
     - Eg. under the experiment type select in the ProfilingUI, have a short description of what this type of experiment does.
-- Refactor QueueMessages in the websocket to ClientMessage and ServerMessage
