@@ -14,6 +14,7 @@ mod queue;
 use crate::commits::Commits;
 use crate::perf_report::PerfReport;
 use crate::profiling::Profiling;
+use crate::components::websocket::Websocket;
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 pub enum Route {
@@ -54,9 +55,12 @@ fn switch(routes: Route) -> Html {
 #[function_component]
 fn App() -> Html {
     html! {
+        <>
         <BrowserRouter>
             <Switch<Route> render={switch} />
         </BrowserRouter>
+        <Websocket />
+        </>
     }
 }
 

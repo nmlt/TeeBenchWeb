@@ -9,18 +9,6 @@ pub struct NavigationProps {
 }
 
 #[function_component]
-pub fn PersistentComponent() -> Html {
-    use gloo_console::log;
-    log!("Rerendering PersistentComponent.");
-    let status = "CONNECTED";
-    html! {
-        <span>
-        {status}
-        </span>
-    }
-} 
-
-#[function_component]
 pub fn Navigation(NavigationProps { active_nav_item }: &NavigationProps) -> Html {
     fn add_active_class(current: &str, active: String) -> yew::html::Classes {
         if current == &active {
@@ -60,7 +48,6 @@ pub fn Navigation(NavigationProps { active_nav_item }: &NavigationProps) -> Html
                         </Link<Route>>
                     </li>
                 </ul>
-                <PersistentComponent />
             </nav>
         </div>
     }
