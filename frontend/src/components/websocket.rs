@@ -1,34 +1,21 @@
-use yew::platform::pinned::mpsc::{unbounded, UnboundedReceiver, UnboundedSender};
 use yew::prelude::*;
 use yewdux::prelude::*;
+use std::collections::VecDeque;
 
 use common::data_types::QueueMessage;
 use futures::{SinkExt, StreamExt};
 use gloo_console::log;
 use gloo_net::websocket::{futures::WebSocket, Message};
 use wasm_bindgen_futures::spawn_local;
-use yewdux::prelude::*;
 
-#[derive(Debug, Store)]
+#[derive(Debug, Clone, Default, PartialEq, Store)]
 pub struct WebsocketState {
-    pub transmitter: UnboundedSender<QueueMessage>,
-    receiver: UnboundedReceiver<QueueMessage>,
+    pub outgoing_queue: VecDeque<QueueMessage>,
     pub connected: bool,
 }
 
-impl Default for WebsocketState {
-    fn default() -> Self {
-        let (transmitter, receiver) = unbounded::<QueueMessage>();
-        Self {
-            transmitter,
-            receiver,
-            connected: false,
-        }
-    }
-}
-
 #[function_component]
-pub fn websocket() -> Html {
+pub fn Websocket() -> Html {
     let (store, dispatch) = use_store::<WebsocketState>();
     use_effect_with_deps(
         move |_| {
@@ -94,7 +81,7 @@ pub fn websocket() -> Html {
                 //log!("Done!");
             });
         },
-        (),
+        store,
     );
     html! {
         <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">

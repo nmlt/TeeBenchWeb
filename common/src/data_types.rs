@@ -173,7 +173,7 @@ impl Default for Job {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum QueueMessage {
     /// Frontend wants to get the current queue
     RequestQueue, // TODO Do I even need that? Can the server just send its queue when the socket opens
