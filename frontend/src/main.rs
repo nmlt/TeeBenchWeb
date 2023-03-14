@@ -12,9 +12,9 @@ mod profiling;
 mod queue;
 
 use crate::commits::Commits;
+use crate::components::websocket::Websocket;
 use crate::perf_report::PerfReport;
 use crate::profiling::Profiling;
-use crate::components::websocket::Websocket;
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 pub enum Route {

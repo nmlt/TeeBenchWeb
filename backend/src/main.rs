@@ -18,7 +18,7 @@ use tracing::{error, info, instrument, warn};
 
 use backend_lib::profiling_task;
 use common::data_types::{
-    ClientMessage, Commit, Job, JobStatus, Operator, ProfilingConfiguration, ServerMessage,
+    ClientMessage, Commit, Job, JobConfig, JobStatus, Operator, ServerMessage,
 };
 
 const DEFAULT_TASK_CHANNEL_SIZE: usize = 5;
@@ -83,10 +83,13 @@ async fn handle_socket(mut socket: WebSocket, queue_state: Arc<QueueState>) {
                                         };
                                         for item in queue {
                                             info!("Sending queue item: {item:?}");
+                                            let JobConfig::Profiling(c) = item.config else {
+                                                panic!("Only Profiling configs allowed in queue!");
+                                            };
                                             if socket
                                                 .send(Message::Binary(
                                                     serde_json::to_vec(&ServerMessage::AddQueueItem(
-                                                        item.config,
+                                                        c,
                                                     ))
                                                     .unwrap(),
                                                 ))
@@ -130,7 +133,10 @@ async fn handle_socket(mut socket: WebSocket, queue_state: Arc<QueueState>) {
                 info!("Queue receiver got a new running or finished job.");
                 match job.status {
                     JobStatus::Waiting => {
-                        let msg = ServerMessage::AddQueueItem(job.config.clone());
+                        let JobConfig::Profiling(c) = job.config.clone() else {
+                            panic!("Only ProfilingConfigurations allowed in queue!");
+                        };
+                        let msg = ServerMessage::AddQueueItem(c);
                         let serialized = serde_json::to_vec(&msg).unwrap();
                         if let Err(e) = socket.send(Message::Binary(serialized)).await {
                             error!("Sending new queue job added to client failed: {e}");

@@ -58,9 +58,13 @@ A collection of thoughts of what could be improved in the project.
 - Form validation:
     - To represent a not finished form with a struct in rust would require all fields to be possibly empty, so to be Options. That seems bothersome. Instead validate on the client side (not a security problem, because axum will not accept empty forms (except empty vec/hashsets, that i still have to fix)), maybe by storing in some form of "form config" which fields need to be selected (for the platform, at least one, for baseline one, etc).
 - Offline:
-    - Commits are added to the local CommitState even when the server connection fails (or might, I didn't actually check). That's good, except they should be sent to the server, when it reconnects
+    - Commits are added to the local CommitState even when the server connection fails (or might, I didn't actually check). That's good, except they should be sent to the server when it reconnects.
     - For the Profiling Queue that's not the case. The queue is only filled after the server answers. Would be better user experience if you could queue jobs offline (and as above sent them, when reconnected).
 - Layout component:
     - Make a layout component that takes all the other elements as children, so that I don't have to repeat the bootstrap css classes for each tab and can make nice error messages eg. for the performance report.
 - Explanations:
     - Eg. under the experiment type select in the ProfilingUI, have a short description of what this type of experiment does.
+- API Design:
+    - Everything that could be in a DB is queried via the REST API. Because if I ever add a db (for commits and finished profiling jobs), that part could be moved out of the axum server and eg. put in its own vm with a small frontend that translates requests to db queries.
+        - TODO Question is whether microservices in VMs is even always a good idea. for big scale probably, but I know this won't ever be scaled up.
+    - Other parts that only the profiling/perf_report runner can answer (queue status, queue commands like clear) can be send via websocket.

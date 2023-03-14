@@ -3,7 +3,7 @@ use time::macros::format_description;
 use yew::prelude::*;
 use yewdux::prelude::*;
 
-use common::data_types::{Job, JobStatus, Report};
+use common::data_types::{Job, JobConfig, JobStatus, Report};
 
 use crate::chartjs::Chart;
 use crate::components::finding::FindingCardColumn;
@@ -22,13 +22,15 @@ pub fn JobResult(JobResultProps { job }: &JobResultProps) -> Html {
     match &job.status {
         JobStatus::Waiting => html! { <span>{"Error!"}</span> },
         JobStatus::Done { runtime, result } => {
-            let algs: Vec<_> = job
-                .config
-                .algorithm
-                .iter()
-                .map(|a| a.to_string())
-                .map(|a| html! { <span class="badge text-bg-primary m-1">{a}</span> })
-                .collect();
+            let algs: Vec<_> = if let JobConfig::Profiling(c) = &job.config {
+                c.algorithm
+                    .iter()
+                    .map(|a| a.to_string())
+                    .map(|a| html! { <span class="badge text-bg-primary m-1">{a}</span> })
+                    .collect()
+            } else {
+                panic!("Can only display Profiling Jobs here!");
+            };
             let result = if result.is_ok() {
                 let result = result.clone();
                 let onclick = {

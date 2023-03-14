@@ -1,4 +1,4 @@
-use common::data_types::{ExperimentType, Measurement, Parameter, Report};
+use common::data_types::{ExperimentType, JobConfig, Measurement, Parameter, Report};
 // use gloo_console::log;
 use js_sys::Object;
 use serde_json::json;
@@ -56,11 +56,14 @@ pub fn Chart(ChartProps { report }: &ChartProps) -> Html {
             let plugins;
             let scales;
             let options;
-            match report.config.experiment_type {
+            let JobConfig::Profiling(conf) = report.config else {
+                todo!();
+            };
+            match conf.experiment_type {
                 ExperimentType::Custom => {
                     let mut heading;
                     let y_axis_text;
-                    match report.config.measurement {
+                    match conf.measurement {
                         Measurement::EpcPaging => {
                             chart_type = "bar";
                             heading = String::from("EPC Paging with varying ");
@@ -72,7 +75,7 @@ pub fn Chart(ChartProps { report }: &ChartProps) -> Html {
                             y_axis_text = "Throughput [M rec/s]";
                         }
                     }
-                    match report.config.parameter {
+                    match conf.parameter {
                         Parameter::Threads => {
                             heading.push_str("Threads");
                         }
@@ -83,7 +86,7 @@ pub fn Chart(ChartProps { report }: &ChartProps) -> Html {
                             heading.push_str("Join Selectivity");
                         }
                     }
-                    let steps: Vec<_> = report.config.param_value_iter().collect();
+                    let steps: Vec<_> = conf.param_value_iter().collect();
                     labels = json!(steps);
                     let mut data = HashMap::new();
                     report.results.sort_unstable_by(|(a, _), (b, _)| a.cmp(b));
@@ -91,7 +94,7 @@ pub fn Chart(ChartProps { report }: &ChartProps) -> Html {
                         let v = data
                             .entry((args.algorithm, args.app_name, args.dataset))
                             .or_insert(vec![]);
-                        v.push(match report.config.measurement {
+                        v.push(match conf.measurement {
                             Measurement::EpcPaging => result.throughput, // TODO Add EPC Paging.
                             Measurement::Throughput => result.throughput,
                         });

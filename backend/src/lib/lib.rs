@@ -4,16 +4,16 @@ use std::env::var;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::Mutex;
-use time::{Duration, OffsetDateTime};
+use time::Duration;
 use tokio::process::Command as TokioCommand;
 use tokio::sync::{mpsc, oneshot};
 use tracing::{error, info, instrument, warn};
 
 use common::data_types::{
-    Commandline, ExperimentResult, Job, JobStatus, Platform, ProfilingConfiguration, Report,
+    Commandline, ExperimentResult, Job, JobConfig, JobStatus, Platform, Report,
 };
 
-async fn compile_and_run(conf: ProfilingConfiguration) -> Report {
+async fn compile_and_run(conf: JobConfig) -> Report {
     let tee_bench_dir =
         PathBuf::from(var("TEEBENCHWEB_RUN_DIR").expect("TEEBENCHWEB_RUN_DIR not set"));
     let cmds = conf.to_teebench_cmd();

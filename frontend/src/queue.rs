@@ -88,8 +88,8 @@ pub fn Queue() -> Html {
     }
 }
 
-use common::data_types::ClientMessage;
 use crate::components::websocket::WebsocketState;
+use common::data_types::ClientMessage;
 #[function_component]
 pub fn ClearQueueButton() -> Html {
     let queue_store = use_store_value::<QueueState>();
