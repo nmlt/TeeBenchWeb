@@ -48,21 +48,8 @@ pub struct Commit {
     pub reports: Vec<Report>, // TODO Change to JobResult in case there is an error.
     /// Top level findings (diplayed above all the charts in the performance report).
     pub findings: Vec<Finding>,
-    // TODO Add an ID that the server generates to uniquely identify a commit, independently of the user supplied title.
-}
-
-// TODO Remove Default because there is no useful value for a default ID, or at least it doesnt make sense the generate it here if its incrementing: both backend and server could then conflict.
-impl Default for Commit {
-    fn default() -> Self {
-        Self {
-            title: String::default(),
-            operator: Operator::default(),
-            datetime: OffsetDateTime::now_utc(),
-            code: String::default(),
-            reports: Vec::default(),
-            findings: Vec::default(),
-        }
-    }
+    /// Client side ID of this commit, just gets incremented with each commit.
+    pub id: usize,
 }
 
 impl Commit {
@@ -72,6 +59,7 @@ impl Commit {
         datetime: OffsetDateTime,
         code: String,
         reports: Vec<Report>,
+        id: usize,
     ) -> Self {
         Commit {
             title,
@@ -85,6 +73,7 @@ impl Commit {
                 Finding::new("Phase 2: Join", "11/191 (-4)", FindingStyle::Good),
                 Finding::new("EPC Paging", "- 0.4 %", FindingStyle::Good),
             ],
+            id,
         }
     }
 }

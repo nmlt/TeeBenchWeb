@@ -22,7 +22,10 @@ use yew_router::components::Link;
 
 use crate::Route;
 
-#[derive(Debug, Clone, PartialEq, Default)]
+// TODO This is probably a bad idea. Just put the counter in the UploadCommitFormState. But then I have again the problem of Default.
+static mut COMMIT_ID_COUNTER: usize = 0;
+
+#[derive(Debug, Clone, PartialEq)]
 /// 0: the commit
 /// 1: compilation status:
 pub struct CommitStatus {
@@ -62,16 +65,50 @@ impl CommitState {
 // It's not useful for this to be an Option, because as soon as there is eg. an uploaded file, that Option becomes Some. But that doesn't mean that the title field has been filled in, so the commit might still have bogus in the title field, even though the code field is already ok.
 /// TODO Instead this struct could represent the form, with each available field being an option.
 #[derive(Debug, Clone, PartialEq, Default, Store)]
-pub struct UploadCommitState(Commit);
+pub struct UploadCommitFormState {
+    pub title: Option<String>,
+    pub operator: Option<Operator>,
+    pub code: Option<String>,
+    pub baseline: Option<Algorithm>,
+}
 
-/// Holds the selected baseline from the upload form.
-#[derive(Debug, Clone, PartialEq, Default, Store)]
-pub struct BaselineState(Algorithm);
+impl UploadCommitFormState {
+    // TODO Can this be converted to some From<Commit> implementation and use the automatic into?
+    /// Only call after you verified that the form has been filled in correctly. Otherwise this panics
+    pub fn to_commit_and_baseline(&self) -> (Commit, Algorithm) {
+        let c;
+        unsafe {
+            c = Commit {
+                title: self.title.clone().unwrap(),
+                operator: self.operator.clone().unwrap(),
+                datetime: OffsetDateTime::now_utc(),
+                code: self.code.clone().unwrap(),
+                reports: vec![],
+                findings: vec![],
+                id: COMMIT_ID_COUNTER,
+            };
+            COMMIT_ID_COUNTER += 1;
+        }
+        (c, self.baseline.clone().unwrap())
+    }
+    pub fn verify(&self) -> bool {
+        self.title.is_some()
+            && self.operator.is_some()
+            && self.code.is_some()
+            && self.baseline.is_some()
+    }
+    pub fn reset(&mut self) {
+        self.title = None;
+        self.operator = None;
+        self.code = None;
+        self.baseline = None;
+    }
+}
 
 #[function_component]
 fn UploadCommit() -> Html {
     let onchange = {
-        let dispatch = Dispatch::<UploadCommitState>::new();
+        let dispatch = Dispatch::<UploadCommitFormState>::new();
         dispatch.reduce_mut_future_callback_with(|store, e: Event| {
             Box::pin(async move {
                 //log!("UploadCommit: onchange triggered!");
@@ -85,48 +122,51 @@ fn UploadCommit() -> Html {
                         .map(File::from)
                         .unwrap();
                     let code = read_as_text(&file).await.unwrap();
-                    store.0.code = code;
+                    store.code = Some(code);
                 }
             })
         })
     };
     let onchange_title = {
-        let dispatch = Dispatch::<UploadCommitState>::new();
+        let dispatch = Dispatch::<UploadCommitFormState>::new();
         dispatch.reduce_mut_callback_with(|store, e: Event| {
             let input_elem = e.target_unchecked_into::<HtmlInputElement>();
-            store.0.title = input_elem.value();
+            store.title = Some(input_elem.value());
         })
     };
     let operators = Operator::VARIANTS;
     let operators = SelectDataOption::options_vec(&operators);
+    // TODO Add a "Select an Operator" option that maps to None in the store.
     let operators_onchange = {
-        let (_, dispatch) = use_store::<UploadCommitState>();
+        let (_, dispatch) = use_store::<UploadCommitFormState>();
         dispatch.reduce_mut_callback_with(|store, e: Event| {
             let select_elem = e.target_unchecked_into::<HtmlSelectElement>();
             let value = select_elem.value();
-            store.0.operator = Operator::from_str(&value).unwrap();
+            store.operator = Some(Operator::from_str(&value).unwrap());
         })
     };
     let algs = Algorithm::VARIANTS;
     let algs = SelectDataOption::options_vec(&algs);
     let algs_onchange = {
-        let dispatch = Dispatch::<BaselineState>::new();
+        let dispatch = Dispatch::<UploadCommitFormState>::new();
         dispatch.reduce_mut_callback_with(|store, e: Event| {
             let select_elem = e.target_unchecked_into::<HtmlSelectElement>();
             let value = select_elem.value();
-            store.0 = Algorithm::from_str(&value).unwrap();
+            store.baseline = Some(Algorithm::from_str(&value).unwrap());
         })
     };
     let onclick = {
-        let upload_commit_store = use_store_value::<UploadCommitState>();
+        let (upload_commit_state, upload_commit_dispatch) = use_store::<UploadCommitFormState>();
         let dispatch = Dispatch::<CommitState>::new();
         dispatch.reduce_mut_future_callback_with(move |commit_state, e: MouseEvent| {
             let input = e.target_unchecked_into::<HtmlInputElement>();
             let form: HtmlFormElement = input.form().unwrap();
             form.reset();
-            let upload_commit_store = upload_commit_store.clone();
+            let upload_commit_state = upload_commit_state.clone();
+            let upload_commit_dispatch = upload_commit_dispatch.clone();
             Box::pin(async move {
-                let mut new_commit = upload_commit_store.0.clone();
+                // Verified that the UploadCommitFormState has no fields with None by disabling this callback's button until the condition is met.
+                let (mut new_commit, baseline) = upload_commit_state.to_commit_and_baseline();
                 new_commit.datetime = OffsetDateTime::now_utc();
                 commit_state.0.push(CommitStatus::new(new_commit.clone()));
                 let _resp = Request::get("/api/commit")
@@ -137,6 +177,7 @@ fn UploadCommit() -> Html {
                     .await
                     .unwrap();
                 //log!("Sent commit to server, got response: ", format!("{_resp:?}"));
+                upload_commit_dispatch.reduce_mut(|s| s.reset());
 
                 // Send compile job
                 let compile_job = Job {
@@ -155,8 +196,19 @@ fn UploadCommit() -> Html {
             })
         })
     };
-    let upload_commit_store = use_store_value::<UploadCommitState>();
-    let baseline_store = use_store_value::<BaselineState>();
+    let upload_commit_store = use_store_value::<UploadCommitFormState>();
+    // Those next two statements do essentially the same.
+    let selected_operator = upload_commit_store
+        .operator
+        .as_ref()
+        .map(|s| vec![s.to_string()])
+        .unwrap_or(vec![]);
+    let selected_baseline = if let Some(selected_baseline) = &upload_commit_store.baseline {
+        vec![selected_baseline.to_string()]
+    } else {
+        vec![]
+    };
+    let upload_disabled = !upload_commit_store.verify();
     html! {
         <form class="row g-3">
             <div class="col-md">
@@ -174,13 +226,13 @@ fn UploadCommit() -> Html {
                         </div>
                     </div>
                     <div class="col-md">
-                        <InputSelect options={operators} onchange={operators_onchange} label={"Operator"} multiple={false} selected={vec![upload_commit_store.0.operator.to_string()]} disabled={false} />
+                        <InputSelect options={operators} onchange={operators_onchange} label={"Operator"} multiple={false} selected={selected_operator} disabled={false} />
                     </div>
                     <div class="col-md">
-                        <InputSelect options={algs} onchange={algs_onchange} label={"Baseline"} multiple={false} selected={vec![baseline_store.0.to_string()]} disabled={false} />
+                        <InputSelect options={algs} onchange={algs_onchange} label={"Baseline"} multiple={false} selected={selected_baseline} disabled={false} />
                     </div>
                     <div class="col-auto">
-                        <input class="btn btn-primary" type="button" {onclick} value={"Upload"} />
+                        <input class="btn btn-primary" type="button" {onclick} disabled={upload_disabled} value={"Upload"} />
                     </div>
                 </div>
             </div>
@@ -281,6 +333,7 @@ pub fn Commits() -> Html {
         move |_| {
             let commit_dispatch = commit_dispatch.clone();
             spawn_local(async move {
+                // TODO Get the largest commit id and save it in COMMIT_ID_COUNTER (unsafe).
                 let commit_dispatch = commit_dispatch.clone();
                 let resp: Result<Vec<Commit>, _> = Request::get("/api/commit")
                     .method(Method::GET)
