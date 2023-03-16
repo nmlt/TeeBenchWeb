@@ -2,7 +2,7 @@ use yew::prelude::*;
 use yewdux::prelude::*;
 
 use crate::{
-    chartjs::Chart, commits::CommitState, components::finding::FindingCardColumn, modal::Modal,
+    chartjs::Chart, commits::{CommitStatus, CommitState}, components::finding::FindingCardColumn, modal::Modal,
     navigation::Navigation,
 };
 use common::data_types::Report;
@@ -35,8 +35,8 @@ pub fn PerfReport(PerfReportProps { commit: current }: &PerfReportProps) -> Html
     let commit_store = use_store_value::<CommitState>();
     let current = match current {
         Some(c) => c,
-        None => match commit_store.commits.iter().last() {
-            Some(c) => &c.title,
+        None => match commit_store.0.iter().last() {
+            Some(cs) => &cs.commit.title,
             None => {
                 return html! {
                     <h1>{"No operators! Upload some in the Operator tab."}</h1> // TODO Would be nice to provide a link to the Operator tab.
@@ -44,7 +44,7 @@ pub fn PerfReport(PerfReportProps { commit: current }: &PerfReportProps) -> Html
             }
         },
     };
-    let Some(commit) = commit_store.commits.iter().filter(|c| &c.title == current).next() else {
+    let Some(commit) = commit_store.0.iter().filter(|cs| &cs.commit.title == current).next().map(|cs| cs.commit.clone()) else {
         return html! {
             <h1>{format!("Error getting commit with title {current:?}!")}</h1>
         }

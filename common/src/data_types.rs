@@ -51,6 +51,7 @@ pub struct Commit {
     // TODO Add an ID that the server generates to uniquely identify a commit, independently of the user supplied title.
 }
 
+// TODO Remove Default because there is no useful value for a default ID, or at least it doesnt make sense the generate it here if its incrementing: both backend and server could then conflict.
 impl Default for Commit {
     fn default() -> Self {
         Self {
@@ -424,6 +425,8 @@ pub enum JobConfig {
         commit: String,
         baseline: Algorithm,
     },
+    /// Compile the commit with name 0.
+    Compile(String),
 }
 
 impl Default for JobConfig {
@@ -445,6 +448,7 @@ impl Display for JobConfig {
             Self::PerfReport { commit, baseline } => {
                 write!(f, "PerfReport for {commit} with baseline {baseline}")
             }
+            Self::Compile(s) => write!(f, "{s}"),
         }
     }
 }
@@ -791,6 +795,7 @@ impl JobConfig {
                     // TODO
                 ]
             }
+            Self::Compile(_) => panic!("Can't convert compile job to teebench command!"),
         }
     }
 }

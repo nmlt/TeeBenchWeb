@@ -1,6 +1,5 @@
-use std::collections::VecDeque;
 use std::rc::Rc;
-use yew::platform::pinned::mpsc::{unbounded, UnboundedReceiver, UnboundedSender};
+use yew::platform::pinned::mpsc::{unbounded, UnboundedSender};
 use yew::prelude::*;
 use yewdux::prelude::*;
 
@@ -101,9 +100,6 @@ pub fn Websocket() -> Html {
                                     log!("Error: Queue out of sync!");
                                 }
                             });
-                        }
-                        _ => {
-                            log!("Error: Unexpected websocket message received!");
                         }
                     }
                 }
