@@ -68,3 +68,5 @@ A collection of thoughts of what could be improved in the project.
     - Everything that could be in a DB is queried via the REST API. Because if I ever add a db (for commits and finished profiling jobs), that part could be moved out of the axum server and eg. put in its own vm with a small frontend that translates requests to db queries.
         - TODO Question is whether microservices in VMs is even always a good idea. for big scale probably, but I know this won't ever be scaled up.
     - Other parts that only the profiling/perf_report runner can answer (queue status, queue commands like clear) can be send via websocket.
+- Compiling:
+    - If the initial compilation fails, the commit needs to be marked or immediately removed, otherwise the profiling/perfreport runners will be able to try to compile again.

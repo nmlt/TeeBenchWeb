@@ -9,19 +9,20 @@ use tokio::process::Command as TokioCommand;
 use tokio::sync::{mpsc, oneshot};
 use tracing::{error, info, instrument, warn};
 
-use common::data_types::{
-    Commandline, ExperimentResult, Job, JobConfig, JobStatus, Platform, Report,
-};
 
-async fn compile_and_run(conf: JobConfig) -> Report {
-    let tee_bench_dir =
-        PathBuf::from(var("TEEBENCHWEB_RUN_DIR").expect("TEEBENCHWEB_RUN_DIR not set"));
-    let cmds = conf.to_teebench_cmd();
+use common::data_types::{
+    ExperimentResult, Job, JobConfig, JobStatus, Platform, Report, JobResult,
+};
+use common::commandline::Commandline;
+use common::hardcoded::hardcoded_perf_report_commands;
+
+async fn run_experiment(tee_bench_dir: PathBuf, cmds: Vec<Commandline>, conf: JobConfig) -> JobResult {
     let mut tasks = HashMap::new();
     for cmd in cmds {
         let mut tee_bench_dir = tee_bench_dir.clone();
         let cmd_moved = cmd.clone();
-        // Each task should get the full "power" of the machine, so don't run them in parallel.
+        // Each task should get the full "power" of the machine, so don't run them in parallel (by awaiting the handle).
+        // TODO Do we have to spawn here? I think I just did that when I failed to see the `current_dir` option on `Command`. This was to avoid changing the cwd for the whole axum server.
         let handle = tokio::task::spawn(async move {
             let cmd = cmd_moved.clone();
             match cmd.app {
@@ -32,6 +33,7 @@ async fn compile_and_run(conf: JobConfig) -> Report {
                     tee_bench_dir.push("native");
                 }
             }
+            // TODO Put the right file into the right folder, if necessary. This requires the JobConfig.
             // This assumes that the Makefile of TeeBench has a different app name ("sgx" or "native"). See `common::data_types::Platform::to_app_name()`.
             // TokioCommand::new("make").current_dir(tee_bench_dir).args(["clean"]).status().await.expect("Failed to run make clean");
             // TokioCommand::new("make").current_dir(tee_bench_dir).args(["-B", "sgx"]).status().await.expect("Failed to compile sgx version of TeeBench");
@@ -64,7 +66,28 @@ async fn compile_and_run(conf: JobConfig) -> Report {
         let exp_result: ExperimentResult = iter.next().unwrap().unwrap();
         report.results.push((args, exp_result));
     }
-    report
+    JobResult::Exp(Ok(report))
+}
+
+async fn compile_and_run(conf: JobConfig) -> JobResult {
+    let tee_bench_dir =
+        PathBuf::from(var("TEEBENCHWEB_RUN_DIR").expect("TEEBENCHWEB_RUN_DIR not set"));
+    match conf {
+        JobConfig::Profiling(ref c) => {
+            let cmds = c.to_teebench_cmd();
+            run_experiment(tee_bench_dir, cmds, conf).await
+        }
+        JobConfig::PerfReport(ref c) => {
+            let cmds = hardcoded_perf_report_commands(&c.baseline);
+            run_experiment(tee_bench_dir, cmds, conf).await
+        }
+        JobConfig::Compile(id) => {
+            // TODO find file with `id`
+            // put it in the right place in teebench src dir
+            // OR: give this function access to CommitState (`ServerState`). That is probably the way to go :(
+            JobResult::Compile(Ok(()))
+        }
+    } 
 }
 
 #[instrument(skip(queue, oneshot_tx, queue_tx))]
@@ -81,12 +104,12 @@ async fn work_on_queue(
     // Probably by making the above function a closure, which would also be more idiomatic.
     while let Some(current_job) = peek_queue(queue.clone()) {
         info!("Working on {current_job:#?}...");
-        let report = compile_and_run(current_job.config.clone()).await;
-        info!("Process completed with {report:?}.");
+        let result = compile_and_run(current_job.config.clone()).await;
+        info!("Process completed with {result:?}.");
         let finished_job = Job {
             status: JobStatus::Done {
                 runtime: Duration::new(5, 0), // TODO Get actual runtime from teebench output.
-                result: Ok(report),
+                result,
             },
             ..current_job
         };

@@ -66,8 +66,8 @@ async fn ws_handler(
 async fn handle_socket(mut socket: WebSocket, queue_state: Arc<QueueState>) {
     loop {
         let mut guard = queue_state.queue_rx.lock().await;
-        // TODO Check if data loss could happen due to cancelation.
         info!("Looping back to select socket or queue_state channel receiver");
+        // TODO Check if data loss could happen due to cancelation.
         tokio::select! {
             Some(msg) = socket.recv() => {
                 info!("Socket received.");

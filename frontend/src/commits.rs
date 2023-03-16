@@ -166,8 +166,8 @@ fn UploadCommit() -> Html {
             let upload_commit_dispatch = upload_commit_dispatch.clone();
             Box::pin(async move {
                 // Verified that the UploadCommitFormState has no fields with None by disabling this callback's button until the condition is met.
-                let (mut new_commit, baseline) = upload_commit_state.to_commit_and_baseline();
-                new_commit.datetime = OffsetDateTime::now_utc();
+                let (new_commit, baseline) = upload_commit_state.to_commit_and_baseline();
+                let id = new_commit.id;
                 commit_state.0.push(CommitStatus::new(new_commit.clone()));
                 let _resp = Request::get("/api/commit")
                     .method(Method::POST)
@@ -181,7 +181,7 @@ fn UploadCommit() -> Html {
 
                 // Send compile job
                 let compile_job = Job {
-                    config: JobConfig::Compile(new_commit.title.clone()),
+                    config: JobConfig::Compile(id),
                     submitted: OffsetDateTime::now_utc(),
                     status: JobStatus::default(),
                 };
