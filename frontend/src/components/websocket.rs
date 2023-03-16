@@ -50,9 +50,8 @@ pub fn Websocket() -> Html {
     dispatch.set(WebsocketState::new(tx));
     use_effect_with_deps(
         move |_| {
-            // TODO Change address to '/api/ws' because its not just the queue being transmitted now.
             // TODO Find a way for the frontend to get the websites actual address (not localhost)
-            let ws = match WebSocket::open("ws://localhost:3000/api/queue") {
+            let ws = match WebSocket::open("ws://localhost:3000/api/ws") {
                 // `ws://` is required, otherwise there's an error.
                 Ok(ws) => ws,
                 Err(e) => {
@@ -63,14 +62,6 @@ pub fn Websocket() -> Html {
             let (mut write, mut read) = ws.split();
 
             spawn_local(async move {
-                //log!("sending first...");
-                write
-                    .send(Message::Bytes(
-                        serde_json::to_vec(&ClientMessage::RequestQueue).unwrap(),
-                    ))
-                    .await
-                    .unwrap();
-                //log!("Done!...");
                 while let Some(msg) = rx.next().await {
                     write
                         .send(Message::Bytes(serde_json::to_vec(&msg).unwrap()))
@@ -85,11 +76,6 @@ pub fn Websocket() -> Html {
                     let msg = serde_json::from_slice(&msg).unwrap();
                     log!(format!("Got msg {msg:?}"));
                     match msg {
-                        ServerMessage::AddQueueItem(conf) => {
-                            queue_state_dispatch.reduce_mut(|queue_state| {
-                                queue_state.queue.push_back(conf);
-                            });
-                        }
                         ServerMessage::RemoveQueueItem(finished_job) => {
                             // TODO Put the finished_job into another hook to enable viewing it somewhere else.
                             finished_job_dispatch.reduce_mut(|finished_job_state| {
@@ -109,8 +95,8 @@ pub fn Websocket() -> Html {
         (),
     );
     html! {
-        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-            {"CONNECTED"}
+        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-info">
+            {" "}
             <span class="visually-hidden">{"websocket status"}</span>
         </span>
     }

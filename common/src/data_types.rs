@@ -176,9 +176,7 @@ impl Default for Job {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ClientMessage {
-    /// Frontend wants to get the current queue
-    RequestQueue, // TODO Do I even need that? Can the server just send its queue when the socket opens
-    /// Frontend wants to clear the queue
+    //RequestQueue, // TODO Instead do a get to /api/queue.
     RequestClear,
     // Frontend received message
     Acknowledge, // TODO Can I trust that transmission succeeds?
@@ -186,10 +184,6 @@ pub enum ClientMessage {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ServerMessage {
-    // TODO Either merge the next two messages and use the Job enum or remove that enum.
-    /// Backend has a new job (or the frontend just requested the queue)
-    /// This message gets send for each item in the queue.
-    AddQueueItem(ProfilingConfiguration),
     /// Backend has finished the current top queue item and wants the frontend to remove it from the queue.
     /// Also the frontend should add the attached JobResult to that Job.
     RemoveQueueItem(Job),
@@ -909,6 +903,15 @@ impl std::fmt::Display for ProfilingConfiguration {
             self.platform,
             self.sort_data
         )
+    }
+}
+
+impl From<JobConfig> for ProfilingConfiguration {
+    fn from(jc: JobConfig) -> Self {
+        match jc {
+            JobConfig::Compile(_) | JobConfig::PerfReport { .. } => panic!("Can't convert!"),
+            JobConfig::Profiling(c) => c,
+        }
     }
 }
 

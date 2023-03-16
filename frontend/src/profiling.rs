@@ -22,6 +22,7 @@ use crate::components::{
 use crate::job_results_view::JobResultsView;
 use crate::modal::Modal;
 use crate::navigation::Navigation;
+use crate::queue::QueueState;
 
 use wasm_bindgen::JsCast;
 
@@ -165,16 +166,18 @@ pub fn profiling() -> Html {
     let onsubmit = {
         // send some request to server
         let store = use_store_value::<ProfilingConfiguration>();
-        Callback::from(move |_| {
-            //e.prevent_default(); // Doesn't seem to work with type="submit".
+        let queue_dispatch = Dispatch::<QueueState>::new();
+        queue_dispatch.reduce_mut_future_callback_with(move |s, _| {
             let store = ProfilingConfiguration::clone(&store);
-            let job = Job {
-                config: store.into(),
-                submitted: OffsetDateTime::now_utc(),
-                ..Job::default()
-            };
-            spawn_local(async move {
-                let resp = Request::get("/api/profiling")
+            Box::pin(async move {
+                //e.prevent_default(); // Doesn't seem to work with type="submit".
+                let store = ProfilingConfiguration::clone(&store);
+                let job = Job {
+                    config: store.clone().into(),
+                    submitted: OffsetDateTime::now_utc(),
+                    ..Job::default()
+                };
+                let resp = Request::get("/api/job")
                     .method(Method::POST)
                     .json(&job)
                     .unwrap()
@@ -182,7 +185,8 @@ pub fn profiling() -> Html {
                     .await
                     .unwrap();
                 log!("Sent request got: ", format!("{resp:?}"));
-            });
+                s.queue.push_back(store);
+            })
         })
     };
     let (store, dispatch) = use_store::<ProfilingConfiguration>();

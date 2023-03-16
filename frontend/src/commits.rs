@@ -16,7 +16,7 @@ use crate::modal::Modal;
 use crate::modal::ModalContent;
 use crate::navigation::Navigation;
 
-use common::data_types::{Algorithm, Commit, Operator, Job, JobConfig, JobStatus, VariantNames};
+use common::data_types::{Algorithm, Commit, Job, JobConfig, JobStatus, Operator, VariantNames};
 
 use yew_router::components::Link;
 
@@ -51,7 +51,6 @@ impl CommitStatus {
 // TODO Would it be a good idea to put another field in here that encodes an error to communicate with the server? Depending on its value the commit list could display a field to reload the list.
 #[derive(Debug, Clone, PartialEq, Default, Store)]
 pub struct CommitState(pub Vec<CommitStatus>);
-
 
 impl CommitState {
     pub fn new(commits: Vec<Commit>) -> Self {
@@ -152,6 +151,7 @@ fn UploadCommit() -> Html {
                     .send()
                     .await
                     .unwrap();
+                // TODO Instead of unwrapping show a possible error while sending.
             })
         })
     };

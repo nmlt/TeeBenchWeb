@@ -1,8 +1,11 @@
+use gloo_console::log;
+use gloo_net::http::{Method, Request};
 use std::collections::VecDeque;
+use yew::platform::spawn_local;
 use yew::prelude::*;
 use yewdux::prelude::*;
 
-use common::data_types::ProfilingConfiguration;
+use common::data_types::{Job, ProfilingConfiguration};
 
 #[derive(Debug, PartialEq, Properties)]
 struct QueueItemProps {
@@ -63,9 +66,39 @@ pub struct QueueState {
     pub queue: VecDeque<ProfilingConfiguration>,
 }
 
+impl QueueState {
+    pub fn new(jobs: Vec<Job>) -> Self {
+        let queue: VecDeque<ProfilingConfiguration> =
+            jobs.into_iter().map(|j| j.config.into()).collect();
+        QueueState { queue }
+    }
+}
+
 #[function_component]
 pub fn Queue() -> Html {
-    let queue_store = use_store_value::<QueueState>();
+    let (queue_store, queue_dispatch) = use_store::<QueueState>();
+    use_effect_with_deps(
+        move |_| {
+            let queue_dispatch = queue_dispatch.clone();
+            spawn_local(async move {
+                let resp: Result<Vec<Job>, _> = Request::get("/api/queue")
+                    .method(Method::GET)
+                    .send()
+                    .await
+                    .unwrap()
+                    .json()
+                    .await;
+                match resp {
+                    Ok(json) => {
+                        //log!(format!("got commits: {json:?}"));
+                        queue_dispatch.set(QueueState::new(json));
+                    }
+                    Err(e) => log!("Error getting queue json: ", e.to_string()),
+                }
+            });
+        },
+        (),
+    );
     let queue: Vec<Html> = queue_store
         .queue
         .iter()
@@ -75,6 +108,7 @@ pub fn Queue() -> Html {
             html! { <QueueItem config={c.clone()} running={running} /> }
         })
         .collect();
+
     html! {
         // <div class="text-white">
         //     <h3 class="fs-5">{"Queue"}</h3>

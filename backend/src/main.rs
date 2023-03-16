@@ -39,13 +39,18 @@ async fn get_commits(State(state): State<Arc<Mutex<ServerState>>>) -> Json<Value
 
 #[instrument(skip(profiling_state, payload))]
 #[axum_macros::debug_handler]
-async fn run_experiment(
+async fn run_job(
     State(profiling_state): State<Arc<ProfilingState>>,
     Json(payload): Json<Job>,
 ) -> Result<(), StatusCode> {
     info!("Received: {:?}", payload);
     profiling_state.channel_tx.send(payload).await.unwrap();
     Ok(())
+}
+
+async fn get_queue(State(queue_state): State<Arc<QueueState>>) -> impl IntoResponse {
+    let guard = queue_state.queue.lock().unwrap();
+    Json(guard.clone())
 }
 
 #[instrument(skip(queue_state, ws))]
@@ -75,33 +80,6 @@ async fn handle_socket(mut socket: WebSocket, queue_state: Arc<QueueState>) {
                             info!("Client sent binary data.");
                             if let Ok(request) = serde_json::from_slice(&b) {
                                 match request {
-                                    ClientMessage::RequestQueue => {
-                                        let queue = {
-                                            // TODO This is probably not required to immediately drop the read_guard.
-                                            info!("Locking queue_state...");
-                                            queue_state.queue.lock().unwrap().clone()
-                                        };
-                                        for item in queue {
-                                            info!("Sending queue item: {item:?}");
-                                            let JobConfig::Profiling(c) = item.config else {
-                                                panic!("Only Profiling configs allowed in queue!");
-                                            };
-                                            if socket
-                                                .send(Message::Binary(
-                                                    serde_json::to_vec(&ServerMessage::AddQueueItem(
-                                                        c,
-                                                    ))
-                                                    .unwrap(),
-                                                ))
-                                                .await
-                                                .is_err()
-                                            {
-                                                error!("Client disconnected while sending queue items.");
-                                                return;
-                                            }
-                                        }
-                                        info!("Sent queue to frontend!");
-                                    }
                                     ClientMessage::RequestClear => {
                                         // Cancel current job and clear queue
                                         warn!("Unimplemented clear queue request received.");
@@ -130,18 +108,10 @@ async fn handle_socket(mut socket: WebSocket, queue_state: Arc<QueueState>) {
                 }
             },
             Some(job) = guard.recv() => {
-                info!("Queue receiver got a new running or finished job.");
+                info!("Queue receiver got a new running or finished job. Notifying client...");
                 match job.status {
                     JobStatus::Waiting => {
-                        let JobConfig::Profiling(c) = job.config.clone() else {
-                            panic!("Only ProfilingConfigurations allowed in queue!");
-                        };
-                        let msg = ServerMessage::AddQueueItem(c);
-                        let serialized = serde_json::to_vec(&msg).unwrap();
-                        if let Err(e) = socket.send(Message::Binary(serialized)).await {
-                            error!("Sending new queue job added to client failed: {e}");
-                            return;
-                        }
+                        // TODO Remove getting notified of this here?
                     },
                     JobStatus::Done { .. } => {
                         let msg = ServerMessage::RemoveQueueItem(job.clone());
@@ -225,9 +195,11 @@ async fn main() {
         .with_state(app_state.clone())
         .route("/api/commit", get(get_commits))
         .with_state(app_state.clone())
-        .route("/api/profiling", post(run_experiment))
+        .route("/api/job", post(run_job))
         .with_state(app_state.clone())
-        .route("/api/queue", get(ws_handler))
+        .route("/api/ws", get(ws_handler))
+        .with_state(app_state.clone())
+        .route("/api/queue", get(get_queue))
         .with_state(app_state);
 
     info!("Listening on 0.0.0.0:3000");
