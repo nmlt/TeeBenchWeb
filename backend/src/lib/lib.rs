@@ -9,14 +9,17 @@ use tokio::process::Command as TokioCommand;
 use tokio::sync::{mpsc, oneshot};
 use tracing::{error, info, instrument, warn};
 
-
-use common::data_types::{
-    ExperimentResult, Job, JobConfig, JobStatus, Platform, Report, JobResult,
-};
 use common::commandline::Commandline;
+use common::data_types::{
+    ExperimentResult, Job, JobConfig, JobResult, JobStatus, Platform, Report,
+};
 use common::hardcoded::hardcoded_perf_report_commands;
 
-async fn run_experiment(tee_bench_dir: PathBuf, cmds: Vec<Commandline>, conf: JobConfig) -> JobResult {
+async fn run_experiment(
+    tee_bench_dir: PathBuf,
+    cmds: Vec<Commandline>,
+    conf: JobConfig,
+) -> JobResult {
     let mut tasks = HashMap::new();
     for cmd in cmds {
         let mut tee_bench_dir = tee_bench_dir.clone();
@@ -85,9 +88,15 @@ async fn compile_and_run(conf: JobConfig) -> JobResult {
             // TODO find file with `id`
             // put it in the right place in teebench src dir
             // OR: give this function access to CommitState (`ServerState`). That is probably the way to go :(
-            JobResult::Compile(Ok(()))
+            tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+
+            if rand::random() {
+                JobResult::Compile(Ok(()))
+            } else {
+                JobResult::Compile(Err("Fortuna wasn't merciful this time".to_string()))
+            }
         }
-    } 
+    }
 }
 
 #[instrument(skip(queue, oneshot_tx, queue_tx))]
@@ -127,17 +136,14 @@ async fn work_on_queue(
 ///
 /// - queue: still the actual queue, to queue new jobs
 /// - rx: channel to webserver, to receive new jobs from the websocket
-/// - queue_tx: notify webserver of new jobs
 async fn receive_confs(
     queue: Arc<Mutex<VecDeque<Job>>>,
     rx: Arc<tokio::sync::Mutex<mpsc::Receiver<Job>>>,
-    queue_tx: mpsc::Sender<Job>,
 ) {
     let mut rx_guard = rx.lock().await;
     match rx_guard.recv().await {
         Some(job) => {
             info!("New job came in!");
-            queue_tx.send(job.clone()).await.unwrap();
             let mut guard = queue.lock().unwrap();
             guard.push_back(job);
         }
@@ -161,7 +167,7 @@ pub async fn profiling_task(
     // Using a tokio Mutex here to make it Send. Which is required...
     let rx = Arc::new(tokio::sync::Mutex::new(rx));
     loop {
-        receive_confs(queue.clone(), rx.clone(), queue_tx.clone()).await;
+        receive_confs(queue.clone(), rx.clone()).await;
         let (work_finished_tx, mut work_finished_rx) = oneshot::channel();
         tokio::spawn(work_on_queue(
             queue.clone(),
@@ -171,7 +177,7 @@ pub async fn profiling_task(
         loop {
             // Following the advice in the tokio::oneshot documentation to make the rx &mut.
             tokio::select! {
-                _ = receive_confs(queue.clone(), rx.clone(), queue_tx.clone()) => {},
+                _ = receive_confs(queue.clone(), rx.clone()) => {},
                 _ = &mut work_finished_rx => { break; },
             }
         }

@@ -143,6 +143,7 @@ dependencies = [
  "csv",
  "indoc",
  "once_cell",
+ "rand",
  "serde",
  "serde_json",
  "structopt",

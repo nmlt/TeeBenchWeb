@@ -3,12 +3,13 @@ use yew::platform::pinned::mpsc::{unbounded, UnboundedSender};
 use yew::prelude::*;
 use yewdux::prelude::*;
 
-use common::data_types::{ClientMessage, ServerMessage};
+use common::data_types::{ClientMessage, JobConfig, JobResult, JobStatus, ServerMessage};
 use futures::{SinkExt, StreamExt};
 use gloo_console::log;
 use gloo_net::websocket::{futures::WebSocket, Message};
 use wasm_bindgen_futures::spawn_local;
 
+use crate::commits::CommitState;
 use crate::job_results_view::FinishedJobState;
 use crate::queue::QueueState;
 
@@ -72,21 +73,56 @@ pub fn Websocket() -> Html {
             spawn_local(async move {
                 let queue_state_dispatch = Dispatch::<QueueState>::new();
                 let finished_job_dispatch = Dispatch::<FinishedJobState>::new();
+                let commit_dispatch = Dispatch::<CommitState>::new();
                 while let Some(Ok(Message::Bytes(msg))) = read.next().await {
                     let msg = serde_json::from_slice(&msg).unwrap();
                     log!(format!("Got msg {msg:?}"));
                     match msg {
-                        ServerMessage::RemoveQueueItem(finished_job) => {
-                            // TODO Put the finished_job into another hook to enable viewing it somewhere else.
-                            finished_job_dispatch.reduce_mut(|finished_job_state| {
-                                finished_job_state.jobs.push(finished_job.clone());
-                            });
-                            queue_state_dispatch.reduce_mut(|queue_state| {
-                                if queue_state.queue.pop_front().is_none() {
-                                    log!("Error: Queue out of sync!");
-                                }
-                            });
-                        }
+                        ServerMessage::RemoveQueueItem(finished_job) => match finished_job.config {
+                            JobConfig::Profiling(_) => {
+                                finished_job_dispatch.reduce_mut(|finished_job_state| {
+                                    finished_job_state.jobs.push(finished_job.clone());
+                                });
+                                queue_state_dispatch.reduce_mut(|queue_state| {
+                                    if queue_state.queue.pop_front().is_none() {
+                                        log!("Error: Queue out of sync!");
+                                    }
+                                });
+                            }
+                            JobConfig::PerfReport(conf) => {
+                                commit_dispatch.reduce_mut(|commit_store| {
+                                        for commit in commit_store.0.iter_mut() {
+                                            if commit.commit.id == conf.commit {
+                                                if let JobStatus::Done { result, .. } = finished_job.status {
+                                                    commit.commit.reports.push(result);
+                                                } else {
+                                                    log!("Error: Got an unfinished job in the websocket.");
+                                                }
+                                                break;
+                                            }
+                                        }
+                                    });
+                            }
+                            JobConfig::Compile(id) => {
+                                commit_dispatch.reduce_mut(|commit_store| {
+                                        for commit in commit_store.0.iter_mut() {
+                                            if commit.commit.id == id {
+                                                if let JobStatus::Done { result, .. } = finished_job.status {
+                                                    if let JobResult::Compile(r) = result {
+                                                        let r = r.and(Ok((true, "".to_string())));
+                                                        commit.compile_status = Some(r);
+                                                    } else {
+                                                        log!("Error: Got a job result for somehting else than compiling when expecting Compile.")
+                                                    }
+                                                } else {
+                                                    log!("Error: Got an unfinished job in the websocket.");
+                                                }
+                                                break;
+                                            }
+                                        }
+                                    });
+                            }
+                        },
                     }
                 }
                 //log!("Done!");

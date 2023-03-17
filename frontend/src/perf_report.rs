@@ -8,7 +8,7 @@ use crate::{
     modal::Modal,
     navigation::Navigation,
 };
-use common::data_types::Report;
+use common::data_types::{JobResult, Report};
 
 #[derive(Debug, PartialEq, Properties)]
 pub struct CardChartColumnProps {
@@ -57,7 +57,20 @@ pub fn PerfReport(PerfReportProps { commit: current }: &PerfReportProps) -> Html
             <FindingCardColumn finding={f.clone()} />
         }
     });
-    let reports = commit.reports.iter().map(|r: &Report| {
+    let reports = commit.reports.iter().map(|r: &JobResult| {
+        let r = match r {
+            JobResult::Exp(Ok(r)) => r,
+            JobResult::Exp(Err(_)) => {
+                return html! {
+                    "Error while running experiment!"
+                }
+            }
+            JobResult::Compile(_) => {
+                return html! {
+                    "Cannot show compile jobs as chart!"
+                }
+            }
+        };
         let chart = html! {
             <Chart report={r.clone()} />
         };

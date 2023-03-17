@@ -35,10 +35,7 @@ pub struct CommitStatus {
     /// - Some(Ok((true, "warnings"))): compiled without errors,
     /// - Some(Err("errors")): compiled with errors
     pub compile_status: Option<Result<(bool, String), String>>,
-    /// - None: no reports generated yet
-    /// - Some(Ok(())): reports done
-    /// - Some(Err(msgs)): errors while generating reports
-    pub report_status: Option<Result<(), String>>,
+    pub reports_exps_running: bool,
 }
 
 impl CommitStatus {
@@ -46,7 +43,7 @@ impl CommitStatus {
         Self {
             commit,
             compile_status: None,
-            report_status: None,
+            reports_exps_running: false,
         }
     }
 }
@@ -193,6 +190,8 @@ fn UploadCommit() -> Html {
                     .await
                     .unwrap();
                 // TODO Instead of unwrapping show a possible error while sending.
+                commit_state.0.last_mut().unwrap().compile_status =
+                    Some(Ok((false, "".to_string())));
             })
         })
     };
@@ -245,7 +244,7 @@ fn CommitsList() -> Html {
     let (_content_store, content_dispatch) = use_store::<ModalContent>();
     let (commit_store, commit_dispatch) = use_store::<CommitState>();
 
-    let list_items_html: Html = commit_store.0.iter().rev().map(|CommitStatus {commit, compile_status, report_status}| {
+    let list_items_html: Html = commit_store.0.iter().rev().map(|CommitStatus {commit, compile_status, reports_exps_running}| {
         let commit = commit.clone();
 
         let onclick = {
@@ -275,33 +274,56 @@ fn CommitsList() -> Html {
                 }
             })
         };
-        let report_button = match compile_status {
-            None => {
-                let onclick = {
-                    // Send perf_report job
-                    Callback::from(|_| {
-                        // TODO
-                    })
-                };
-                html! { <button class="btn btn-info" {onclick}>{"Report"}</button> }
-            },
-            Some(Ok((false, _))) => {
-                html! { <button class="btn btn-info">{"Report"}<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span></button> }
-            },
-            Some(Ok((true, msgs))) => {
-                log!(format!("runner messages: {msgs}"));
-                html! {
-                    <Link<Route> classes={classes!("btn", "btn-info")} to={Route::PerfReport { commit: commit.title.clone() }}>
-                        {"Report"}
-                    </Link<Route>>
+        let compile_status_view = match compile_status {
+            // - None: not yet compiled
+            None => html! {"waiting to start compilation..."},
+            // - Some(Ok((false, ""))): compiling
+            Some(Ok((false, _))) => html! {"compiling..."},
+            // - Some(Ok((true, "warnings"))): compiled without errors,
+            Some(Ok((true, warnings))) => {
+                if warnings.is_empty() {
+                    html! {"Successfully compiled."}
+                } else {
+                    html! {
+                        <>
+                        {"There were some warnings."}
+                        {warnings}
+                        </>
+                    }
                 }
             }
+            // - Some(Err("errors")): compiled with errors
             Some(Err(e)) => {
-                log!(format!("runner messages: {e}"));
                 html! {
-                    {"Error running job!"}
+                    <>
+                    {"Failed to compile"}
+                    {e}
+                    </>
                 }
             }
+        };
+        let report_button = if *reports_exps_running {
+            html! {
+                <Link<Route> classes={classes!("btn", "btn-info")} to={Route::PerfReport { commit: commit.title.clone() }}>
+                    {"Report"}
+                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                </Link<Route>>
+            }
+        } else {
+            let onclick = {
+                let commit_dispatch = commit_dispatch.clone();
+                let id = commit.id;
+                // Send perf_report job
+                commit_dispatch.reduce_mut_callback(move |s| {
+                    for c in s.0.iter_mut() {
+                        if c.commit.id == id {
+                            c.reports_exps_running = true;
+                            break;
+                        }
+                    }
+                })
+            };
+            html! { <button class="btn btn-info" {onclick}>{"Report"}</button> }
         };
         html! {
             <li class="list-group-item">
@@ -313,7 +335,10 @@ fn CommitsList() -> Html {
                         <button class="btn btn-secondary" {onclick} data-bs-toggle="modal" data-bs-target="#mainModal">{"Code"}</button>
                     </div>
                     <div class="p-2">
-                        //{report_button}
+                        {compile_status_view}
+                    </div>
+                    <div class="p-2">
+                        {report_button}
                     </div>
                 </div>
             </li>

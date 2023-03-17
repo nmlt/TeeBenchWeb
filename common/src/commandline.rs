@@ -1,4 +1,4 @@
-use crate::data_types::{Platform, Algorithm, TeebenchArgs};
+use crate::data_types::{Algorithm, Platform, TeebenchArgs};
 use std::fmt::Display;
 use structopt::StructOpt;
 
@@ -68,7 +68,9 @@ impl std::fmt::Display for Commandline {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::data_types::{ProfilingConfiguration, ExperimentType, Parameter, Measurement, Dataset};
+    use crate::data_types::{
+        Dataset, ExperimentType, Measurement, Parameter, ProfilingConfiguration,
+    };
 
     #[test]
     fn profiling_configuration_to_teebench_cmd_default() {

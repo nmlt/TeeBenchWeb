@@ -1,4 +1,7 @@
-use crate::{data_types::{Algorithm, Platform, REPLACE_ALG}, commandline::Commandline};
+use crate::{
+    commandline::Commandline,
+    data_types::{Algorithm, Platform, REPLACE_ALG},
+};
 
 pub fn hardcoded_perf_report_commands(baseline: &Algorithm) -> Vec<Commandline> {
     let baseline = &baseline.to_string();

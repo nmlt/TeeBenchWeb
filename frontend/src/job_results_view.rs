@@ -3,7 +3,7 @@ use time::macros::format_description;
 use yew::prelude::*;
 use yewdux::prelude::*;
 
-use common::data_types::{Job, JobConfig, JobStatus, Report};
+use common::data_types::{Job, JobConfig, JobResult, JobStatus, Report};
 
 use crate::chartjs::Chart;
 use crate::components::finding::FindingCardColumn;
@@ -11,12 +11,12 @@ use crate::modal::ModalContent;
 use crate::queue::Queue;
 
 #[derive(Debug, Clone, PartialEq, Properties)]
-pub struct JobResultProps {
+pub struct JobResultViewProps {
     pub job: Job,
 }
 
 #[function_component]
-pub fn JobResult(JobResultProps { job }: &JobResultProps) -> Html {
+pub fn JobResultView(JobResultViewProps { job }: &JobResultViewProps) -> Html {
     let (_content_store, content_dispatch) = use_store::<ModalContent>();
     let time_format = format_description!("[hour]:[minute]");
     match &job.status {
@@ -30,6 +30,12 @@ pub fn JobResult(JobResultProps { job }: &JobResultProps) -> Html {
                     .collect()
             } else {
                 panic!("Can only display Profiling Jobs here!");
+            };
+            let result = match result {
+                JobResult::Exp(r) => r,
+                JobResult::Compile(_) => {
+                    panic!("Cannot display compile results in job results view!")
+                }
             };
             let result = if result.is_ok() {
                 let result = result.clone();
@@ -108,7 +114,7 @@ pub struct FinishedJobState {
 pub fn JobResultsView() -> Html {
     let (finished_job_store, _dispatch) = use_store::<FinishedJobState>();
     let jobs = finished_job_store.jobs.iter().map(|j| {
-        html! { <JobResult job={j.clone()} /> }
+        html! { <JobResultView job={j.clone()} /> }
     });
 
     html! {

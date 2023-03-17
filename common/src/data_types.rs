@@ -39,6 +39,7 @@ type CommitIdType = usize;
 /// A commit represents an algorithm/operator and its performance report.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Commit {
+    /// What the user entered as the commit message.
     pub title: String,
     /// Type of the operator.
     pub operator: Operator,
@@ -46,8 +47,8 @@ pub struct Commit {
     pub datetime: OffsetDateTime,
     /// C or C++ code.
     pub code: String,
-    /// Holds the finished Performance Report experiments. Baseline is first stored in a hook, and after the reports are done, in the reports.
-    pub reports: Vec<Report>, // TODO Change to JobResult in case there is an error.
+    /// Holds the finished Performance Report experiments.
+    pub reports: Vec<JobResult>,
     /// Top level findings (diplayed above all the charts in the performance report).
     pub findings: Vec<Finding>,
     /// Client side ID of this commit, just gets incremented with each commit.
@@ -60,7 +61,7 @@ impl Commit {
         operator: Operator,
         datetime: OffsetDateTime,
         code: String,
-        reports: Vec<Report>,
+        reports: Vec<JobResult>,
         id: usize,
     ) -> Self {
         Commit {
