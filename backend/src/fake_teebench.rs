@@ -41,57 +41,57 @@ static CSV_OUTPUT: Lazy<HashMap<(Platform, Algorithm, Dataset), &str>> = Lazy::n
         (
             (Platform::Sgx, Algorithm::Rho, Dataset::CacheFit),
             indoc! {"
-            matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            5242880,0,530802580,0,85,0,0,164574,39.8100000016
+            algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
+            RHO,2,1310720,5242880,5242880,0,481746914,0,78,0,0,257808,25.4205
         "},
         ),
         (
             (Platform::Sgx, Algorithm::Rho, Dataset::CacheExceed),
             indoc! {"
-            matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            52428800,0,8161090876,0,127,0,0,2461427,26.6500000052
+            algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
+            RHO,2,13107200,52428800,52428800,0,5930547977,0,92,0,0,3047240,21.5067
         "},
         ),
         (
             (Platform::Sgx, Algorithm::Crkj, Dataset::CacheFit),
             indoc! {"
-            matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            5242880,0,0,0,166,13520,306410,319930,20.4100000045
+            algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
+            CrkJoin,2,1310720,5242880,5242880,0,0,0,150,21165,475384,496549,13.1983
         "},
         ),
         (
             (Platform::Sgx, Algorithm::Crkj, Dataset::CacheExceed),
             indoc! {"
-            matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            52428800,0,0,0,123,198162,2170082,2368244,27.6500000028
+            algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
+            CrkJoin,2,13107200,52428800,52428800,0,0,0,133,340694,4056896,4397590,14.9027
         "},
         ),
         (
             (Platform::Sgx, Algorithm::Pht, Dataset::CacheFit),
             indoc! {"
-            matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,1000000,0
+            algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
+            PHT,2,1310720,5242880,5242880,298166084,0,486162275,119,0,0,393755,16.6439
         "},
         ),
         (
             (Platform::Sgx, Algorithm::Pht, Dataset::CacheExceed),
             indoc! {"
-            matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,5000000,0
+            algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput            0,0,0,0,0,0,0,5000000,0
+            PHT,2,13107200,52428800,52428800,219376788914,0,723447139495,14386,0,0,473306934,0.1385
         "},
         ),
         (
             (Platform::Sgx, Algorithm::Psm, Dataset::CacheFit),
             indoc! {"
-            matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,1000000,0
+            algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
+            PSM,2,1310720,5242880,5242880,1176578271,9193003,0,180,0,0,595286,11.0092
         "},
         ),
         (
             (Platform::Sgx, Algorithm::Psm, Dataset::CacheExceed),
             indoc! {"
-            matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,5000000,0
+            algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
+            PSM,2,13107200,52428800,52428800,11814713271,93232254,0,181,0,0,5977924,10.9630
         "},
         ),
         (
@@ -111,57 +111,57 @@ static CSV_OUTPUT: Lazy<HashMap<(Platform, Algorithm, Dataset), &str>> = Lazy::n
         (
             (Platform::Sgx, Algorithm::Rht, Dataset::CacheFit),
             indoc! {"
-            matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,1000000,0
+            algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
+            RHT,2,1310720,5242880,5242880,0,381947479,0,61,0,0,203048,32.2761
         "},
         ),
         (
             (Platform::Sgx, Algorithm::Rht, Dataset::CacheExceed),
             indoc! {"
-            matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,5000000,0
+            algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
+            RHT,2,13107200,52428800,52428800,0,5906061283,0,92,0,0,3035341,21.5910
         "},
         ),
         (
             (Platform::Sgx, Algorithm::Cht, Dataset::CacheFit),
             indoc! {"
-            matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,1000000,0
+            algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
+            CHT,2,1310720,5242880,5242880,34228389,61312999,307212842,61,0,0,202202,32.4112
         "},
         ),
         (
             (Platform::Sgx, Algorithm::Cht, Dataset::CacheExceed),
             indoc! {"
-            matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,5000000,0
+            algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
+            CHT,2,13107200,52428800,52428800,2667835856,656401775,153445200425,2392,0,0,78699826,0.8327
         "},
         ),
         (
             (Platform::Sgx, Algorithm::Rsm, Dataset::CacheFit),
             indoc! {"
-            matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,1000000,0
+            algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
+            RSM,2,1310720,5242880,5242880,0,420542556,0,113,0,0,371827,17.6254
         "},
         ),
         (
             (Platform::Sgx, Algorithm::Rsm, Dataset::CacheExceed),
             indoc! {"
-            matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,5000000,0
+            algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
+            RSM,2,13107200,52428800,52428800,0,6933755145,0,178,0,0,5869445,11.1656
         "},
         ),
         (
             (Platform::Sgx, Algorithm::Inl, Dataset::CacheFit),
             indoc! {"
-            matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,1000000,0
+            algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
+            INL,2,1310720,5242880,5242880,0,0,0,124,0,0,409273,16.0128
         "},
         ),
         (
             (Platform::Sgx, Algorithm::Inl, Dataset::CacheExceed),
             indoc! {"
-            matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,5000000,0
+            algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
+            INL,2,13107200,52428800,0,0,0,0,0,0,0,0,0.00
         "},
         ),
         (
@@ -182,57 +182,57 @@ static CSV_OUTPUT: Lazy<HashMap<(Platform, Algorithm, Dataset), &str>> = Lazy::n
         (
             (Platform::Native, Algorithm::Rho, Dataset::CacheFit),
             indoc! {"
-            matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,1000000,0
+            algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
+            RHO,2,1310720,5242880,5242880,0,67402791,0,13,0,0,43788,149.6666
         "},
         ),
         (
             (Platform::Native, Algorithm::Rho, Dataset::CacheExceed),
             indoc! {"
-            matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,5000000,0
+            algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
+            RHO,2,13107200,52428800,52428800,0,739501213,0,13,0,0,445093,147.2411
         "},
         ),
         (
             (Platform::Native, Algorithm::Crkj, Dataset::CacheFit),
             indoc! {"
-            matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,1000000,0
+            algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
+            CrkJoin,2,1310720,5242880,5242880,0,0,0,109,19433,339738,359171,18.2465
         "},
         ),
         (
             (Platform::Native, Algorithm::Crkj, Dataset::CacheExceed),
             indoc! {"
-            matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,5000000,0
+            algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
+            CrkJoin,2,13107200,52428800,52428800,0,0,0,95,250358,2885621,3135979,20.8981
         "},
         ),
         (
             (Platform::Native, Algorithm::Pht, Dataset::CacheFit),
             indoc! {"
-            matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,1000000,0
+            algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
+            PHT,2,1310720,5242880,5242880,116549274,0,118558692,35,0,0,118027,55.5263
         "},
         ),
         (
             (Platform::Native, Algorithm::Pht, Dataset::CacheExceed),
             indoc! {"
-            matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,5000000,0
+            algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
+            PHT,2,13107200,52428800,52428800,1398107221,0,1595668763,45,0,0,1502906,43.6062
         "},
         ),
         (
             (Platform::Native, Algorithm::Psm, Dataset::CacheFit),
             indoc! {"
-            matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,1000000,0
+            algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
+            PSM,2,1310720,5242880,5242880,1206610407,10233038,0,185,0,0,610868,10.7283
         "},
         ),
         (
             (Platform::Native, Algorithm::Psm, Dataset::CacheExceed),
             indoc! {"
-            matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,5000000,0
+            algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
+            PSM,2,13107200,52428800,52428800,15422516805,101285232,0,236,0,0,7793105,8.4095
         "},
         ),
         (
@@ -252,57 +252,57 @@ static CSV_OUTPUT: Lazy<HashMap<(Platform, Algorithm, Dataset), &str>> = Lazy::n
         (
             (Platform::Native, Algorithm::Rht, Dataset::CacheFit),
             indoc! {"
-            matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,1000000,0
+            algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
+            RHT,2,1310720,5242880,5242880,0,278009794,0,56,0,0,186142,35.2075
         "},
         ),
         (
             (Platform::Native, Algorithm::Rht, Dataset::CacheExceed),
             indoc! {"
-            matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,5000000,0
+            algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
+            RHT,2,13107200,52428800,52428800,0,783459653,0,14,0,0,470854,139.1854
         "},
         ),
         (
             (Platform::Native, Algorithm::Cht, Dataset::CacheFit),
             indoc! {"
-            matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,1000000,0
+            algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
+            CHT,2,1310720,5242880,5242880,14717179,9502994,107315399,20,0,0,66033,99.2473
         "},
         ),
         (
             (Platform::Native, Algorithm::Cht, Dataset::CacheExceed),
             indoc! {"
-            matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,5000000,0
+            algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
+            CHT,2,13107200,52428800,52428800,173920738,77403114,1947970581,33,0,0,1104069,59.3586
         "},
         ),
         (
             (Platform::Native, Algorithm::Rsm, Dataset::CacheFit),
             indoc! {"
-            matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,1000000,0
+            algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
+            RSM,2,1310720,5242880,5242880,0,67389227,0,53,0,0,176443,37.1429
         "},
         ),
         (
             (Platform::Native, Algorithm::Rsm, Dataset::CacheExceed),
             indoc! {"
-            matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,5000000,0
+            algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
+            RSM,2,13107200,52428800,52428800,0,732636786,0,95,0,0,3126966,20.9583
         "},
         ),
         (
             (Platform::Native, Algorithm::Inl, Dataset::CacheFit),
             indoc! {"
-            matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,1000000,0
+            algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
+            INL,2,1310720,5242880,5242880,0,0,0,77,0,0,255321,25.6681
         "},
         ),
         (
             (Platform::Native, Algorithm::Inl, Dataset::CacheExceed),
             indoc! {"
-            matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,5000000,0
+            algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
+            INL,2,13107200,52428800,52428800,0,0,0,149,0,0,4905579,13.3595
         "},
         ),
         (
