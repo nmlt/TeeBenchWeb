@@ -3,7 +3,9 @@ use yew::platform::pinned::mpsc::{unbounded, UnboundedSender};
 use yew::prelude::*;
 use yewdux::prelude::*;
 
-use common::data_types::{ClientMessage, JobConfig, JobResult, JobStatus, ServerMessage};
+use common::data_types::{
+    ClientMessage, CompilationStatus, JobConfig, JobResult, JobStatus, ServerMessage,
+};
 use futures::{SinkExt, StreamExt};
 use gloo_console::log;
 use gloo_net::websocket::{futures::WebSocket, Message};
@@ -92,9 +94,9 @@ pub fn Websocket() -> Html {
                             JobConfig::PerfReport(conf) => {
                                 commit_dispatch.reduce_mut(|commit_store| {
                                         for commit in commit_store.0.iter_mut() {
-                                            if commit.commit.id == conf.commit {
+                                            if commit.id == conf.commit {
                                                 if let JobStatus::Done { result, .. } = finished_job.status {
-                                                    commit.commit.reports.push(result);
+                                                    commit.reports.push(result);
                                                 } else {
                                                     log!("Error: Got an unfinished job in the websocket.");
                                                 }
@@ -106,11 +108,13 @@ pub fn Websocket() -> Html {
                             JobConfig::Compile(id) => {
                                 commit_dispatch.reduce_mut(|commit_store| {
                                         for commit in commit_store.0.iter_mut() {
-                                            if commit.commit.id == id {
+                                            if commit.id == id {
                                                 if let JobStatus::Done { result, .. } = finished_job.status {
                                                     if let JobResult::Compile(r) = result {
-                                                        let r = r.and(Ok((true, "".to_string())));
-                                                        commit.compile_status = Some(r);
+                                                        match r {
+                                                            Ok(s) => commit.compilation = CompilationStatus::Successful("TODO".to_string()),
+                                                            Err(e) => commit.compilation = CompilationStatus::Failed(e),
+                                                        }
                                                     } else {
                                                         log!("Error: Got a job result for somehting else than compiling when expecting Compile.")
                                                     }

@@ -91,7 +91,7 @@ async fn compile_and_run(conf: JobConfig) -> JobResult {
             tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
 
             if rand::random() {
-                JobResult::Compile(Ok(()))
+                JobResult::Compile(Ok("warning: This is a placeholder warning".to_string()))
             } else {
                 JobResult::Compile(Err("Fortuna wasn't merciful this time".to_string()))
             }

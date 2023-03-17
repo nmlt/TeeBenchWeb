@@ -34,6 +34,14 @@ pub enum Operator {
     OrderBy,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum CompilationStatus {
+    Uncompiled,
+    Compiling,
+    Successful(String),
+    Failed(String),
+}
+
 type CommitIdType = usize;
 
 /// A commit represents an algorithm/operator and its performance report.
@@ -51,8 +59,12 @@ pub struct Commit {
     pub reports: Vec<JobResult>,
     /// Top level findings (diplayed above all the charts in the performance report).
     pub findings: Vec<Finding>,
-    /// Client side ID of this commit, just gets incremented with each commit.
+    /// Client-side-set ID of this commit, just gets incremented with each commit.
     pub id: CommitIdType,
+    /// Compilation status
+    pub compilation: CompilationStatus,
+    /// Whether a PerfReport job is running right now for this commit
+    pub perf_report_running: bool,
 }
 
 impl Commit {
@@ -77,13 +89,15 @@ impl Commit {
                 Finding::new("EPC Paging", "- 0.4 %", FindingStyle::Good),
             ],
             id,
+            compilation: CompilationStatus::Uncompiled,
+            perf_report_running: false,
         }
     }
 }
 
 /// One report can be transformed to one chart with findings
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
-// To make ProfilingConfiguration an enum depending on ExperimentType is a bad idea maybe, because then we'd have to match in every dispatch callback modifying the config. So instead we continue using the ExperimentType in the ProfilingConfig.
+// To make ProfilingConfiguration an enum depending on ExperimentType is a bad idea maybe, because then we'd have to match in every dispatch callback modifying the config. So instead we now use the JobConfig enum to accertain which kind of job created this report.
 pub struct Report {
     pub config: JobConfig,
     pub results: Vec<(TeebenchArgs, ExperimentResult)>,
@@ -140,7 +154,7 @@ impl Finding {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum JobResult {
     Exp(Result<Report, TeeBenchWebError>),
-    Compile(Result<(), String>),
+    Compile(Result<String, String>),
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]

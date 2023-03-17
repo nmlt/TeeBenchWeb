@@ -16,7 +16,9 @@ use crate::modal::Modal;
 use crate::modal::ModalContent;
 use crate::navigation::Navigation;
 
-use common::data_types::{Algorithm, Commit, Job, JobConfig, JobStatus, Operator, VariantNames};
+use common::data_types::{
+    Algorithm, Commit, CompilationStatus, Job, JobConfig, JobStatus, Operator, VariantNames,
+};
 
 use yew_router::components::Link;
 
@@ -25,36 +27,13 @@ use crate::Route;
 // TODO This is probably a bad idea. Just put the counter in the UploadCommitFormState. But then I have again the problem of Default.
 static mut COMMIT_ID_COUNTER: usize = 0;
 
-#[derive(Debug, Clone, PartialEq)]
-/// 0: the commit
-/// 1: compilation status:
-pub struct CommitStatus {
-    pub commit: Commit,
-    /// - None: not yet compiled
-    /// - Some(Ok((false, ""))): compiling
-    /// - Some(Ok((true, "warnings"))): compiled without errors,
-    /// - Some(Err("errors")): compiled with errors
-    pub compile_status: Option<Result<(bool, String), String>>,
-    pub reports_exps_running: bool,
-}
-
-impl CommitStatus {
-    pub fn new(commit: Commit) -> Self {
-        Self {
-            commit,
-            compile_status: None,
-            reports_exps_running: false,
-        }
-    }
-}
-
 // TODO Would it be a good idea to put another field in here that encodes an error to communicate with the server? Depending on its value the commit list could display a field to reload the list.
 #[derive(Debug, Clone, PartialEq, Default, Store)]
-pub struct CommitState(pub Vec<CommitStatus>);
+pub struct CommitState(pub Vec<Commit>);
 
 impl CommitState {
     pub fn new(commits: Vec<Commit>) -> Self {
-        Self(commits.into_iter().map(|c| CommitStatus::new(c)).collect())
+        Self(commits)
     }
 }
 
@@ -75,15 +54,14 @@ impl UploadCommitFormState {
     pub fn to_commit_and_baseline(&self) -> (Commit, Algorithm) {
         let c;
         unsafe {
-            c = Commit {
-                title: self.title.clone().unwrap(),
-                operator: self.operator.clone().unwrap(),
-                datetime: OffsetDateTime::now_utc(),
-                code: self.code.clone().unwrap(),
-                reports: vec![],
-                findings: vec![],
-                id: COMMIT_ID_COUNTER,
-            };
+            c = Commit::new(
+                self.title.clone().unwrap(),
+                self.operator.clone().unwrap(),
+                OffsetDateTime::now_utc(),
+                self.code.clone().unwrap(),
+                vec![],
+                COMMIT_ID_COUNTER,
+            );
             COMMIT_ID_COUNTER += 1;
         }
         (c, self.baseline.clone().unwrap())
@@ -165,7 +143,7 @@ fn UploadCommit() -> Html {
                 // Verified that the UploadCommitFormState has no fields with None by disabling this callback's button until the condition is met.
                 let (new_commit, baseline) = upload_commit_state.to_commit_and_baseline();
                 let id = new_commit.id;
-                commit_state.0.push(CommitStatus::new(new_commit.clone()));
+                commit_state.0.push(new_commit.clone());
                 let _resp = Request::get("/api/commit")
                     .method(Method::POST)
                     .json(&new_commit)
@@ -190,8 +168,7 @@ fn UploadCommit() -> Html {
                     .await
                     .unwrap();
                 // TODO Instead of unwrapping show a possible error while sending.
-                commit_state.0.last_mut().unwrap().compile_status =
-                    Some(Ok((false, "".to_string())));
+                commit_state.0.last_mut().unwrap().compilation = CompilationStatus::Compiling;
             })
         })
     };
@@ -244,7 +221,7 @@ fn CommitsList() -> Html {
     let (_content_store, content_dispatch) = use_store::<ModalContent>();
     let (commit_store, commit_dispatch) = use_store::<CommitState>();
 
-    let list_items_html: Html = commit_store.0.iter().rev().map(|CommitStatus {commit, compile_status, reports_exps_running}| {
+    let list_items_html: Html = commit_store.0.iter().rev().map(|commit| {
         let commit = commit.clone();
 
         let onclick = {
@@ -274,13 +251,10 @@ fn CommitsList() -> Html {
                 }
             })
         };
-        let compile_status_view = match compile_status {
-            // - None: not yet compiled
-            None => html! {"waiting to start compilation..."},
-            // - Some(Ok((false, ""))): compiling
-            Some(Ok((false, _))) => html! {"compiling..."},
-            // - Some(Ok((true, "warnings"))): compiled without errors,
-            Some(Ok((true, warnings))) => {
+        let compile_status_view = match commit.compilation {
+            CompilationStatus::Uncompiled => html! {"waiting to start compilation..."},
+            CompilationStatus::Compiling => html! {"compiling..."},
+            CompilationStatus::Successful(ref warnings) => {
                 if warnings.is_empty() {
                     html! {"Successfully compiled."}
                 } else {
@@ -292,8 +266,7 @@ fn CommitsList() -> Html {
                     }
                 }
             }
-            // - Some(Err("errors")): compiled with errors
-            Some(Err(e)) => {
+            CompilationStatus::Failed(ref e) => {
                 html! {
                     <>
                     {"Failed to compile"}
@@ -302,7 +275,7 @@ fn CommitsList() -> Html {
                 }
             }
         };
-        let report_button = if *reports_exps_running {
+        let report_button = if commit.perf_report_running {
             html! {
                 <Link<Route> classes={classes!("btn", "btn-info")} to={Route::PerfReport { commit: commit.title.clone() }}>
                     {"Report"}
@@ -310,20 +283,24 @@ fn CommitsList() -> Html {
                 </Link<Route>>
             }
         } else {
-            let onclick = {
-                let commit_dispatch = commit_dispatch.clone();
-                let id = commit.id;
-                // Send perf_report job
-                commit_dispatch.reduce_mut_callback(move |s| {
-                    for c in s.0.iter_mut() {
-                        if c.commit.id == id {
-                            c.reports_exps_running = true;
-                            break;
+            if let CompilationStatus::Successful(_) = commit.compilation {
+                let onclick = {
+                    let commit_dispatch = commit_dispatch.clone();
+                    let id = commit.id;
+                    // TODO Send perf_report job
+                    commit_dispatch.reduce_mut_callback(move |s| {
+                        for c in s.0.iter_mut() {
+                            if c.id == id {
+                                c.perf_report_running = true;
+                                break;
+                            }
                         }
-                    }
-                })
-            };
-            html! { <button class="btn btn-info" {onclick}>{"Report"}</button> }
+                    })
+                };
+                html! { <button class="btn btn-info" {onclick}>{"Report"}</button> }
+            } else {
+                html! { <button class="btn btn-info" disabled={true}>{"Report"}</button> }
+            }
         };
         html! {
             <li class="list-group-item">
