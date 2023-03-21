@@ -34,7 +34,7 @@ async fn upload_commit(State(app_state): State<AppState>, Json(payload): Json<Co
 #[instrument(skip(app_state))]
 async fn get_commits(State(app_state): State<AppState>) -> Json<Value> {
     let guard = app_state.commits.lock().unwrap();
-    info!("Get commits {:?}", guard);
+    info!("Get commits {:#?}", guard);
     Json(json!(*guard))
 }
 
@@ -111,7 +111,7 @@ async fn handle_socket(
                 }
             },
             Some(job) = guard.recv() => {
-                info!("Queue receiver got a new running or finished job. Notifying client...");
+                info!("Queue receiver got a finished job. Notifying client...");
                 match job.status {
                     JobStatus::Waiting => {
                         // TODO Remove getting notified of this here?

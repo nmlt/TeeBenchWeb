@@ -11,7 +11,8 @@ use tracing::{error, info, instrument, warn};
 
 use common::commandline::Commandline;
 use common::data_types::{
-    Commit, ExperimentResult, Job, JobConfig, JobResult, JobStatus, Platform, Report,
+    Commit, CompilationStatus, ExperimentResult, Job, JobConfig, JobResult, JobStatus, Platform,
+    Report,
 };
 use common::hardcoded::hardcoded_perf_report_commands;
 
@@ -72,7 +73,7 @@ async fn run_experiment(
     JobResult::Exp(Ok(report))
 }
 
-async fn compile_and_run(conf: JobConfig) -> JobResult {
+async fn compile_and_run(conf: JobConfig, commits: Arc<Mutex<Vec<Commit>>>) -> JobResult {
     let tee_bench_dir =
         PathBuf::from(var("TEEBENCHWEB_RUN_DIR").expect("TEEBENCHWEB_RUN_DIR not set"));
     match conf {
@@ -85,16 +86,46 @@ async fn compile_and_run(conf: JobConfig) -> JobResult {
             run_experiment(tee_bench_dir, cmds, conf).await
         }
         JobConfig::Compile(id) => {
+            {
+                let mut guard = commits.lock().unwrap();
+                // TODO I'm repeating this code too often (eg. 20 lines down). Make finding commit with id a function.
+                for c in guard.iter_mut() {
+                    if c.id == id {
+                        c.compilation = CompilationStatus::Compiling;
+                        break;
+                    }
+                }
+            }
             // TODO find file with `id`
             // put it in the right place in teebench src dir
             // OR: give this function access to CommitState (`ServerState`). That is probably the way to go :(
-            tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+            tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
 
-            if rand::random() {
-                JobResult::Compile(Ok("warning: This is a placeholder warning".to_string()))
+            let output;
+            let result = if rand::random() {
+                output = "warning: This is a placeholder warning".to_string();
+                JobResult::Compile(Ok(output))
             } else {
-                JobResult::Compile(Err("Fortuna wasn't merciful this time".to_string()))
+                output = "Fortuna wasn't merciful this time".to_string();
+                JobResult::Compile(Err(output))
+            };
+            {
+                let mut guard = commits.lock().unwrap();
+                for c in guard.iter_mut() {
+                    if c.id == id {
+                        c.compilation = match result {
+                            JobResult::Compile(Ok(ref msg)) => {
+                                CompilationStatus::Successful(msg.clone())
+                            }
+                            JobResult::Compile(Err(ref msg)) => {
+                                CompilationStatus::Failed(msg.clone())
+                            }
+                            _ => unreachable!(),
+                        };
+                    }
+                }
             }
+            result
         }
     }
 }
@@ -104,6 +135,7 @@ async fn work_on_queue(
     queue: Arc<Mutex<VecDeque<Job>>>,
     oneshot_tx: oneshot::Sender<()>,
     queue_tx: mpsc::Sender<Job>,
+    commits: Arc<Mutex<Vec<Commit>>>,
 ) {
     fn peek_queue(queue: Arc<Mutex<VecDeque<Job>>>) -> Option<Job> {
         let guard = queue.lock().unwrap();
@@ -113,7 +145,7 @@ async fn work_on_queue(
     // Probably by making the above function a closure, which would also be more idiomatic.
     while let Some(current_job) = peek_queue(queue.clone()) {
         info!("Working on {current_job:#?}...");
-        let result = compile_and_run(current_job.config.clone()).await;
+        let result = compile_and_run(current_job.config.clone(), commits.clone()).await;
         info!("Process completed with {result:?}.");
         let finished_job = Job {
             status: JobStatus::Done {
@@ -159,7 +191,7 @@ async fn receive_confs(
 /// queue: the actual queue, shared with the server, so it can send the queue to any newly connecting client
 /// queue_tx: this channel notifies the server of any changes in the queue.
 /// rx: incoming new profiling configs
-#[instrument(skip(rx, queue, queue_tx))]
+#[instrument(skip(commits, queue, queue_tx, rx))]
 pub async fn profiling_task(
     commits: Arc<Mutex<Vec<Commit>>>,
     queue: Arc<Mutex<VecDeque<Job>>>,
@@ -175,6 +207,7 @@ pub async fn profiling_task(
             queue.clone(),
             work_finished_tx,
             queue_tx.clone(),
+            commits.clone(),
         ));
         loop {
             // Following the advice in the tokio::oneshot documentation to make the rx &mut.

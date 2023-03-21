@@ -65,6 +65,8 @@ pub struct Commit {
     pub compilation: CompilationStatus,
     /// Whether a PerfReport job is running right now for this commit
     pub perf_report_running: bool,
+    /// Which other commit or Algorithm should serve as the baseline. Other commits are identified by Algorithm::Commit(CommitIdType).
+    pub baseline: Algorithm,
 }
 
 impl Commit {
@@ -75,6 +77,7 @@ impl Commit {
         code: String,
         reports: Vec<JobResult>,
         id: usize,
+        baseline: Algorithm,
     ) -> Self {
         Commit {
             title,
@@ -91,6 +94,7 @@ impl Commit {
             id,
             compilation: CompilationStatus::Uncompiled,
             perf_report_running: false,
+            baseline,
         }
     }
 }
@@ -436,7 +440,7 @@ pub enum JobConfig {
     ///     - Commit's EPC Paging with increasing dataset size: Page misses as bars and throughput as line.
     ///     - Baseline's EPC Paging with increasing dataset size: Page misses as bars and throughput as line.
     PerfReport(PerfReportConfig),
-    /// Compile the commit with name 0.
+    /// Compile the commit with id 0.
     Compile(CommitIdType),
 }
 

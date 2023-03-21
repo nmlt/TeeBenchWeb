@@ -24,7 +24,7 @@ use yew_router::components::Link;
 
 use crate::Route;
 
-// TODO This is probably a bad idea. Just put the counter in the UploadCommitFormState. But then I have again the problem of Default.
+// TODO This is probably a bad idea. Just put the counter in the UploadCommitFormState. Then I have to update that state after HTTP GET'ting the already present commits from the server.
 static mut COMMIT_ID_COUNTER: usize = 0;
 
 // TODO Would it be a good idea to put another field in here that encodes an error to communicate with the server? Depending on its value the commit list could display a field to reload the list.
@@ -51,9 +51,10 @@ pub struct UploadCommitFormState {
 impl UploadCommitFormState {
     // TODO Can this be converted to some From<Commit> implementation and use the automatic into?
     /// Only call after you verified that the form has been filled in correctly. Otherwise this panics
-    pub fn to_commit_and_baseline(&self) -> (Commit, Algorithm) {
+    pub fn to_commit(&self) -> Commit {
         let c;
         unsafe {
+            COMMIT_ID_COUNTER += 1;
             c = Commit::new(
                 self.title.clone().unwrap(),
                 self.operator.clone().unwrap(),
@@ -61,10 +62,10 @@ impl UploadCommitFormState {
                 self.code.clone().unwrap(),
                 vec![],
                 COMMIT_ID_COUNTER,
+                self.baseline.clone().unwrap(),
             );
-            COMMIT_ID_COUNTER += 1;
         }
-        (c, self.baseline.clone().unwrap())
+        c
     }
     pub fn verify(&self) -> bool {
         self.title.is_some()
@@ -141,7 +142,7 @@ fn UploadCommit() -> Html {
             let upload_commit_dispatch = upload_commit_dispatch.clone();
             Box::pin(async move {
                 // Verified that the UploadCommitFormState has no fields with None by disabling this callback's button until the condition is met.
-                let (new_commit, baseline) = upload_commit_state.to_commit_and_baseline();
+                let new_commit = upload_commit_state.to_commit();
                 let id = new_commit.id;
                 commit_state.0.push(new_commit.clone());
                 let _resp = Request::get("/api/commit")
@@ -335,7 +336,6 @@ pub fn Commits() -> Html {
         move |_| {
             let commit_dispatch = commit_dispatch.clone();
             spawn_local(async move {
-                // TODO Get the largest commit id and save it in COMMIT_ID_COUNTER (unsafe).
                 let commit_dispatch = commit_dispatch.clone();
                 let resp: Result<Vec<Commit>, _> = Request::get("/api/commit")
                     .method(Method::GET)
@@ -348,7 +348,15 @@ pub fn Commits() -> Html {
                 match resp {
                     Ok(json) => {
                         //log!(format!("got commits: {json:?}"));
+                        let largest = json
+                            .iter()
+                            .max_by(|x, y| x.id.cmp(&y.id))
+                            .map(|c| c.id)
+                            .unwrap_or(0);
                         commit_dispatch.set(CommitState::new(json));
+                        unsafe {
+                            COMMIT_ID_COUNTER = largest;
+                        }
                     }
                     Err(e) => log!("Error getting commit json: ", e.to_string()),
                 }
