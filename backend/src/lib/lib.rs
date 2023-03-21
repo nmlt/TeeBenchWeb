@@ -11,7 +11,7 @@ use tracing::{error, info, instrument, warn};
 
 use common::commandline::Commandline;
 use common::data_types::{
-    ExperimentResult, Job, JobConfig, JobResult, JobStatus, Platform, Report,
+    Commit, ExperimentResult, Job, JobConfig, JobResult, JobStatus, Platform, Report,
 };
 use common::hardcoded::hardcoded_perf_report_commands;
 
@@ -155,14 +155,16 @@ async fn receive_confs(
 ///
 /// Wait for new jobs in a loop. When a new job arrives, queue it and start a task to work on the queue. Then start a new loop to receive new jobs or receive the notification that there are no more jobs in the queue. When that notification arrives, break that loop and restart the outer one.
 ///
-/// rx: incoming new profiling configs
+/// commits: The list of commits uploaded, to compile and generate perf reports for them.
 /// queue: the actual queue, shared with the server, so it can send the queue to any newly connecting client
 /// queue_tx: this channel notifies the server of any changes in the queue.
+/// rx: incoming new profiling configs
 #[instrument(skip(rx, queue, queue_tx))]
 pub async fn profiling_task(
-    rx: mpsc::Receiver<Job>,
+    commits: Arc<Mutex<Vec<Commit>>>,
     queue: Arc<Mutex<VecDeque<Job>>>,
     queue_tx: mpsc::Sender<Job>,
+    rx: mpsc::Receiver<Job>,
 ) {
     // Using a tokio Mutex here to make it Send. Which is required...
     let rx = Arc::new(tokio::sync::Mutex::new(rx));

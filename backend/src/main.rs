@@ -23,49 +23,52 @@ use common::data_types::{
 
 const DEFAULT_TASK_CHANNEL_SIZE: usize = 5;
 
-#[instrument(skip(state, payload))]
-async fn upload_commit(State(state): State<Arc<Mutex<ServerState>>>, Json(payload): Json<Commit>) {
-    let mut s = state.lock().unwrap();
+#[instrument(skip(app_state, payload))]
+async fn upload_commit(State(app_state): State<AppState>, Json(payload): Json<Commit>) {
+    let mut guard = app_state.commits.lock().unwrap();
     let debug_title = payload.title.clone();
     info!("Received commit: {debug_title}");
-    s.commits.push(payload);
+    guard.push(payload);
 }
 
-async fn get_commits(State(state): State<Arc<Mutex<ServerState>>>) -> Json<Value> {
-    let s = state.lock().unwrap();
-    info!("Get commits {:?}", s.commits);
-    Json(json!(s.commits))
+#[instrument(skip(app_state))]
+async fn get_commits(State(app_state): State<AppState>) -> Json<Value> {
+    let guard = app_state.commits.lock().unwrap();
+    info!("Get commits {:?}", guard);
+    Json(json!(*guard))
 }
 
-#[instrument(skip(profiling_state, payload))]
+#[instrument(skip(app_state, payload))]
 #[axum_macros::debug_handler]
 async fn run_job(
-    State(profiling_state): State<Arc<ProfilingState>>,
+    State(app_state): State<AppState>,
     Json(payload): Json<Job>,
 ) -> Result<(), StatusCode> {
     info!("Received: {:?}", payload);
-    profiling_state.channel_tx.send(payload).await.unwrap();
+    app_state.worker_task_tx.send(payload).await.unwrap();
     Ok(())
 }
 
-async fn get_queue(State(queue_state): State<Arc<QueueState>>) -> impl IntoResponse {
-    let guard = queue_state.queue.lock().unwrap();
+#[instrument(skip(app_state))]
+async fn get_queue(State(app_state): State<AppState>) -> impl IntoResponse {
+    let guard = app_state.queue.lock().unwrap();
     Json(guard.clone())
 }
 
-#[instrument(skip(queue_state, ws))]
-async fn ws_handler(
-    State(queue_state): State<Arc<QueueState>>,
-    ws: WebSocketUpgrade,
-) -> impl IntoResponse {
+#[instrument(skip(app_state, ws))]
+async fn ws_handler(State(app_state): State<AppState>, ws: WebSocketUpgrade) -> impl IntoResponse {
     info!("ws_handler running.");
-    ws.on_upgrade(|socket| handle_socket(socket, queue_state))
+    ws.on_upgrade(|socket| handle_socket(socket, app_state.queue, app_state.unqueued_notifier))
 }
 
-#[instrument(skip(socket, queue_state))]
-async fn handle_socket(mut socket: WebSocket, queue_state: Arc<QueueState>) {
+#[instrument(skip(socket, queue, unqueued_notifier))]
+async fn handle_socket(
+    mut socket: WebSocket,
+    queue: Arc<Mutex<VecDeque<Job>>>,
+    unqueued_notifier: Arc<tokio::sync::Mutex<mpsc::Receiver<Job>>>,
+) {
     loop {
-        let mut guard = queue_state.queue_rx.lock().await;
+        let mut guard = unqueued_notifier.lock().await;
         info!("Looping back to select socket or queue_state channel receiver");
         // TODO Check if data loss could happen due to cancelation.
         tokio::select! {
@@ -127,31 +130,29 @@ async fn handle_socket(mut socket: WebSocket, queue_state: Arc<QueueState>) {
     }
 }
 
-#[derive(Debug, Clone, Default)]
-struct ServerState {
-    commits: Vec<Commit>,
-}
-
-#[derive(Debug, Clone)]
-struct ProfilingState {
-    /// Channel transmitter to send newly arrived Jobs to the async worker task (which has the corresponding receiver).
-    channel_tx: mpsc::Sender<Job>,
-}
-
-#[derive(Debug)]
-struct QueueState {
-    queue: Arc<Mutex<VecDeque<Job>>>,
-    /// Channel receiver to get notified if new items were queued or unqueued.
-    // TODO There's only one receiver, right?
-    queue_rx: Arc<tokio::sync::Mutex<mpsc::Receiver<Job>>>,
-    // TODO Some kind of handle or channel that receives a handle to cancel the current queue item.
-}
-
+// TODO Would it be better to just wrap the AppState in an Arc? Still would need the Mutexes on the fields.
 #[derive(Debug, Clone, FromRef)]
 struct AppState {
-    state: Arc<Mutex<ServerState>>,
-    profiling_state: Arc<ProfilingState>,
-    queue_state: Arc<QueueState>,
+    commits: Arc<Mutex<Vec<Commit>>>,
+    queue: Arc<Mutex<VecDeque<Job>>>,
+    unqueued_notifier: Arc<tokio::sync::Mutex<mpsc::Receiver<Job>>>,
+    worker_task_tx: Arc<mpsc::Sender<Job>>,
+}
+
+impl AppState {
+    fn new(
+        commits: Arc<Mutex<Vec<Commit>>>,
+        queue: Arc<Mutex<VecDeque<Job>>>,
+        unqueued_notifier: Arc<tokio::sync::Mutex<mpsc::Receiver<Job>>>,
+        worker_task_tx: Arc<mpsc::Sender<Job>>,
+    ) -> Self {
+        AppState {
+            commits,
+            queue,
+            unqueued_notifier,
+            worker_task_tx,
+        }
+    }
 }
 
 #[tokio::main]
@@ -161,25 +162,26 @@ async fn main() {
         .with_max_level(tracing::Level::INFO)
         .init();
 
-    let (profiling_tx, profiling_rx) = mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);
+    let commits = Arc::new(Mutex::new(vec![]));
     let queue = Arc::new(Mutex::new(VecDeque::new()));
     let (queue_tx, queue_rx) = mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);
-    tokio::spawn(profiling_task(profiling_rx, queue.clone(), queue_tx));
-    let state = Arc::new(Mutex::new(ServerState { commits: vec![] }));
-    let profiling_state = Arc::new(ProfilingState {
-        channel_tx: profiling_tx.clone(),
-    });
-    let queue_state = QueueState {
-        queue,
-        queue_rx: Arc::new(tokio::sync::Mutex::new(queue_rx)),
-    };
-    let app_state = AppState {
-        state,
-        profiling_state,
-        queue_state: Arc::new(queue_state),
-    };
+    let (profiling_tx, profiling_rx) = mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);
 
-    let spa = SpaRouter::new("/assets", "../dist");
+    tokio::spawn(profiling_task(
+        Arc::clone(&commits),
+        Arc::clone(&queue),
+        queue_tx,
+        profiling_rx,
+    ));
+
+    let app_state = AppState::new(
+        commits,
+        queue,
+        Arc::new(tokio::sync::Mutex::new(queue_rx)),
+        Arc::new(profiling_tx),
+    );
+
+    let spa = SpaRouter::new("/assets", "../dist"); // TODO Remove and use the tower middleware instead.
     let app = Router::new()
         .merge(spa)
         .route("/api/test", get(|| async { "Test successful!" }))

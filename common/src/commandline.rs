@@ -1,4 +1,4 @@
-use crate::data_types::{Algorithm, Platform, TeebenchArgs};
+use crate::data_types::{Platform, TeebenchArgs};
 use std::fmt::Display;
 use structopt::StructOpt;
 
@@ -69,7 +69,7 @@ impl std::fmt::Display for Commandline {
 mod test {
     use super::*;
     use crate::data_types::{
-        Dataset, ExperimentType, Measurement, Parameter, ProfilingConfiguration,
+        Algorithm, Dataset, ExperimentType, Measurement, Parameter, ProfilingConfiguration,
     };
 
     #[test]
