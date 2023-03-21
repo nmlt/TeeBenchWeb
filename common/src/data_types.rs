@@ -742,7 +742,7 @@ mod tests {
     #[test]
     fn serde_json_report() {
         let mut report_struct = Report {
-            config: ProfilingConfiguration::default(),
+            config: JobConfig::default(),
             results: vec![],
             findings: vec![],
         };
