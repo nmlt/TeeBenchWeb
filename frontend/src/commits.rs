@@ -169,6 +169,7 @@ fn UploadCommit() -> Html {
                     .await
                     .unwrap();
                 // TODO Instead of unwrapping show a possible error while sending.
+                // TODO If there is already a job, the compilationstatus should be not compiled.
                 commit_state.0.last_mut().unwrap().compilation = CompilationStatus::Compiling;
             })
         })
@@ -284,19 +285,42 @@ fn CommitsList() -> Html {
                 </Link<Route>>
             }
         } else {
-            if let CompilationStatus::Successful(_) = commit.compilation {
+            // TODO Either store in the commit that the perfReport generation has finished or do something else, no conditional on the amount of reports!
+            if commit.reports.len() == 6 {
+               html! {
+                    <Link<Route> classes={classes!("btn", "btn-info")} to={Route::PerfReport { commit: commit.title.clone() }}>
+                        {"Report"}
+                    </Link<Route>>
+                }
+            } else if let CompilationStatus::Successful(_) = commit.compilation {
                 let onclick = {
                     let commit_dispatch = commit_dispatch.clone();
                     let id = commit.id;
-                    // TODO Send perf_report job
-                    commit_dispatch.reduce_mut_callback(move |s| {
+                    let baseline = commit.baseline;
+                    commit_dispatch.reduce_mut_future_callback(move |s| Box::pin(async move {
+                        use common::data_types::PerfReportConfig;
+                        let perf_report_job = Job {
+                            config: JobConfig::PerfReport(PerfReportConfig {
+                                commit: id,
+                                baseline,
+                            }),
+                            submitted: OffsetDateTime::now_utc(),
+                            status: JobStatus::default(),
+                        };
+                        let _resp = Request::get("/api/job")
+                            .method(Method::POST)
+                            .json(&perf_report_job)
+                            .unwrap()
+                            .send()
+                            .await
+                            .unwrap();
                         for c in s.0.iter_mut() {
                             if c.id == id {
                                 c.perf_report_running = true;
                                 break;
                             }
                         }
-                    })
+                    }))
                 };
                 html! { <button class="btn btn-info" {onclick}>{"Report"}</button> }
             } else {

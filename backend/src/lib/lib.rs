@@ -11,8 +11,7 @@ use tracing::{error, info, instrument, warn};
 
 use common::commandline::Commandline;
 use common::data_types::{
-    Commit, CompilationStatus, ExperimentResult, Job, JobConfig, JobResult, JobStatus, Platform,
-    Report,
+    Commit, CompilationStatus, Job, JobConfig, JobResult, JobStatus, Platform, Report,
 };
 use common::hardcoded::hardcoded_perf_report_commands;
 
@@ -67,7 +66,7 @@ async fn run_experiment(
         let mut rdr = csv::Reader::from_reader(&*res);
         let mut iter = rdr.deserialize();
         // iter.next(); // First line is skipped anyway because a header is expected.
-        let exp_result: ExperimentResult = iter.next().unwrap().unwrap();
+        let exp_result: HashMap<String, String> = iter.next().unwrap().unwrap();
         report.results.push((args, exp_result));
     }
     JobResult::Exp(Ok(report))

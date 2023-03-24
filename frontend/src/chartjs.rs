@@ -95,8 +95,8 @@ pub fn Chart(ChartProps { report }: &ChartProps) -> Html {
                             .entry((args.algorithm, args.app_name, args.dataset))
                             .or_insert(vec![]);
                         v.push(match conf.measurement {
-                            Measurement::EpcPaging => result.throughput, // TODO Add EPC Paging.
-                            Measurement::Throughput => result.throughput,
+                            Measurement::EpcPaging => result["throughput"].clone(), // TODO Add EPC Paging.
+                            Measurement::Throughput => result["throughput"].clone(),
                         });
                     }
                     let mut datasets_prep = vec![];

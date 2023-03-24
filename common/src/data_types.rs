@@ -7,6 +7,7 @@ use strum_macros::{Display, EnumIter, EnumString, EnumVariantNames};
 use thiserror::Error;
 use yewdux::prelude::Store;
 
+use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fmt::Display;
 
@@ -104,29 +105,8 @@ impl Commit {
 // To make ProfilingConfiguration an enum depending on ExperimentType is a bad idea maybe, because then we'd have to match in every dispatch callback modifying the config. So instead we now use the JobConfig enum to accertain which kind of job created this report.
 pub struct Report {
     pub config: JobConfig,
-    pub results: Vec<(TeebenchArgs, ExperimentResult)>,
+    pub results: Vec<(TeebenchArgs, HashMap<String, String>)>,
     pub findings: Vec<Finding>,
-}
-
-#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
-pub struct ExperimentResult {
-    pub matches: u64,
-    #[serde(rename = "phaseBuildCycles")]
-    pub phase_build_cycles: u64,
-    #[serde(rename = "phasePartitionCycles")]
-    pub phase_partition_cycles: u64,
-    #[serde(rename = "phaseProbeCycles")]
-    pub phase_probe_cycles: u64,
-    #[serde(rename = "cyclesPerTuple")]
-    pub cycles_per_tuple: u64,
-    #[serde(rename = "timePartitionUsec")]
-    pub time_partition_usec: u64,
-    #[serde(rename = "timeJoinUsec")]
-    pub time_join_usec: u64,
-    #[serde(rename = "timeTotalUsec")]
-    pub time_total_usec: u64,
-    pub throughput: f64,
-    //pub epc_paging: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default, Hash, Eq)]
@@ -208,6 +188,7 @@ pub const REPLACE_ALG: &str = "___";
 
 #[derive(
     Debug,
+    Copy,
     Clone,
     Serialize,
     Deserialize,
@@ -415,6 +396,7 @@ impl Platform {
     }
 }
 
+// TODO Remove, because the baseline is now saved in the Commit.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct PerfReportConfig {
     pub commit: CommitIdType,
