@@ -22,10 +22,10 @@ fn main() -> Result<()> {
     let platform = opt.app_name;
     if let Some(output) = CSV_OUTPUT.get(&(platform, opt.algorithm.clone(), opt.dataset.clone())) {
         let mut rdr = csv::Reader::from_reader(output.as_bytes());
-        let mut iter = rdr.records();
+        let mut iter = rdr.deserialize();
         // iter.next(); // First line is skipped anyway because a header is expected.
-        let data_record = iter.next().unwrap()?;
-        let time_total_usec: u64 = data_record.get(7).unwrap().parse()?;
+        let data_record: HashMap<String, String> = iter.next().unwrap()?;
+        let time_total_usec: u64 = data_record["timeTotalUsec"].parse()?;
         sleep(Duration::from_micros(time_total_usec));
         print!("{output}");
     } else {
@@ -36,6 +36,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+// TODO Would be better to read in a csv file with the results, possibly also lazily.
 static CSV_OUTPUT: Lazy<HashMap<(Platform, Algorithm, Dataset), &str>> = Lazy::new(|| {
     HashMap::from([
         (
