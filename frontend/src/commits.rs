@@ -17,7 +17,8 @@ use crate::modal::ModalContent;
 use crate::navigation::Navigation;
 
 use common::data_types::{
-    Algorithm, Commit, CompilationStatus, Job, JobConfig, JobStatus, Operator, VariantNames, PerfReportConfig
+    Algorithm, Commit, CompilationStatus, Job, JobConfig, JobStatus, Operator, PerfReportConfig,
+    VariantNames,
 };
 
 use yew_router::components::Link;

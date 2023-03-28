@@ -5,7 +5,7 @@ use crate::{
     chartjs::Chart, commits::CommitState, components::finding::FindingCardColumn, modal::Modal,
     navigation::Navigation,
 };
-use common::data_types::{JobResult};
+use common::data_types::JobResult;
 
 #[derive(Debug, PartialEq, Properties)]
 pub struct CardChartColumnProps {
@@ -52,33 +52,41 @@ pub fn PerfReport(PerfReportProps { commit: current }: &PerfReportProps) -> Html
     let findings;
     let charts;
     if let Some(JobResult::Exp(Ok(report))) = commit.reports {
-        findings = report.findings.iter().map(|f| {
-            html! {
-                <FindingCardColumn finding={f.clone()} />
-            }
-        }).collect::<Vec<_>>();
-        charts = report.charts.iter().map(|exp_chart| {
-            // let r = match r {
-            //     JobResult::Exp(Ok(r)) => r,
-            //     JobResult::Exp(Err(_)) => {
-            //         return html! {
-            //             "Error while running experiment!"
-            //         }
-            //     }
-            //     JobResult::Compile(_) => {
-            //         return html! {
-            //             "Cannot show compile jobs as chart!"
-            //         }
-            //     }
-            // };
-            let exp_chart = exp_chart.clone();
-            let chart = html! {
-                <Chart exp_chart={exp_chart.clone()} />
-            };
-            html! {
-                <CardChartColumn chart={chart} />
-            }
-        }).collect::<Vec<_>>();
+        findings = report
+            .findings
+            .iter()
+            .map(|f| {
+                html! {
+                    <FindingCardColumn finding={f.clone()} />
+                }
+            })
+            .collect::<Vec<_>>();
+        charts = report
+            .charts
+            .iter()
+            .map(|exp_chart| {
+                // let r = match r {
+                //     JobResult::Exp(Ok(r)) => r,
+                //     JobResult::Exp(Err(_)) => {
+                //         return html! {
+                //             "Error while running experiment!"
+                //         }
+                //     }
+                //     JobResult::Compile(_) => {
+                //         return html! {
+                //             "Cannot show compile jobs as chart!"
+                //         }
+                //     }
+                // };
+                let exp_chart = exp_chart.clone();
+                let chart = html! {
+                    <Chart exp_chart={exp_chart.clone()} />
+                };
+                html! {
+                    <CardChartColumn chart={chart} />
+                }
+            })
+            .collect::<Vec<_>>();
     } else {
         findings = vec![];
         charts = vec![];

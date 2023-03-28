@@ -1,12 +1,15 @@
-use common::data_types::{ExperimentType, JobConfig, Measurement, Parameter, ExperimentChart, Dataset, TeebenchArgs, Algorithm, Platform};
+use common::data_types::{
+    Algorithm, Dataset, ExperimentChart, ExperimentType, JobConfig, Measurement, Parameter,
+    Platform, TeebenchArgs,
+};
 // use gloo_console::log;
+use crate::commits::CommitState;
 use js_sys::Object;
 use serde_json::json;
 use std::collections::HashMap;
 use wasm_bindgen::prelude::wasm_bindgen;
 use web_sys::HtmlCanvasElement;
 use yew::prelude::*;
-use crate::commits::CommitState;
 use yewdux::prelude::*;
 
 #[allow(non_snake_case)]
@@ -36,13 +39,20 @@ const COLORS: [&str; 15] = [
 #[derive(Clone, PartialEq, Default, Store)]
 pub struct ChartState(MyChart, bool);
 
-#[derive(Debug, Clone, PartialEq, Properties)]
-pub struct ChartProps {
-    pub exp_chart: ExperimentChart,
-}
-
 /// Returns: chart_type, labels: Json: Vec<&str>, datasets: Json<Vec<Obj<>>>, plugins: Json<Vec<Obj<>>>, scales: Json<Vec<Obj<>>>, options: Json<Vec<Obj<>>>
-pub fn predefined_throughput_exp(alg_a: String, alg_b: String, data_a: Vec<f64>, data_b: Vec<f64>, d: Dataset) -> (&'static str, serde_json::Value, serde_json::Value, serde_json::Value, serde_json::Value) {
+pub fn predefined_throughput_exp(
+    alg_a: String,
+    alg_b: String,
+    data_a: Vec<f64>,
+    data_b: Vec<f64>,
+    d: Dataset,
+) -> (
+    &'static str,
+    serde_json::Value,
+    serde_json::Value,
+    serde_json::Value,
+    serde_json::Value,
+) {
     let chart_type = "bar";
     let labels = json!(["native", "sgx"]);
     let datasets = json!([
@@ -80,6 +90,81 @@ pub fn predefined_throughput_exp(alg_a: String, alg_b: String, data_a: Vec<f64>,
     (chart_type, labels, datasets, plugins, scales)
 }
 
+pub fn predefined_scalability_exp(
+    alg_a: String,
+    alg_b: String,
+    data_a: Vec<f64>,
+    data_b: Vec<f64>,
+    d: Dataset,
+) -> (
+    &'static str,
+    serde_json::Value,
+    serde_json::Value,
+    serde_json::Value,
+    serde_json::Value,
+) {
+    let chart_type = "line";
+    let labels = json!([1, 2, 3, 4, 5, 6, 7, 8]);
+    let datasets = json!([
+        {
+            "label": alg_a,
+            "data": data_a,
+            "backgroundColor": "#de3d82",
+            "borderColor": "#de3d82",
+            "yAxisID": "y",
+            "borderWidth":5
+        },
+        {
+            "label": alg_b,
+            "data": data_b,
+            "backgroundColor": "#72e06a",
+            "borderColor": "#72e06a",
+            "yAxisID": "y",
+            "borderWidth":5
+        }
+    ]);
+    let title = match d {
+        Dataset::CacheFit => "Scalability Cache Fit",
+        Dataset::CacheExceed => "Scalability Cache Exceed",
+    };
+    let plugins = json!({
+        "title": {
+            "display": true,
+            "text": title,
+            "font": {
+                "size": 60
+            }
+        }
+    });
+    let scales = json!({
+        "x": {
+            "ticks": {
+                "font": {
+                    "size": 40
+                }
+            }
+        },
+        "y": {
+            "ticks": {
+                "font": {
+                    "size": 40
+                },
+                "min": 0
+            },
+            "text": "Throughput [M rec/s]",
+            "type": "linear",
+            "display": true,
+            "position": "left"
+        }
+    });
+    (chart_type, labels, datasets, plugins, scales)
+}
+
+#[derive(Debug, Clone, PartialEq, Properties)]
+pub struct ChartProps {
+    pub exp_chart: ExperimentChart,
+}
+
 #[function_component]
 pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
     let commit_store = use_store_value::<CommitState>();
@@ -98,7 +183,7 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
             let plugins;
             let scales;
             let options;
-            match exp_chart.config { 
+            match exp_chart.config {
                 JobConfig::Profiling(conf) => match conf.experiment_type {
                     ExperimentType::Custom => {
                         let mut heading;
@@ -129,7 +214,9 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                         let steps: Vec<_> = conf.param_value_iter().collect();
                         labels = json!(steps);
                         let mut data = HashMap::new();
-                        exp_chart.results.sort_unstable_by(|(a, _), (b, _)| a.cmp(b));
+                        exp_chart
+                            .results
+                            .sort_unstable_by(|(a, _), (b, _)| a.cmp(b));
                         for (args, result) in exp_chart.results {
                             let v = data
                                 .entry((args.algorithm, args.app_name, args.dataset))
@@ -187,8 +274,9 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                     }
                     ExperimentType::EpcPaging => {
                         chart_type = "bar";
-                        labels =
-                            json!([8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128]);
+                        labels = json!([
+                            8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128
+                        ]);
                         datasets = json!([
                             {
                                 "label": "Throughput",
@@ -302,15 +390,19 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                     ExperimentType::Scalability => {
                         todo!();
                     }
-                }
+                },
                 JobConfig::PerfReport(pr_conf) => {
-                    let alg_a = commit_store.0.iter().find_map(|c| {
-                        if c.id == pr_conf.id {
-                            Some(c.title.clone())
-                        } else {
-                            None
-                        }
-                    }).unwrap();
+                    let alg_a = commit_store
+                        .0
+                        .iter()
+                        .find_map(|c| {
+                            if c.id == pr_conf.id {
+                                Some(c.title.clone())
+                            } else {
+                                None
+                            }
+                        })
+                        .unwrap();
                     let alg_b;
                     if let common::data_types::Algorithm::Commit(id) = pr_conf.baseline {
                         for c in &commit_store.0 {
@@ -324,25 +416,154 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                     } else {
                         alg_b = pr_conf.baseline.to_string();
                     }
-                    let data_a = {
-                        let native = exp_chart.results.iter().find(|&tuple| tuple.0 == TeebenchArgs::for_throughput(Algorithm::Commit(pr_conf.id), Platform::Native, pr_conf.dataset)).unwrap().1["throughput"].parse().unwrap();
-                        let sgx = exp_chart.results.iter().find(|&tuple| tuple.0 == TeebenchArgs::for_throughput(Algorithm::Commit(pr_conf.id), Platform::Sgx, pr_conf.dataset)).unwrap().1["throughput"].parse().unwrap();
-                        vec![native, sgx]
-                    };
-                    let data_b = {
-                        let native = exp_chart.results.iter().find(|&tuple| tuple.0 == TeebenchArgs::for_throughput(pr_conf.baseline, Platform::Native, pr_conf.dataset)).unwrap().1["throughput"].parse().unwrap();
-                        let sgx = exp_chart.results.iter().find(|&tuple| tuple.0 == TeebenchArgs::for_throughput(pr_conf.baseline, Platform::Sgx, pr_conf.dataset)).unwrap().1["throughput"].parse().unwrap();
-                        vec![native, sgx]
-                    };
-                    (chart_type, labels, datasets, plugins, scales) = predefined_throughput_exp(alg_a, alg_b, data_a, data_b, pr_conf.dataset);
+                    match pr_conf.exp_type {
+                        ExperimentType::Throughput => {
+                            let data_a = {
+                                let native = exp_chart
+                                    .results
+                                    .iter()
+                                    .find(|&tuple| {
+                                        tuple.0
+                                            == TeebenchArgs::for_throughput(
+                                                Algorithm::Commit(pr_conf.id),
+                                                Platform::Native,
+                                                pr_conf.dataset,
+                                            )
+                                    })
+                                    .unwrap()
+                                    .1["throughput"]
+                                    .parse()
+                                    .unwrap();
+                                let sgx = exp_chart
+                                    .results
+                                    .iter()
+                                    .find(|&tuple| {
+                                        tuple.0
+                                            == TeebenchArgs::for_throughput(
+                                                Algorithm::Commit(pr_conf.id),
+                                                Platform::Sgx,
+                                                pr_conf.dataset,
+                                            )
+                                    })
+                                    .unwrap()
+                                    .1["throughput"]
+                                    .parse()
+                                    .unwrap();
+                                vec![native, sgx]
+                            };
+                            let data_b = {
+                                let native = exp_chart
+                                    .results
+                                    .iter()
+                                    .find(|&tuple| {
+                                        tuple.0
+                                            == TeebenchArgs::for_throughput(
+                                                pr_conf.baseline,
+                                                Platform::Native,
+                                                pr_conf.dataset,
+                                            )
+                                    })
+                                    .unwrap()
+                                    .1["throughput"]
+                                    .parse()
+                                    .unwrap();
+                                let sgx = exp_chart
+                                    .results
+                                    .iter()
+                                    .find(|&tuple| {
+                                        tuple.0
+                                            == TeebenchArgs::for_throughput(
+                                                pr_conf.baseline,
+                                                Platform::Sgx,
+                                                pr_conf.dataset,
+                                            )
+                                    })
+                                    .unwrap()
+                                    .1["throughput"]
+                                    .parse()
+                                    .unwrap();
+                                vec![native, sgx]
+                            };
+                            (chart_type, labels, datasets, plugins, scales) =
+                                predefined_throughput_exp(
+                                    alg_a,
+                                    alg_b,
+                                    data_a,
+                                    data_b,
+                                    pr_conf.dataset,
+                                );
+                        }
+                        ExperimentType::Scalability => {
+                            let data_a = {
+                                let mut res = vec![];
+                                for threads in 1..=8 {
+                                    res.push(
+                                        exp_chart
+                                            .results
+                                            .iter()
+                                            .find(|&tuple| {
+                                                tuple.0
+                                                    == TeebenchArgs::for_scalability(
+                                                        Algorithm::Commit(pr_conf.id),
+                                                        pr_conf.dataset,
+                                                        threads,
+                                                    )
+                                            })
+                                            .unwrap()
+                                            .1["throughput"]
+                                            .parse()
+                                            .unwrap(),
+                                    );
+                                }
+                                res
+                            };
+                            let data_b = {
+                                let mut res = vec![];
+                                for threads in 1..=8 {
+                                    res.push(
+                                        exp_chart
+                                            .results
+                                            .iter()
+                                            .find(|&tuple| {
+                                                tuple.0
+                                                    == TeebenchArgs::for_scalability(
+                                                        pr_conf.baseline,
+                                                        pr_conf.dataset,
+                                                        threads,
+                                                    )
+                                            })
+                                            .unwrap()
+                                            .1["throughput"]
+                                            .parse()
+                                            .unwrap(),
+                                    );
+                                }
+                                res
+                            };
+                            (chart_type, labels, datasets, plugins, scales) =
+                                predefined_scalability_exp(
+                                    alg_a,
+                                    alg_b,
+                                    data_a,
+                                    data_b,
+                                    pr_conf.dataset,
+                                );
+                        }
+                        ExperimentType::EpcPaging => {
+                            todo!();
+                        }
+                        ExperimentType::Custom => {
+                            unreachable!();
+                        }
+                    }
                 }
                 JobConfig::Compile(_) => panic!("Not allowed here!"),
             }
             options = json!({
-                            "responsive": true,
-                            "plugins": plugins,
-                            "scales": scales,
-                        });
+                "responsive": true,
+                "plugins": plugins,
+                "scales": scales,
+            });
             let config = json!({
                 "type": chart_type,
                 "data": {

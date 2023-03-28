@@ -14,65 +14,72 @@ use common::data_types::{
     Commit, CompilationStatus, ExperimentChart, Job, JobConfig, JobResult, JobStatus, Platform,
     Report, TeeBenchWebError,
 };
-use common::hardcoded::hardcoded_perf_report_commands;
+use common::hardcoded::{hardcoded_perf_report_commands, hardcoded_perf_report_configs};
 
 async fn run_experiment(
     tee_bench_dir: PathBuf,
-    cmds: Vec<Commandline>,
-    conf: JobConfig,
+    configs: Vec<JobConfig>,
+    cmds: Vec<Vec<Commandline>>,
 ) -> JobResult {
-    let mut tasks = HashMap::new();
-    for cmd in cmds {
-        let mut tee_bench_dir = tee_bench_dir.clone();
-        let cmd_moved = cmd.clone();
-        // Each task should get the full "power" of the machine, so don't run them in parallel (by awaiting the handle).
-        // TODO Do we have to spawn here? I think I just did that when I failed to see the `current_dir` option on `Command`. This was to avoid changing the cwd for the whole axum server.
-        let handle = tokio::task::spawn(async move {
-            let cmd = cmd_moved.clone();
-            match cmd.app {
-                Platform::Sgx => {
-                    tee_bench_dir.push("sgx");
+    let mut all_tasks = vec![];
+    for (chart_cmds, conf) in cmds.iter().zip(configs) {
+        let mut cmd_tasks = HashMap::new();
+        for cmd in chart_cmds {
+            let mut tee_bench_dir = tee_bench_dir.clone();
+            let cmd_moved = cmd.clone();
+            // Each task should get the full "power" of the machine, so don't run them in parallel (by awaiting the handle).
+            // TODO Do we have to spawn here? I think I just did that when I failed to see the `current_dir` option on `Command`. This was to avoid changing the cwd for the whole axum server.
+            let handle = tokio::task::spawn(async move {
+                let cmd = cmd_moved.clone();
+                match cmd.app {
+                    Platform::Sgx => {
+                        tee_bench_dir.push("sgx");
+                    }
+                    Platform::Native => {
+                        tee_bench_dir.push("native");
+                    }
                 }
-                Platform::Native => {
-                    tee_bench_dir.push("native");
+                // TODO Put the right file into the right folder, if necessary. This requires the JobConfig.
+                // This assumes that the Makefile of TeeBench has a different app name ("sgx" or "native"). See `common::data_types::Platform::to_app_name()`.
+                // TokioCommand::new("make").current_dir(tee_bench_dir).args(["clean"]).status().await.expect("Failed to run make clean");
+                // TokioCommand::new("make").current_dir(tee_bench_dir).args(["-B", "sgx"]).status().await.expect("Failed to compile sgx version of TeeBench");
+                let output = to_command(cmd.clone())
+                    .current_dir(tee_bench_dir)
+                    .output()
+                    .await
+                    .expect("Failed to run TeeBench");
+                info!("Running `{cmd}`");
+                if !output.status.success() {
+                    error!("Command failed with {output:#?}");
+                    return Err(());
                 }
-            }
-            // TODO Put the right file into the right folder, if necessary. This requires the JobConfig.
-            // This assumes that the Makefile of TeeBench has a different app name ("sgx" or "native"). See `common::data_types::Platform::to_app_name()`.
-            // TokioCommand::new("make").current_dir(tee_bench_dir).args(["clean"]).status().await.expect("Failed to run make clean");
-            // TokioCommand::new("make").current_dir(tee_bench_dir).args(["-B", "sgx"]).status().await.expect("Failed to compile sgx version of TeeBench");
-            let output = to_command(cmd.clone())
-                .current_dir(tee_bench_dir)
-                .output()
-                .await
-                .expect("Failed to run TeeBench");
-            info!("Running `{cmd}`");
-            if !output.status.success() {
-                error!("Command failed with {output:#?}");
-                return Err(());
-            }
-            Ok(output.stdout)
-        })
-        .await;
-        tasks.insert(cmd.to_teebench_args(), handle);
+                Ok(output.stdout)
+            })
+            .await;
+            cmd_tasks.insert(cmd.to_teebench_args(), handle);
+        }
+        all_tasks.push((conf, cmd_tasks));
     }
-    let mut experiment_chart = ExperimentChart::new(conf, vec![], vec![]);
-    for (args, task) in tasks {
-        let Ok(res) = task.unwrap() else {
-            return JobResult::Exp(Err(TeeBenchWebError::default()));
-        };
-        let human_readable = String::from_utf8(res.clone()).unwrap();
-        info!("Task output:\n```\n{human_readable}\n```");
-        let mut rdr = csv::Reader::from_reader(&*res);
-        let mut iter = rdr.deserialize();
-        // iter.next(); // First line is skipped anyway because a header is expected.
-        let exp_result: HashMap<String, String> = iter.next().unwrap().unwrap();
-        experiment_chart.results.push((args, exp_result));
-    }
-    let report = Report {
-        charts: vec![experiment_chart],
+    let mut report = Report {
+        charts: vec![],
         findings: vec![],
     };
+    for (conf, tasks) in all_tasks {
+        let mut experiment_chart = ExperimentChart::new(conf, vec![], vec![]);
+        for (args, task) in tasks {
+            let Ok(res) = task.unwrap() else {
+                return JobResult::Exp(Err(TeeBenchWebError::default()));
+            };
+            let human_readable = String::from_utf8(res.clone()).unwrap();
+            info!("Task output:\n```\n{human_readable}\n```");
+            let mut rdr = csv::Reader::from_reader(&*res);
+            let mut iter = rdr.deserialize();
+            // iter.next(); // First line is skipped anyway because a header is expected.
+            let exp_result: HashMap<String, String> = iter.next().unwrap().unwrap();
+            experiment_chart.results.push((args, exp_result));
+        }
+        report.charts.push(experiment_chart);
+    }
     JobResult::Exp(Ok(report))
 }
 
@@ -82,7 +89,7 @@ async fn compile_and_run(conf: JobConfig, commits: Arc<Mutex<Vec<Commit>>>) -> J
     match conf {
         JobConfig::Profiling(ref c) => {
             let cmds = c.to_teebench_cmd();
-            run_experiment(tee_bench_dir, cmds, conf).await
+            run_experiment(tee_bench_dir, vec![conf], vec![cmds]).await
         }
         JobConfig::PerfReport(ref pr_conf) => {
             let baseline = || {
@@ -98,8 +105,19 @@ async fn compile_and_run(conf: JobConfig, commits: Arc<Mutex<Vec<Commit>>>) -> J
             };
             let baseline = baseline();
             let cmds = hardcoded_perf_report_commands(&baseline);
-            let _results = run_experiment(tee_bench_dir, cmds, conf).await;
-            todo!();
+            let confs = hardcoded_perf_report_configs(pr_conf.id, baseline);
+            let results = run_experiment(tee_bench_dir, confs, cmds).await;
+            {
+                let mut guard = commits.lock().unwrap();
+                for c in guard.iter_mut() {
+                    if c.id == pr_conf.id {
+                        c.reports = Some(results.clone());
+                        c.perf_report_running = false;
+                        break;
+                    }
+                }
+            }
+            results
         }
         JobConfig::Compile(id) => {
             {
@@ -115,10 +133,10 @@ async fn compile_and_run(conf: JobConfig, commits: Arc<Mutex<Vec<Commit>>>) -> J
             // TODO find file with `id`
             // put it in the right place in teebench src dir
             // OR: give this function access to CommitState (`ServerState`). That is probably the way to go :(
-            tokio::time::sleep(tokio::time::Duration::from_secs(10)).await;
+            tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
 
             let output;
-            let result = if rand::random() {
+            let result = if true {
                 output = "warning: This is a placeholder warning".to_string();
                 JobResult::Compile(Ok(output))
             } else {
@@ -146,7 +164,7 @@ async fn compile_and_run(conf: JobConfig, commits: Arc<Mutex<Vec<Commit>>>) -> J
     }
 }
 
-#[instrument(skip(queue, oneshot_tx, queue_tx))]
+#[instrument(skip(queue, oneshot_tx, queue_tx, commits))]
 async fn work_on_queue(
     queue: Arc<Mutex<VecDeque<Job>>>,
     oneshot_tx: oneshot::Sender<()>,

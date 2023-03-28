@@ -43,7 +43,7 @@ pub enum CompilationStatus {
     Failed(String),
 }
 
-type CommitIdType = usize;
+pub type CommitIdType = usize;
 
 /// A commit represents an algorithm/operator and its performance report.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -426,7 +426,6 @@ impl Platform {
     }
 }
 
-
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct PerfReportConfig {
     pub id: CommitIdType,
@@ -437,18 +436,36 @@ pub struct PerfReportConfig {
 
 impl PerfReportConfig {
     pub fn for_throughput(id: CommitIdType, baseline: Algorithm) -> (Self, Self) {
-        (Self {
-            id,
-            exp_type: ExperimentType::Throughput,
-            dataset: Dataset::CacheFit,
-            baseline,
-        },
-        Self {
-            id,
-            exp_type: ExperimentType::Throughput,
-            dataset: Dataset::CacheExceed,
-            baseline,
-        })
+        (
+            Self {
+                id,
+                exp_type: ExperimentType::Throughput,
+                dataset: Dataset::CacheFit,
+                baseline,
+            },
+            Self {
+                id,
+                exp_type: ExperimentType::Throughput,
+                dataset: Dataset::CacheExceed,
+                baseline,
+            },
+        )
+    }
+    pub fn for_scalability(id: CommitIdType, baseline: Algorithm) -> (Self, Self) {
+        (
+            Self {
+                id,
+                exp_type: ExperimentType::Scalability,
+                dataset: Dataset::CacheFit,
+                baseline,
+            },
+            Self {
+                id,
+                exp_type: ExperimentType::Scalability,
+                dataset: Dataset::CacheExceed,
+                baseline,
+            },
+        )
     }
 }
 
@@ -728,9 +745,7 @@ impl ProfilingConfiguration {
 use std::path::PathBuf;
 use structopt::StructOpt;
 
-#[derive(
-    Debug, Clone, StructOpt, PartialOrd, Ord, PartialEq, Eq, Hash, Deserialize, Serialize,
-)]
+#[derive(Debug, Clone, StructOpt, PartialOrd, Ord, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[structopt(
     name = "TeeBench",
     about = "fake placeholder for testing that outputs teebench output. Because I don't have SGX on my dev machine."
@@ -819,6 +834,14 @@ impl TeebenchArgs {
             app_name,
             dataset,
             algorithm,
+            ..Self::default()
+        }
+    }
+    pub fn for_scalability(algorithm: Algorithm, dataset: Dataset, threads: u8) -> Self {
+        Self {
+            algorithm,
+            dataset,
+            threads,
             ..Self::default()
         }
     }
