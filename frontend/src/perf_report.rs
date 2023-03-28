@@ -5,7 +5,7 @@ use crate::{
     chartjs::Chart, commits::CommitState, components::finding::FindingCardColumn, modal::Modal,
     navigation::Navigation,
 };
-use common::data_types::{JobResult, Report};
+use common::data_types::{JobResult};
 
 #[derive(Debug, PartialEq, Properties)]
 pub struct CardChartColumnProps {
@@ -49,32 +49,40 @@ pub fn PerfReport(PerfReportProps { commit: current }: &PerfReportProps) -> Html
             <h1>{format!("Error getting commit with title {current:?}!")}</h1>
         }
     };
-    let findings = commit.findings.iter().map(|f| {
-        html! {
-            <FindingCardColumn finding={f.clone()} />
-        }
-    });
-    let reports = commit.reports.iter().map(|r: &JobResult| {
-        let r = match r {
-            JobResult::Exp(Ok(r)) => r,
-            JobResult::Exp(Err(_)) => {
-                return html! {
-                    "Error while running experiment!"
-                }
+    let findings;
+    let charts;
+    if let Some(JobResult::Exp(Ok(report))) = commit.reports {
+        findings = report.findings.iter().map(|f| {
+            html! {
+                <FindingCardColumn finding={f.clone()} />
             }
-            JobResult::Compile(_) => {
-                return html! {
-                    "Cannot show compile jobs as chart!"
-                }
+        }).collect::<Vec<_>>();
+        charts = report.charts.iter().map(|exp_chart| {
+            // let r = match r {
+            //     JobResult::Exp(Ok(r)) => r,
+            //     JobResult::Exp(Err(_)) => {
+            //         return html! {
+            //             "Error while running experiment!"
+            //         }
+            //     }
+            //     JobResult::Compile(_) => {
+            //         return html! {
+            //             "Cannot show compile jobs as chart!"
+            //         }
+            //     }
+            // };
+            let exp_chart = exp_chart.clone();
+            let chart = html! {
+                <Chart exp_chart={exp_chart.clone()} />
+            };
+            html! {
+                <CardChartColumn chart={chart} />
             }
-        };
-        let chart = html! {
-            <Chart report={r.clone()} />
-        };
-        html! {
-            <CardChartColumn chart={chart} />
-        }
-    });
+        }).collect::<Vec<_>>();
+    } else {
+        findings = vec![];
+        charts = vec![];
+    }
     html! {
         <div class="container-fluid">
             <div class="row vh-100">
@@ -91,7 +99,7 @@ pub fn PerfReport(PerfReportProps { commit: current }: &PerfReportProps) -> Html
                             </div>
                             <div class="row row-cols-2">
                                 // Graph cards
-                                {for reports}
+                                {for charts}
                             </div>
                         </div>
                     </main>

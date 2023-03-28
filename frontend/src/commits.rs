@@ -17,7 +17,7 @@ use crate::modal::ModalContent;
 use crate::navigation::Navigation;
 
 use common::data_types::{
-    Algorithm, Commit, CompilationStatus, Job, JobConfig, JobStatus, Operator, VariantNames,
+    Algorithm, Commit, CompilationStatus, Job, JobConfig, JobStatus, Operator, VariantNames, PerfReportConfig
 };
 
 use yew_router::components::Link;
@@ -60,7 +60,7 @@ impl UploadCommitFormState {
                 self.operator.clone().unwrap(),
                 OffsetDateTime::now_utc(),
                 self.code.clone().unwrap(),
-                vec![],
+                None,
                 COMMIT_ID_COUNTER,
                 self.baseline.clone().unwrap(),
             );
@@ -285,8 +285,8 @@ fn CommitsList() -> Html {
                 </Link<Route>>
             }
         } else {
-            // TODO Either store in the commit that the perfReport generation has finished or do something else, no conditional on the amount of reports!
-            if commit.reports.len() == 6 {
+            // TODO Either store in the commit that the perfReport generation has finished or do something else, not this!
+            if commit.reports.is_some() {
                html! {
                     <Link<Route> classes={classes!("btn", "btn-info")} to={Route::PerfReport { commit: commit.title.clone() }}>
                         {"Report"}
@@ -298,12 +298,9 @@ fn CommitsList() -> Html {
                     let id = commit.id;
                     let baseline = commit.baseline;
                     commit_dispatch.reduce_mut_future_callback(move |s| Box::pin(async move {
-                        use common::data_types::PerfReportConfig;
+                        let (fit, _exceed) = PerfReportConfig::for_throughput(id, baseline);
                         let perf_report_job = Job {
-                            config: JobConfig::PerfReport(PerfReportConfig {
-                                commit: id,
-                                baseline,
-                            }),
+                            config: JobConfig::PerfReport(fit),
                             submitted: OffsetDateTime::now_utc(),
                             status: JobStatus::default(),
                         };

@@ -57,9 +57,7 @@ pub struct Commit {
     /// C or C++ code.
     pub code: String,
     /// Holds the finished Performance Report experiments.
-    pub reports: Vec<JobResult>,
-    /// Top level findings (diplayed above all the charts in the performance report).
-    pub findings: Vec<Finding>,
+    pub reports: Option<JobResult>, // TODO Rename to report
     /// Client-side-set ID of this commit, just gets incremented with each commit.
     pub id: CommitIdType,
     /// Compilation status
@@ -76,7 +74,7 @@ impl Commit {
         operator: Operator,
         datetime: OffsetDateTime,
         code: String,
-        reports: Vec<JobResult>,
+        reports: Option<JobResult>,
         id: usize,
         baseline: Algorithm,
     ) -> Self {
@@ -86,12 +84,6 @@ impl Commit {
             datetime,
             code,
             reports,
-            findings: vec![
-                Finding::new("Performance Difference", "+ 3.6 %", FindingStyle::Good),
-                Finding::new("Phase 1: Partition", "180/191 (+0)", FindingStyle::SoSo),
-                Finding::new("Phase 2: Join", "11/191 (-4)", FindingStyle::Good),
-                Finding::new("EPC Paging", "- 0.4 %", FindingStyle::Good),
-            ],
             id,
             compilation: CompilationStatus::Uncompiled,
             perf_report_running: false,
@@ -100,12 +92,32 @@ impl Commit {
     }
 }
 
-/// One report can be transformed to one chart with findings
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 // To make ProfilingConfiguration an enum depending on ExperimentType is a bad idea maybe, because then we'd have to match in every dispatch callback modifying the config. So instead we now use the JobConfig enum to accertain which kind of job created this report.
-pub struct Report {
+pub struct ExperimentChart {
     pub config: JobConfig,
     pub results: Vec<(TeebenchArgs, HashMap<String, String>)>,
+    pub findings: Vec<Finding>,
+}
+
+impl ExperimentChart {
+    pub fn new(
+        config: JobConfig,
+        results: Vec<(TeebenchArgs, HashMap<String, String>)>,
+        findings: Vec<Finding>,
+    ) -> Self {
+        Self {
+            config,
+            results,
+            findings,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct Report {
+    pub charts: Vec<ExperimentChart>,
+    /// Top level findings (diplayed above all the charts in the performance report).
     pub findings: Vec<Finding>,
 }
 
@@ -226,8 +238,21 @@ pub enum Algorithm {
     Crkj,
     // #[strum(to_string = "JOIN - NestedLoopJoin")]
     Nlj,
-    //     #[strum(to_string = "Latest Commit")]
-    //     Commit(u32), // TODO Uuid
+    #[strum(to_string = "Latest Operator")]
+    Commit(CommitIdType),
+}
+
+use std::str::FromStr;
+impl Algorithm {
+    pub fn from_cmd_arg(string: &str) -> Result<Self, &'static str> {
+        if let Some(_) = Algorithm::VARIANTS.iter().find(|&a| a == &string) {
+            return Ok(Algorithm::from_str(string).unwrap());
+        } else if string == REPLACE_ALG {
+            return Ok(Algorithm::Commit(1));
+        } else {
+            return Err("Could not find this Operator/Algorithm!");
+        }
+    }
 }
 
 #[derive(
@@ -238,6 +263,7 @@ pub enum ExperimentType {
     #[strum(to_string = "EPC Paging")]
     EpcPaging,
     Throughput,
+    Scalability,
     // #[strum(to_string = "CPU Cycles/Tuple")]
     // CpuCyclesTuple,
     #[default]
@@ -251,7 +277,10 @@ impl ExperimentType {
                 "View the first selected algorithm/operator's throughput and EPC misses in relation to the dataset size"
             }
             Self::Throughput => {
-                "Compares througput of all selected algorithms for the selected dataset"
+                "Compares througput of all selected algorithms with a chart for each dataset"
+            }
+            Self::Scalability => {
+                "Compares throughput of all selected algorithms with an increasing number of threads with a chart for each dataset"
             }
             // Self::CpuCyclesTuple => {
 
@@ -286,6 +315,7 @@ pub enum Measurement {
 
 #[derive(
     Debug,
+    Copy,
     Clone,
     Serialize,
     Deserialize,
@@ -396,11 +426,30 @@ impl Platform {
     }
 }
 
-// TODO Remove, because the baseline is now saved in the Commit.
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct PerfReportConfig {
-    pub commit: CommitIdType,
+    pub id: CommitIdType,
+    pub exp_type: ExperimentType,
+    pub dataset: Dataset,
     pub baseline: Algorithm,
+}
+
+impl PerfReportConfig {
+    pub fn for_throughput(id: CommitIdType, baseline: Algorithm) -> (Self, Self) {
+        (Self {
+            id,
+            exp_type: ExperimentType::Throughput,
+            dataset: Dataset::CacheFit,
+            baseline,
+        },
+        Self {
+            id,
+            exp_type: ExperimentType::Throughput,
+            dataset: Dataset::CacheExceed,
+            baseline,
+        })
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -421,6 +470,7 @@ pub enum JobConfig {
     /// - **EPC Paging**:
     ///     - Commit's EPC Paging with increasing dataset size: Page misses as bars and throughput as line.
     ///     - Baseline's EPC Paging with increasing dataset size: Page misses as bars and throughput as line.
+    /// I need to access the Commit state anyway when evaluating this (to get the title of the baseline, if its a commit), so no need to save baseline, etc in here.
     PerfReport(PerfReportConfig),
     /// Compile the commit with id 0.
     Compile(CommitIdType),
@@ -451,6 +501,20 @@ impl Display for JobConfig {
 }
 
 pub type StepType = i64;
+
+// #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Store)]
+// pub struct ExperimentChartConfig {
+//     pub algorithms: HashSet<Algorithm>,
+//     pub experiment_type: ExperimentType,
+//     pub parameter: Parameter,
+//     pub measurement: Measurement,
+//     pub min: StepType,
+//     pub max: StepType,
+//     pub step: StepType,
+//     pub dataset: Dataset,
+//     pub platform: Platform,
+//     pub sort_data: bool,
+// }
 
 /// Represents either a Profiling Experiment or a Performance Report Experiment.
 ///
@@ -641,6 +705,15 @@ impl ProfilingConfiguration {
                 // self.platform = HashSet::from([Platform::Sgx]);
                 // self.sort_data = false;
             }
+            ExperimentType::Scalability => {
+                self.measurement = Measurement::Throughput;
+                self.parameter = Parameter::Threads;
+                // self.dataset = HashSet::from([Dataset::CacheExceed, Dataset::CacheFit]);
+                // self.platform = HashSet::from([Platform::Sgx]);
+                // self.min = 1;
+                // self.max = 8;
+                // self.step = 1;
+            }
             // ExperimentType::CpuCyclesTuple => {
             //     self.measurement = Measurement::Throughput;
             //     // self.dataset = HashSet::from([Dataset::CacheExceed, Dataset::CacheFit]);
@@ -656,7 +729,7 @@ use std::path::PathBuf;
 use structopt::StructOpt;
 
 #[derive(
-    Debug, Clone, StructOpt, PartialOrd, Ord, PartialEq, Eq, Hash, Default, Deserialize, Serialize,
+    Debug, Clone, StructOpt, PartialOrd, Ord, PartialEq, Eq, Hash, Deserialize, Serialize,
 )]
 #[structopt(
     name = "TeeBench",
@@ -670,7 +743,7 @@ pub struct TeebenchArgs {
     #[structopt(short = "d", long, parse(try_from_str = Dataset::from_cmd_arg), default_value = "cache-fit")]
     pub dataset: Dataset,
     ///`-a` - join algorithm name. Currently working: see `common::data_types::Algorithm`.
-    #[structopt(short = "a", long, default_value = "RHO")]
+    #[structopt(short = "a", long, parse(try_from_str = Algorithm::from_cmd_arg), default_value = "cache-fit")]
     pub algorithm: Algorithm,
     ///`-n` - number of threads used to execute the join algorithm. Default: `2`
     #[structopt(short = "n", long, default_value = "2")]
@@ -716,6 +789,41 @@ pub struct TeebenchArgs {
     pub csv: bool,
 }
 
+impl Default for TeebenchArgs {
+    fn default() -> Self {
+        Self {
+            app_name: Platform::default(),
+            dataset: Dataset::default(),
+            algorithm: Algorithm::default(),
+            threads: 2,
+            selectivity: 100,
+            data_skew: 0,
+            seal_chunk_size: 0,
+            r_tuples: 2097152,
+            s_tuples: 2097152,
+            r_path: None,
+            s_path: None,
+            r_size: None,
+            s_size: None,
+            seal: false,
+            sort_r: false,
+            sort_s: false,
+            csv: true,
+        }
+    }
+}
+
+impl TeebenchArgs {
+    pub fn for_throughput(algorithm: Algorithm, app_name: Platform, dataset: Dataset) -> Self {
+        Self {
+            app_name,
+            dataset,
+            algorithm,
+            ..Self::default()
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -724,13 +832,14 @@ mod tests {
     #[test]
     fn serde_json_report() {
         let mut report_struct = Report {
-            config: JobConfig::default(),
-            results: vec![],
+            charts: vec![],
             findings: vec![],
         };
-        report_struct
-            .results
-            .push((TeebenchArgs::default(), ExperimentResult::default()));
+        report_struct.charts.push(ExperimentChart::new(
+            JobConfig::default(),
+            vec![(TeebenchArgs::default(), HashMap::new())],
+            vec![],
+        ));
         let _report_json = serde_json::to_string(&report_struct).unwrap();
     }
 

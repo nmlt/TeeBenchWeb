@@ -11,7 +11,8 @@ use tracing::{error, info, instrument, warn};
 
 use common::commandline::Commandline;
 use common::data_types::{
-    Commit, CompilationStatus, Job, JobConfig, JobResult, JobStatus, Platform, Report,
+    Commit, CompilationStatus, ExperimentChart, Job, JobConfig, JobResult, JobStatus, Platform,
+    Report, TeeBenchWebError,
 };
 use common::hardcoded::hardcoded_perf_report_commands;
 
@@ -48,27 +49,30 @@ async fn run_experiment(
             info!("Running `{cmd}`");
             if !output.status.success() {
                 error!("Command failed with {output:#?}");
+                return Err(());
             }
-            output.stdout
+            Ok(output.stdout)
         })
         .await;
         tasks.insert(cmd.to_teebench_args(), handle);
     }
-    let mut report = Report {
-        config: conf,
-        results: vec![],
-        findings: vec![],
-    };
+    let mut experiment_chart = ExperimentChart::new(conf, vec![], vec![]);
     for (args, task) in tasks {
-        let res = task.unwrap();
+        let Ok(res) = task.unwrap() else {
+            return JobResult::Exp(Err(TeeBenchWebError::default()));
+        };
         let human_readable = String::from_utf8(res.clone()).unwrap();
         info!("Task output:\n```\n{human_readable}\n```");
         let mut rdr = csv::Reader::from_reader(&*res);
         let mut iter = rdr.deserialize();
         // iter.next(); // First line is skipped anyway because a header is expected.
         let exp_result: HashMap<String, String> = iter.next().unwrap().unwrap();
-        report.results.push((args, exp_result));
+        experiment_chart.results.push((args, exp_result));
     }
+    let report = Report {
+        charts: vec![experiment_chart],
+        findings: vec![],
+    };
     JobResult::Exp(Ok(report))
 }
 
@@ -80,9 +84,22 @@ async fn compile_and_run(conf: JobConfig, commits: Arc<Mutex<Vec<Commit>>>) -> J
             let cmds = c.to_teebench_cmd();
             run_experiment(tee_bench_dir, cmds, conf).await
         }
-        JobConfig::PerfReport(ref c) => {
-            let cmds = hardcoded_perf_report_commands(&c.baseline);
-            run_experiment(tee_bench_dir, cmds, conf).await
+        JobConfig::PerfReport(ref pr_conf) => {
+            let baseline = || {
+                let mut guard = commits.lock().unwrap();
+                // TODO I'm repeating this code too often (eg. 20 lines down). Make finding commit with id a function.
+                for c in guard.iter_mut() {
+                    if c.id == pr_conf.id {
+                        c.perf_report_running = true;
+                        return c.baseline;
+                    }
+                }
+                panic!("Could not find the commit!");
+            };
+            let baseline = baseline();
+            let cmds = hardcoded_perf_report_commands(&baseline);
+            let _results = run_experiment(tee_bench_dir, cmds, conf).await;
+            todo!();
         }
         JobConfig::Compile(id) => {
             {

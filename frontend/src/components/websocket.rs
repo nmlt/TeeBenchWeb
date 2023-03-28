@@ -91,12 +91,12 @@ pub fn Websocket() -> Html {
                                     }
                                 });
                             }
-                            JobConfig::PerfReport(conf) => {
+                            JobConfig::PerfReport(pr_conf) => {
                                 commit_dispatch.reduce_mut(|commit_store| {
                                         for commit in commit_store.0.iter_mut() {
-                                            if commit.id == conf.commit {
+                                            if commit.id == pr_conf.id {
                                                 if let JobStatus::Done { result, .. } = finished_job.status {
-                                                    commit.reports.push(result);
+                                                    commit.reports = Some(result);
                                                 } else {
                                                     log!("Error: Got an unfinished job in the websocket.");
                                                 }
@@ -112,7 +112,7 @@ pub fn Websocket() -> Html {
                                                 if let JobStatus::Done { result, .. } = finished_job.status {
                                                     if let JobResult::Compile(r) = result {
                                                         match r {
-                                                            Ok(s) => commit.compilation = CompilationStatus::Successful("TODO".to_string()),
+                                                            Ok(_teebenchweberror) => commit.compilation = CompilationStatus::Successful("TODO".to_string()),
                                                             Err(e) => commit.compilation = CompilationStatus::Failed(e),
                                                         }
                                                     } else {

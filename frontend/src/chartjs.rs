@@ -1,4 +1,4 @@
-use common::data_types::{ExperimentType, JobConfig, Measurement, Parameter, Report};
+use common::data_types::{ExperimentType, JobConfig, Measurement, Parameter, ExperimentChart, Dataset, TeebenchArgs, Algorithm, Platform};
 // use gloo_console::log;
 use js_sys::Object;
 use serde_json::json;
@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use wasm_bindgen::prelude::wasm_bindgen;
 use web_sys::HtmlCanvasElement;
 use yew::prelude::*;
+use crate::commits::CommitState;
 use yewdux::prelude::*;
 
 #[allow(non_snake_case)]
@@ -37,18 +38,59 @@ pub struct ChartState(MyChart, bool);
 
 #[derive(Debug, Clone, PartialEq, Properties)]
 pub struct ChartProps {
-    pub report: Report,
+    pub exp_chart: ExperimentChart,
+}
+
+/// Returns: chart_type, labels: Json: Vec<&str>, datasets: Json<Vec<Obj<>>>, plugins: Json<Vec<Obj<>>>, scales: Json<Vec<Obj<>>>, options: Json<Vec<Obj<>>>
+pub fn predefined_throughput_exp(alg_a: String, alg_b: String, data_a: Vec<f64>, data_b: Vec<f64>, d: Dataset) -> (&'static str, serde_json::Value, serde_json::Value, serde_json::Value, serde_json::Value) {
+    let chart_type = "bar";
+    let labels = json!(["native", "sgx"]);
+    let datasets = json!([
+        {
+            "label": alg_a,
+            "backgroundColor": "#de3d82",
+            "data": data_a
+        },
+        {
+            "label": alg_b,
+            "backgroundColor": "#72e06a",
+            "data": data_b
+
+        }
+    ]);
+    let d = match d {
+        Dataset::CacheFit => "Throughput Cache Fit",
+        Dataset::CacheExceed => "Throughput Cache Exceed",
+    };
+    let plugins = json!({
+        "title": {
+            "display": true,
+            "text": d,
+            "font": {
+                "size":60
+            }
+        }
+    });
+    let scales = json!({
+        "x": {"ticks": {"font": {"size": 40}}},
+        "y": {"ticks": {"font": {"size": 40}},
+        "text": "Throughput [M rec/s]",
+        }
+    });
+    (chart_type, labels, datasets, plugins, scales)
 }
 
 #[function_component]
-pub fn Chart(ChartProps { report }: &ChartProps) -> Html {
-    let report = report.clone();
+pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
+    let commit_store = use_store_value::<CommitState>();
+    let exp_chart = exp_chart.clone();
     let canvas_ref = NodeRef::default();
     let move_canvas_ref = canvas_ref.clone();
     //let (store, dispatch) = use_store::<ChartState>();
     use_effect_with_deps(
         move |_| {
-            let mut report = report.clone();
+            let commit_store = commit_store.clone();
+            let mut exp_chart = exp_chart.clone();
             let canvas_ref = move_canvas_ref.clone();
             let chart_type;
             let labels;
@@ -56,224 +98,251 @@ pub fn Chart(ChartProps { report }: &ChartProps) -> Html {
             let plugins;
             let scales;
             let options;
-            let JobConfig::Profiling(conf) = report.config else {
-                todo!();
-            };
-            match conf.experiment_type {
-                ExperimentType::Custom => {
-                    let mut heading;
-                    let y_axis_text;
-                    match conf.measurement {
-                        Measurement::EpcPaging => {
-                            chart_type = "bar";
-                            heading = String::from("EPC Paging with varying ");
-                            y_axis_text = "EPC Misses";
-                        } // TODO Not actually supported yet.
-                        Measurement::Throughput => {
-                            chart_type = "line";
-                            heading = String::from("Throughput with varying ");
-                            y_axis_text = "Throughput [M rec/s]";
+            match exp_chart.config { 
+                JobConfig::Profiling(conf) => match conf.experiment_type {
+                    ExperimentType::Custom => {
+                        let mut heading;
+                        let y_axis_text;
+                        match conf.measurement {
+                            Measurement::EpcPaging => {
+                                chart_type = "bar";
+                                heading = String::from("EPC Paging with varying ");
+                                y_axis_text = "EPC Misses";
+                            } // TODO Not actually supported yet.
+                            Measurement::Throughput => {
+                                chart_type = "line";
+                                heading = String::from("Throughput with varying ");
+                                y_axis_text = "Throughput [M rec/s]";
+                            }
                         }
-                    }
-                    match conf.parameter {
-                        Parameter::Threads => {
-                            heading.push_str("Threads");
+                        match conf.parameter {
+                            Parameter::Threads => {
+                                heading.push_str("Threads");
+                            }
+                            Parameter::DataSkew => {
+                                heading.push_str("Data Skew");
+                            }
+                            Parameter::JoinSelectivity => {
+                                heading.push_str("Join Selectivity");
+                            }
                         }
-                        Parameter::DataSkew => {
-                            heading.push_str("Data Skew");
+                        let steps: Vec<_> = conf.param_value_iter().collect();
+                        labels = json!(steps);
+                        let mut data = HashMap::new();
+                        exp_chart.results.sort_unstable_by(|(a, _), (b, _)| a.cmp(b));
+                        for (args, result) in exp_chart.results {
+                            let v = data
+                                .entry((args.algorithm, args.app_name, args.dataset))
+                                .or_insert(vec![]);
+                            v.push(match conf.measurement {
+                                Measurement::EpcPaging => result["throughput"].clone(), // TODO Add EPC Paging.
+                                Measurement::Throughput => result["throughput"].clone(),
+                            });
                         }
-                        Parameter::JoinSelectivity => {
-                            heading.push_str("Join Selectivity");
+                        let mut datasets_prep = vec![];
+
+                        for (((alg, platform, ds), data_value), color) in
+                            data.iter().zip(COLORS.iter().cycle())
+                        {
+                            datasets_prep.push(json!({
+                                "label": format!("{alg} on {platform} with dataset {ds}"),
+                                "data": data_value,
+                                "backgroundColor": color,
+                                "borderColor": color,
+                                "yAxisID": "y",
+                                "borderWidth":5
+                            }));
                         }
-                    }
-                    let steps: Vec<_> = conf.param_value_iter().collect();
-                    labels = json!(steps);
-                    let mut data = HashMap::new();
-                    report.results.sort_unstable_by(|(a, _), (b, _)| a.cmp(b));
-                    for (args, result) in report.results {
-                        let v = data
-                            .entry((args.algorithm, args.app_name, args.dataset))
-                            .or_insert(vec![]);
-                        v.push(match conf.measurement {
-                            Measurement::EpcPaging => result["throughput"].clone(), // TODO Add EPC Paging.
-                            Measurement::Throughput => result["throughput"].clone(),
+                        datasets = json!(datasets_prep);
+                        plugins = json!({
+                            "title": {
+                                "display": true,
+                                "text": heading,
+                                "font": {
+                                    "size": 60
+                                }
+                            }
+                        });
+                        scales = json!({
+                            "x": {
+                                "ticks": {
+                                    "font": {
+                                        "size": 40
+                                    }
+                                }
+                            },
+                            "y": {
+                                "ticks": {
+                                    "font": {
+                                        "size": 40
+                                    },
+                                    "min": 0
+                                },
+                                "text": y_axis_text,
+                                "type": "linear",
+                                "display": true,
+                                "position": "left"
+                            }
                         });
                     }
-                    let mut datasets_prep = vec![];
-
-                    for (((alg, platform, ds), data_value), color) in
-                        data.iter().zip(COLORS.iter().cycle())
-                    {
-                        datasets_prep.push(json!({
-                            "label": format!("{alg} on {platform} with dataset {ds}"),
-                            "data": data_value,
-                            "backgroundColor": color,
-                            "borderColor": color,
-                            "yAxisID": "y",
-                            "borderWidth":5
-                        }));
-                    }
-                    datasets = json!(datasets_prep);
-                    plugins = json!({
-                        "title": {
-                            "display": true,
-                            "text": heading,
-                            "font": {
-                                "size": 60
-                            }
-                        }
-                    });
-                    scales = json!({
-                        "x": {
-                            "ticks": {
-                                "font": {
-                                    "size": 40
-                                }
-                            }
-                        },
-                        "y": {
-                            "ticks": {
-                                "font": {
-                                    "size": 40
-                                },
-                                "min": 0
+                    ExperimentType::EpcPaging => {
+                        chart_type = "bar";
+                        labels =
+                            json!([8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128]);
+                        datasets = json!([
+                            {
+                                "label": "Throughput",
+                                "labelString": "Throughput",
+                                "display": true,
+                                "data": [25.99, 20.36, 21.70, 20.60, 16.96, 14.00, 13.09, 17.80, 17.03, 18.26, 17.59, 16.86, 16.15, 14.71, 17.52, 17.55],
+                                "borderColor": "#de3d82",
+                                "backgroundColor": "#de3d82",
+                                "border": 0,
+                                "type": "line",
+                                "yAxisID": "y",
+                                "borderWidth": 5
                             },
-                            "text": y_axis_text,
-                            "type": "linear",
-                            "display": true,
-                            "position": "left"
-                        }
-                    });
-                    options = json!({
-                        "responsive": true,
-                        "plugins": plugins,
-                        "scales": scales,
-                    });
-                }
-                ExperimentType::EpcPaging => {
-                    chart_type = "bar";
-                    labels =
-                        json!([8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128]);
-                    datasets = json!([
-                        {
-                            "label": "Throughput",
-                            "labelString": "Throughput",
-                            "display": true,
-                            "data": [25.99, 20.36, 21.70, 20.60, 16.96, 14.00, 13.09, 17.80, 17.03, 18.26, 17.59, 16.86, 16.15, 14.71, 17.52, 17.55],
-                            "borderColor": "#de3d82",
-                            "backgroundColor": "#de3d82",
-                            "border": 0,
-                            "type": "line",
-                            "yAxisID": "y",
-                            "borderWidth": 5
-                        },
-                        {
-                            "label": "EPC Paging",
-                            "data": [325201, 334234, 338962, 343624, 348356, 353090, 357802, 362510, 367241, 371954, 376744, 381605, 386340, 390620, 394810, 399069],
-                            "borderColor": "#7e84fa",
-                            "backgroundColor": "#7e84fa",
-                            // "type": "line",
-                            "order": 1,
-                            "yAxisID": "y1",
-                        }
-                    ]);
-                    plugins = json!({
-                        "legend": {
-                            "position": "top",
-                        },
-                        "title": {
-                            "display": true,
-                            "text": "EPC Paging v2.1",
-                            "font": {"size":40}
-                        }
-                    });
-                    scales = json!({
-                        "x": {
-                            "ticks": {"font": {"size":20}},
-                            "title" : {
-                                "display": true,
-                                "text": "Size of R [MB]",
-                                "font": {
-                                    "size": 25
-                                }
+                            {
+                                "label": "EPC Paging",
+                                "data": [325201, 334234, 338962, 343624, 348356, 353090, 357802, 362510, 367241, 371954, 376744, 381605, 386340, 390620, 394810, 399069],
+                                "borderColor": "#7e84fa",
+                                "backgroundColor": "#7e84fa",
+                                // "type": "line",
+                                "order": 1,
+                                "yAxisID": "y1",
                             }
-                        },
-                        "y": {
-                            "text": "Throughput [M rec/s]",
-                            "type": "linear",
-                            "display": true,
-                            "position": "left",
-                            "ticks": {"font": {"size": 20}},
-                            "title" : {
+                        ]);
+                        plugins = json!({
+                            "legend": {
+                                "position": "top",
+                            },
+                            "title": {
                                 "display": true,
+                                "text": "EPC Paging v2.1",
+                                "font": {"size":40}
+                            }
+                        });
+                        scales = json!({
+                            "x": {
+                                "ticks": {"font": {"size":20}},
+                                "title" : {
+                                    "display": true,
+                                    "text": "Size of R [MB]",
+                                    "font": {
+                                        "size": 25
+                                    }
+                                }
+                            },
+                            "y": {
                                 "text": "Throughput [M rec/s]",
-                                "font": {
-                                    "size": 25
-                                }
-                            }
-                        },
-                        "y1": {
-                            "type": "linear",
-                            "display": true,
-                            "position": "right",
-                            "ticks": {"font": {"size": 20}},
-                            // grid line settings
-                            "grid": {
-                                "drawOnChartArea": false, // only want the grid lines for one axis to show up
-                            },
-                            "title" : {
+                                "type": "linear",
                                 "display": true,
-                                "text": "EPC Misses",
-                                "font": {
-                                    "size": 25
+                                "position": "left",
+                                "ticks": {"font": {"size": 20}},
+                                "title" : {
+                                    "display": true,
+                                    "text": "Throughput [M rec/s]",
+                                    "font": {
+                                        "size": 25
+                                    }
+                                }
+                            },
+                            "y1": {
+                                "type": "linear",
+                                "display": true,
+                                "position": "right",
+                                "ticks": {"font": {"size": 20}},
+                                // grid line settings
+                                "grid": {
+                                    "drawOnChartArea": false, // only want the grid lines for one axis to show up
+                                },
+                                "title" : {
+                                    "display": true,
+                                    "text": "EPC Misses",
+                                    "font": {
+                                        "size": 25
+                                    }
                                 }
                             }
-                        }
-                    });
-                    options = json!({
-                        "responsive": true,
-                        "plugins": plugins,
-                        "scales": scales,
-                    });
-                }
-                ExperimentType::Throughput => {
-                    chart_type = "bar";
-                    labels = json!(["native", "sgx"]);
-                    datasets = json!([
-                        {
-                            "label": "v2.1",
-                            "backgroundColor": "#de3d82",
-                            "data": [164.11,33.51]
-                        },
-                        {
-                            "label": "v2.2",
-                            "backgroundColor": "#72e06a",
-                            "data": [180.11,39.51]
+                        });
+                    }
+                    ExperimentType::Throughput => {
+                        // TODO Replace with the funciton call predefined_throughput_exp
+                        chart_type = "bar";
+                        labels = json!(["native", "sgx"]);
+                        datasets = json!([
+                            {
+                                "label": "v2.1",
+                                "backgroundColor": "#de3d82",
+                                "data": [164.11,33.51]
+                            },
+                            {
+                                "label": "v2.2",
+                                "backgroundColor": "#72e06a",
+                                "data": [180.11,39.51]
 
+                            }
+                        ]);
+                        plugins = json!({
+                            "title": {
+                                "display": true,
+                                "text": "Throughput cache-fit",
+                                "font": {
+                                    "size":60
+                                }
+                            }
+                        });
+                        scales = json!({
+                            "x": {"ticks": {"font": {"size": 40}}},
+                            "y": {"ticks": {"font": {"size": 40}},
+                            "text": "Throughput [M rec/s]",
+                            }
+                        });
+                    }
+                    ExperimentType::Scalability => {
+                        todo!();
+                    }
+                }
+                JobConfig::PerfReport(pr_conf) => {
+                    let alg_a = commit_store.0.iter().find_map(|c| {
+                        if c.id == pr_conf.id {
+                            Some(c.title.clone())
+                        } else {
+                            None
                         }
-                    ]);
-                    plugins = json!({
-                        "title": {
-                            "display": true,
-                            "text": "Throughput cache-fit",
-                            "font": {
-                                "size":60
+                    }).unwrap();
+                    let alg_b;
+                    if let common::data_types::Algorithm::Commit(id) = pr_conf.baseline {
+                        for c in &commit_store.0 {
+                            if c.id == id {
+                                // TODO Why is rust warning about this never being read?
+                                alg_b = c.title.clone();
+                                break;
                             }
                         }
-                    });
-                    scales = json!({
-                        "x": {"ticks": {"font": {"size": 40}}},
-                        "y": {"ticks": {"font": {"size": 40}},
-                        "text": "Throughput [M rec/s]",
-                        }
-                    });
-                    options = json!({
-                        "responsive": true,
-                        "plugins": plugins,
-                        "scales": scales,
-                    });
+                        panic!("Could not find the commit!");
+                    } else {
+                        alg_b = pr_conf.baseline.to_string();
+                    }
+                    let data_a = {
+                        let native = exp_chart.results.iter().find(|&tuple| tuple.0 == TeebenchArgs::for_throughput(Algorithm::Commit(pr_conf.id), Platform::Native, pr_conf.dataset)).unwrap().1["throughput"].parse().unwrap();
+                        let sgx = exp_chart.results.iter().find(|&tuple| tuple.0 == TeebenchArgs::for_throughput(Algorithm::Commit(pr_conf.id), Platform::Sgx, pr_conf.dataset)).unwrap().1["throughput"].parse().unwrap();
+                        vec![native, sgx]
+                    };
+                    let data_b = {
+                        let native = exp_chart.results.iter().find(|&tuple| tuple.0 == TeebenchArgs::for_throughput(pr_conf.baseline, Platform::Native, pr_conf.dataset)).unwrap().1["throughput"].parse().unwrap();
+                        let sgx = exp_chart.results.iter().find(|&tuple| tuple.0 == TeebenchArgs::for_throughput(pr_conf.baseline, Platform::Sgx, pr_conf.dataset)).unwrap().1["throughput"].parse().unwrap();
+                        vec![native, sgx]
+                    };
+                    (chart_type, labels, datasets, plugins, scales) = predefined_throughput_exp(alg_a, alg_b, data_a, data_b, pr_conf.dataset);
                 }
+                JobConfig::Compile(_) => panic!("Not allowed here!"),
             }
+            options = json!({
+                            "responsive": true,
+                            "plugins": plugins,
+                            "scales": scales,
+                        });
             let config = json!({
                 "type": chart_type,
                 "data": {

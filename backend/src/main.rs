@@ -17,9 +17,7 @@ use tokio::sync::mpsc;
 use tracing::{error, info, instrument, warn};
 
 use backend_lib::profiling_task;
-use common::data_types::{
-    ClientMessage, Commit, Job, JobConfig, JobStatus, Operator, ServerMessage,
-};
+use common::data_types::{ClientMessage, Commit, Job, JobStatus, ServerMessage};
 
 const DEFAULT_TASK_CHANNEL_SIZE: usize = 5;
 
@@ -61,10 +59,10 @@ async fn ws_handler(State(app_state): State<AppState>, ws: WebSocketUpgrade) -> 
     ws.on_upgrade(|socket| handle_socket(socket, app_state.queue, app_state.unqueued_notifier))
 }
 
-#[instrument(skip(socket, queue, unqueued_notifier))]
+#[instrument(skip(socket, _queue, unqueued_notifier))]
 async fn handle_socket(
     mut socket: WebSocket,
-    queue: Arc<Mutex<VecDeque<Job>>>,
+    _queue: Arc<Mutex<VecDeque<Job>>>,
     unqueued_notifier: Arc<tokio::sync::Mutex<mpsc::Receiver<Job>>>,
 ) {
     loop {

@@ -72,7 +72,7 @@ pub fn JobResultView(JobResultViewProps { job }: &JobResultViewProps) -> Html {
                                         <button type="button" class="btn-close" onclick={destroy_onclick.clone()} data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
                                     <div class="modal-body">
-                                        <Chart report={report}/>
+                                        <Chart exp_chart={report.charts[0].clone()}/> // TODO Put the proper chart here
                                     </div>
                                     <div class="modal-header">
                                         <h5 class="modal-title">{"Analyser Findings"}</h5>

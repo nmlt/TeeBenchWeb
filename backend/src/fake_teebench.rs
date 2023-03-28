@@ -40,6 +40,20 @@ fn main() -> Result<()> {
 static CSV_OUTPUT: Lazy<HashMap<(Platform, Algorithm, Dataset), &str>> = Lazy::new(|| {
     HashMap::from([
         (
+            (Platform::Sgx, Algorithm::Commit(1), Dataset::CacheFit),
+            indoc! {"
+            algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
+            ___,2,1310720,5242880,5242880,0,481746914,0,78,0,0,257808,25.4205
+        "},
+        ),
+        (
+            (Platform::Sgx, Algorithm::Commit(1), Dataset::CacheExceed),
+            indoc! {"
+            algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
+            ___,2,13107200,52428800,52428800,0,5930547977,0,92,0,0,3047240,21.5067
+        "},
+        ),
+        (
             (Platform::Sgx, Algorithm::Rho, Dataset::CacheFit),
             indoc! {"
             algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
@@ -180,6 +194,20 @@ static CSV_OUTPUT: Lazy<HashMap<(Platform, Algorithm, Dataset), &str>> = Lazy::n
         "},
         ),
         // native:
+        (
+            (Platform::Native, Algorithm::Commit(1), Dataset::CacheFit),
+            indoc! {"
+            algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
+            ___,2,1310720,5242880,5242880,0,481746914,0,78,0,0,257808,25.4205
+        "},
+        ),
+        (
+            (Platform::Native, Algorithm::Commit(1), Dataset::CacheExceed),
+            indoc! {"
+            algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
+            ___,2,13107200,52428800,52428800,0,5930547977,0,92,0,0,3047240,21.5067
+        "},
+        ),
         (
             (Platform::Native, Algorithm::Rho, Dataset::CacheFit),
             indoc! {"
