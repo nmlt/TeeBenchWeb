@@ -53,6 +53,7 @@ impl Commandline {
         let app_name = vec![self.app.to_app_name()];
         let iter = app_name.iter().chain(self.args.iter());
         let mut args = TeebenchArgs::from_iter_safe(iter).unwrap();
+        // TODO Remove app_name as the way to determine the platform, use an environment variable and compile it two times.
         args.app_name = self.app;
         args
     }
