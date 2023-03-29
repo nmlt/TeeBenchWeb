@@ -517,7 +517,7 @@ impl Display for JobConfig {
     }
 }
 
-pub type StepType = i64;
+pub type StepType = String;
 
 // #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq, Store)]
 // pub struct ExperimentChartConfig {
@@ -602,9 +602,9 @@ impl Default for ProfilingConfiguration {
             experiment_type: ExperimentType::default(),
             parameter: Parameter::default(),
             measurement: Measurement::default(),
-            min: 2,
-            max: 8,
-            step: 1,
+            min: 2.to_string(),
+            max: 8.to_string(),
+            step: 1.to_string(),
             dataset: HashSet::from([Dataset::CacheExceed, Dataset::CacheFit]),
             platform: HashSet::from([Platform::default()]),
             sort_data: false,
@@ -654,8 +654,39 @@ impl From<JobConfig> for ProfilingConfiguration {
 
 use crate::commandline::Commandline;
 impl ProfilingConfiguration {
-    pub fn param_value_iter(&self) -> std::iter::StepBy<std::ops::RangeInclusive<StepType>> {
-        (self.min..=self.max).step_by(self.step as usize)
+    pub fn param_value_iter(&self) -> Vec<String> {
+        match self.parameter {
+            Parameter::JoinSelectivity | Parameter::Threads => {
+                let min: i64 = self.min.parse().unwrap();
+                let max: i64 = self.max.parse().unwrap();
+                let step: usize = self.step.parse().unwrap();
+                (min..=max).step_by(step).map(|i| i.to_string()).collect()
+            }
+            Parameter::DataSkew => {
+                let mut min: f64 = self.min.parse().unwrap();
+                let max: f64 = self.max.parse().unwrap();
+                let step: f64 = self.step.parse().unwrap();
+                let mut res = vec![];
+                while min <= max {
+                    let stringified = min.to_string();
+                    res.push(stringified);
+                    min += step;
+                }
+                // Fix if adding leads to some very long floats, eg. 0.2 + 0.1 = 0.30000000000000004:
+                let lens = vec![self.min.len(), self.max.len(), self.step.len()];
+                let max = lens.iter().max().unwrap_or(&lens[0]);
+                res = res
+                    .into_iter()
+                    .map(|mut v| {
+                        if &v.len() > max {
+                            v.truncate(*max);
+                        }
+                        v
+                    })
+                    .collect();
+                res
+            }
+        }
     }
     pub fn to_teebench_cmd(&self) -> Vec<Commandline> {
         let mut res = vec![];
@@ -686,7 +717,8 @@ impl ProfilingConfiguration {
             &mut res,
             &mut dataset_iter.map(|ds| ds.to_cmd_arg()),
         );
-        let mut value_iter = self.param_value_iter(); // TODO Verify that these values form a valid range.
+        let value_iter = self.param_value_iter(); // TODO Verify that these values form a valid range.
+        let mut value_iter = value_iter.iter();
         let val = value_iter.next().unwrap();
         let p = match self.parameter {
             Parameter::Threads => "-n",
@@ -750,6 +782,7 @@ use structopt::StructOpt;
     name = "TeeBench",
     about = "fake placeholder for testing that outputs teebench output. Because I don't have SGX on my dev machine."
 )]
+/// The chart renderer on the frontend runs sort on this. So don't just change the order of the fields. This struct isn't only taking the arguments for fake_teebench, but also the "identifier" for each run of teebench. The results in an `ExperimentChart` are identified by this struct.
 pub struct TeebenchArgs {
     /// The name of the application. Used to determine whether it is simulating Sgx or native.
     #[structopt(skip = Platform::arg0_to_platform())]
@@ -768,7 +801,7 @@ pub struct TeebenchArgs {
     pub selectivity: u8,
     ///`-z` - data skew. Default: `0`
     #[structopt(short = "z", long, default_value = "0")]
-    pub data_skew: u32,
+    pub data_skew: String,
     ///`-c` - seal chunk size in kBs. if set to 0 then seal everything at once. Default: `0`
     #[structopt(short = "c", long, default_value = "0")]
     pub seal_chunk_size: u32,
@@ -812,7 +845,7 @@ impl Default for TeebenchArgs {
             algorithm: Algorithm::default(),
             threads: 2,
             selectivity: 100,
-            data_skew: 0,
+            data_skew: "0".to_string(),
             seal_chunk_size: 0,
             r_tuples: 2097152,
             s_tuples: 2097152,

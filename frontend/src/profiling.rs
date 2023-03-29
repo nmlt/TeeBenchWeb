@@ -101,7 +101,15 @@ pub fn profiling() -> Html {
         dispatch.reduce_mut_callback_with(|store, e: Event| {
             let input_num = e.target_unchecked_into::<HtmlInputElement>();
             let value = input_num.value();
-            let value = i64::from_str_radix(&value, 10).unwrap();
+            match store.parameter {
+                Parameter::Threads | Parameter::JoinSelectivity => {
+                    // TODO Notify user of wrong input if unwrap fails.
+                    let _value = i64::from_str_radix(&value, 10).unwrap();
+                }
+                Parameter::DataSkew => {
+                    let _value = f64::from_str(&value).unwrap();
+                }
+            }
             store.min = value;
         })
     };
@@ -110,7 +118,15 @@ pub fn profiling() -> Html {
         dispatch.reduce_mut_callback_with(|store, e: Event| {
             let input_num = e.target_unchecked_into::<HtmlInputElement>();
             let value = input_num.value();
-            let value = i64::from_str_radix(&value, 10).unwrap();
+            match store.parameter {
+                Parameter::Threads | Parameter::JoinSelectivity => {
+                    // TODO Notify user of wrong input if unwrap fails.
+                    let _value = i64::from_str_radix(&value, 10).unwrap();
+                }
+                Parameter::DataSkew => {
+                    let _value = f64::from_str(&value).unwrap();
+                }
+            }
             store.max = value;
         })
     };
@@ -119,7 +135,15 @@ pub fn profiling() -> Html {
         dispatch.reduce_mut_callback_with(|store, e: Event| {
             let input_num = e.target_unchecked_into::<HtmlInputElement>();
             let value = input_num.value();
-            let value = i64::from_str_radix(&value, 10).unwrap();
+            match store.parameter {
+                Parameter::Threads | Parameter::JoinSelectivity => {
+                    // TODO Notify user of wrong input if unwrap fails.
+                    let _value = i64::from_str_radix(&value, 10).unwrap();
+                }
+                Parameter::DataSkew => {
+                    let _value = f64::from_str(&value).unwrap();
+                }
+            }
             store.step = value;
         })
     };

@@ -211,7 +211,7 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                 heading.push_str("Join Selectivity");
                             }
                         }
-                        let steps: Vec<_> = conf.param_value_iter().collect();
+                        let steps: Vec<_> = conf.param_value_iter();
                         labels = json!(steps);
                         let mut data = HashMap::new();
                         exp_chart
@@ -425,7 +425,7 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                     .find(|&tuple| {
                                         tuple.0
                                             == TeebenchArgs::for_throughput(
-                                                Algorithm::Commit(1), // Actual commit id is irrelevant for now because only one Operator with id is allowed per perf report. 
+                                                Algorithm::Commit(1), // Actual commit id is irrelevant for now because only one Operator with id is allowed per perf report.
                                                 // TODO Making this the actual commit also leads to a problem: I can't get the id from the commandline (there it's always -a ___), so the experiment runner would have to know whether it is running a baseline or commit. But it's just a vector with commands, it doesn't know which of those is baseline or commit...
                                                 Platform::Native,
                                                 pr_conf.dataset,
