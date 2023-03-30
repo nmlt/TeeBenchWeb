@@ -5,7 +5,7 @@ use yew::platform::spawn_local;
 use yew::prelude::*;
 use yewdux::prelude::*;
 
-use common::data_types::{Job, ProfilingConfiguration};
+use common::data_types::{Job, JobConfig, ProfilingConfiguration};
 
 #[derive(Debug, PartialEq, Properties)]
 struct QueueItemProps {
@@ -68,8 +68,21 @@ pub struct QueueState {
 
 impl QueueState {
     pub fn new(jobs: Vec<Job>) -> Self {
-        let queue: VecDeque<ProfilingConfiguration> =
-            jobs.into_iter().map(|j| j.config.into()).collect();
+        let queue: VecDeque<ProfilingConfiguration> = jobs
+            .into_iter()
+            .map(|j| {
+                if let Job {
+                    config: JobConfig::Profiling(c),
+                    ..
+                } = j
+                {
+                    return Some(c);
+                }
+                // Nothing to display, other kind of jobs are shown in the Operator (commits.rs) view.
+                None
+            })
+            .flatten()
+            .collect();
         QueueState { queue }
     }
 }
@@ -90,7 +103,7 @@ pub fn Queue() -> Html {
                     .await;
                 match resp {
                     Ok(json) => {
-                        //log!(format!("got commits: {json:?}"));
+                        log!(format!("got queue items: {json:?}"));
                         queue_dispatch.set(QueueState::new(json));
                     }
                     Err(e) => log!("Error getting queue json: ", e.to_string()),

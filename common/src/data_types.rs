@@ -643,15 +643,6 @@ impl std::fmt::Display for ProfilingConfiguration {
     }
 }
 
-impl From<JobConfig> for ProfilingConfiguration {
-    fn from(jc: JobConfig) -> Self {
-        match jc {
-            JobConfig::Compile(_) | JobConfig::PerfReport { .. } => panic!("Can't convert!"),
-            JobConfig::Profiling(c) => c,
-        }
-    }
-}
-
 use crate::commandline::Commandline;
 impl ProfilingConfiguration {
     pub fn param_value_iter(&self) -> Vec<String> {
