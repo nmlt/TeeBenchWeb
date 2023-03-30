@@ -98,7 +98,7 @@ pub fn Queue() -> Html {
                     .method(Method::GET)
                     .send()
                     .await
-                    .unwrap()
+                    .expect("Server didn't respond. Is it running?")
                     .json()
                     .await;
                 match resp {

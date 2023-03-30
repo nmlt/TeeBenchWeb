@@ -203,10 +203,10 @@ pub fn profiling() -> Html {
                 let resp = Request::get("/api/job")
                     .method(Method::POST)
                     .json(&job)
-                    .unwrap()
+                    .unwrap() // This should be impossible to fail.
                     .send()
                     .await
-                    .unwrap();
+                    .expect("Server didn't respond. Is it running?");
                 log!("Sent request got: ", format!("{resp:?}"));
                 s.queue.push_back(store);
             })

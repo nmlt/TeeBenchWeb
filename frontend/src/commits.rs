@@ -152,7 +152,7 @@ fn UploadCommit() -> Html {
                     .unwrap()
                     .send()
                     .await
-                    .unwrap();
+                    .expect("Server didn't respond. Is it running?");
                 //log!("Sent commit to server, got response: ", format!("{_resp:?}"));
                 upload_commit_dispatch.reduce_mut(|s| s.reset());
 
@@ -168,7 +168,7 @@ fn UploadCommit() -> Html {
                     .unwrap()
                     .send()
                     .await
-                    .unwrap();
+                    .expect("Server didn't respond. Is it running?");
                 // TODO Instead of unwrapping show a possible error while sending.
                 // TODO If there is already a job, the compilationstatus should be not compiled.
                 commit_state.0.last_mut().unwrap().compilation = CompilationStatus::Compiling;
@@ -311,7 +311,7 @@ fn CommitsList() -> Html {
                             .unwrap()
                             .send()
                             .await
-                            .unwrap();
+                            .expect("Server didn't respond. Is it running?");
                         for c in s.0.iter_mut() {
                             if c.id == id {
                                 c.perf_report_running = true;
@@ -363,7 +363,7 @@ pub fn Commits() -> Html {
                     .method(Method::GET)
                     .send()
                     .await
-                    .unwrap()
+                    .expect("Server didn't respond. Is it running?")
                     .json()
                     .await;
                 //log!(format!("GET /api/commits: Response: {:?}", resp));
