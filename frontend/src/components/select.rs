@@ -4,16 +4,21 @@ use yew::prelude::*;
 pub struct SelectDataOption {
     pub label: String,
     pub value: String,
+    pub enabled: bool,
 }
 
 impl SelectDataOption {
-    pub fn new(label: String, value: String) -> Self {
-        Self { label, value }
+    pub fn new(label: String, value: String, enabled: bool) -> Self {
+        Self {
+            label,
+            value,
+            enabled,
+        }
     }
     pub fn options_vec(options: &[&str]) -> Vec<Self> {
         options
             .iter()
-            .map(|o| SelectDataOption::new(o.to_string(), o.to_string()))
+            .map(|o| SelectDataOption::new(o.to_string(), o.to_string(), true))
             .collect()
     }
 }
@@ -44,9 +49,9 @@ pub fn InputSelect(
         .iter()
         .map(|o| {
             if selected.contains(&o.value) {
-                return html! { <option value={o.value.clone()} selected={true} >{o.label.clone()}</option> };
+                return html! { <option value={o.value.clone()} selected={true} disabled={!o.enabled}>{o.label.clone()}</option> };
             }
-            html! { <option value={o.value.clone()}>{o.label.clone()}</option> }
+            html! { <option value={o.value.clone()} disabled={!o.enabled}>{o.label.clone()}</option> }
         });
     html! {
         <div>

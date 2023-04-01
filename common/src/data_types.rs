@@ -198,6 +198,7 @@ pub enum ServerMessage {
 /// Name of the algorithm for Teebench that is always replaced with the current commit's code.
 pub const REPLACE_ALG: &str = "___";
 
+// TODO Do not use strum for from_str and to_string. Write your own that takes into account the id of the Commit(id) variant.
 #[derive(
     Debug,
     Copy,
@@ -248,9 +249,16 @@ impl Algorithm {
         if let Some(_) = Algorithm::VARIANTS.iter().find(|&a| a == &string) {
             return Ok(Algorithm::from_str(string).unwrap());
         } else if string == REPLACE_ALG {
-            return Ok(Algorithm::Commit(1));
+            return Ok(Algorithm::Commit(1)); // TODO This is not ideal.
         } else {
             return Err("Could not find this Operator/Algorithm!");
+        }
+    }
+    pub fn to_cmd_arg(&self) -> String {
+        if let Self::Commit(_) = self {
+            REPLACE_ALG.to_string()
+        } else {
+            self.to_string()
         }
     }
 }
@@ -690,9 +698,9 @@ impl ProfilingConfiguration {
         let mut alg_iter = self.algorithm.iter();
         let alg = alg_iter.next().unwrap(); // There is at least one algorithm.
         for cmd in &mut res {
-            cmd.add_args("-a", alg);
+            cmd.add_args("-a", alg.to_cmd_arg());
         }
-        Commandline::double_cmds_with_different_arg_value(&mut res, &mut alg_iter);
+        Commandline::double_cmds_with_different_arg_value(&mut res, &mut alg_iter.map(|a| a.to_cmd_arg()));
 
         if self.sort_data {
             for cmd in &mut res {

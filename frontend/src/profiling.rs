@@ -13,6 +13,7 @@ use common::data_types::{
 use std::collections::HashSet;
 use std::str::FromStr;
 
+use crate::commits::CommitState;
 use crate::components::{
     checkbox::{CheckboxData, InputCheckbox, InputCheckboxes},
     number::InputNumber,
@@ -41,10 +42,26 @@ pub fn profiling() -> Html {
     let measurements = Measurement::VARIANTS;
     let platforms = Platform::VARIANTS;
     let datasets = Dataset::VARIANTS;
-    let algs = SelectDataOption::options_vec(algs);
+    let commit_store = use_store_value::<CommitState>();
+    let algs = {
+        let mut algs = SelectDataOption::options_vec(algs);
+        let found = algs.iter_mut().find(|o| o.value == "Latest Operator");
+        if found.is_some() {
+            let o: &mut SelectDataOption = found.unwrap(); // Putting &mut in front of the variable does not work. Type just to understand.
+            if let Some(c) = commit_store.0.first() {
+                o.label = format!("Latest Operator ({})", c.title).to_string();
+                // We could put the id of the commit in the value field to offer not just the latest commit, but all.
+            } else {
+                o.enabled = false;
+            }
+        };
+        algs
+    };
     let algs_onchange = {
         let (_store, dispatch) = use_store::<ProfilingConfiguration>();
-        dispatch.reduce_mut_callback_with(|store, e: Event| {
+        let commit_store = commit_store.clone();
+        dispatch.reduce_mut_callback_with(move |store, e: Event| {
+            let commit_store = commit_store.clone();
             let select_elem = e.target_unchecked_into::<HtmlSelectElement>();
             let html_collection = select_elem.selected_options();
             let mut selected = HashSet::new();
@@ -56,11 +73,16 @@ pub fn profiling() -> Html {
                     .unwrap();
                 let value = Algorithm::from_str(&value.value()).unwrap();
                 match value {
-                    //                     Algorithm::Commit(_) => {
-                    //                         // TODO Get latest commit id.
-                    //                         let id = 0;
-                    //                         selected.insert(Algorithm::Commit(id));
-                    //                     }
+                    Algorithm::Commit(_) => {
+                        let id = match commit_store.0.iter().max_by(|a, b| a.id.cmp(&b.id)) {
+                            Some(c) => c.id,
+                            None => {
+                                log!("Error: No latest operator yet. Upload code in the Operator tab!");
+                                panic!("This should not have been possible to happen :(");
+                            }
+                        };
+                        selected.insert(Algorithm::Commit(id));
+                    }
                     alg_variant => {
                         selected.insert(alg_variant);
                     }
