@@ -700,7 +700,10 @@ impl ProfilingConfiguration {
         for cmd in &mut res {
             cmd.add_args("-a", alg.to_cmd_arg());
         }
-        Commandline::double_cmds_with_different_arg_value(&mut res, &mut alg_iter.map(|a| a.to_cmd_arg()));
+        Commandline::double_cmds_with_different_arg_value(
+            &mut res,
+            &mut alg_iter.map(|a| a.to_cmd_arg()),
+        );
 
         if self.sort_data {
             for cmd in &mut res {

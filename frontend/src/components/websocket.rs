@@ -93,38 +93,35 @@ pub fn Websocket() -> Html {
                             }
                             JobConfig::PerfReport(pr_conf) => {
                                 commit_dispatch.reduce_mut(|commit_store| {
-                                        for commit in commit_store.0.iter_mut() {
-                                            if commit.id == pr_conf.id {
-                                                if let JobStatus::Done { result, .. } = finished_job.status {
-                                                    commit.reports = Some(result);
-                                                } else {
-                                                    log!("Error: Got an unfinished job in the websocket.");
-                                                }
-                                                break;
-                                            }
+                                    let commit = commit_store.get_id_mut(&pr_conf.id);
+                                    if let Some(mut commit) = commit {
+                                        if let JobStatus::Done { result, .. } = finished_job.status
+                                        {
+                                            commit.reports = Some(result);
+                                        } else {
+                                            log!("Error: Got an unfinished job in the websocket.");
                                         }
-                                    });
+                                    }
+                                });
                             }
-                            JobConfig::Compile(id) => {
+                            JobConfig::Compile(ref id) => {
                                 commit_dispatch.reduce_mut(|commit_store| {
-                                        for commit in commit_store.0.iter_mut() {
-                                            if commit.id == id {
-                                                if let JobStatus::Done { result, .. } = finished_job.status {
-                                                    if let JobResult::Compile(r) = result {
-                                                        match r {
-                                                            Ok(_teebenchweberror) => commit.compilation = CompilationStatus::Successful("TODO".to_string()),
-                                                            Err(e) => commit.compilation = CompilationStatus::Failed(e),
-                                                        }
-                                                    } else {
-                                                        log!("Error: Got a job result for somehting else than compiling when expecting Compile.")
-                                                    }
-                                                } else {
-                                                    log!("Error: Got an unfinished job in the websocket.");
+                                    let commit = commit_store.get_id_mut(id);
+                                    if let Some(mut commit) = commit {
+                                        if let JobStatus::Done { result, .. } = finished_job.status {
+                                            if let JobResult::Compile(r) = result {
+                                                match r {
+                                                    Ok(_teebenchweberror) => commit.compilation = CompilationStatus::Successful("TODO".to_string()),
+                                                    Err(e) => commit.compilation = CompilationStatus::Failed(e),
                                                 }
-                                                break;
+                                            } else {
+                                                log!("Error: Got a job result for something else than compiling when expecting Compile.")
                                             }
+                                        } else {
+                                            log!("Error: Got an unfinished job in the websocket.");
                                         }
-                                    });
+                                    }
+                                });
                             }
                         },
                     }

@@ -74,7 +74,7 @@ pub fn profiling() -> Html {
                 let value = Algorithm::from_str(&value.value()).unwrap();
                 match value {
                     Algorithm::Commit(_) => {
-                        let id = match commit_store.0.iter().max_by(|a, b| a.id.cmp(&b.id)) {
+                        let id = match commit_store.get_latest() {
                             Some(c) => c.id,
                             None => {
                                 log!("Error: No latest operator yet. Upload code in the Operator tab!");

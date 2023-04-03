@@ -34,9 +34,17 @@ pub struct PerfReportProps {
 pub fn PerfReport(PerfReportProps { commit: current }: &PerfReportProps) -> Html {
     let commit_store = use_store_value::<CommitState>();
     let current = match current {
-        Some(c) => c,
-        None => match commit_store.0.iter().last() {
-            Some(c) => &c.title,
+        Some(title) => match commit_store.get_title(&title).first() {
+            // TODO If there are multiple commits with the same title, add another route "perf_report/title/<number>" and handle the vector returned here accordingly.
+            Some(c) => c.id,
+            None => {
+                return html! {
+                    <h1>{format!("Error getting commit with title {title:?}!")}</h1>
+                }
+            }
+        },
+        None => match commit_store.get_latest() {
+            Some(c) => c.id,
             None => {
                 return html! {
                     <h1>{"No operators! Upload some in the Operator tab."}</h1> // TODO Would be nice to provide a link to the Operator tab.
@@ -44,14 +52,14 @@ pub fn PerfReport(PerfReportProps { commit: current }: &PerfReportProps) -> Html
             }
         },
     };
-    let Some(commit) = commit_store.0.iter().filter(|c| &c.title == current).next().map(|c| c.clone()) else {
+    let Some(commit) = commit_store.get_id(&current) else {
         return html! {
             <h1>{format!("Error getting commit with title {current:?}!")}</h1>
         }
     };
     let findings;
     let charts;
-    if let Some(JobResult::Exp(Ok(report))) = commit.reports {
+    if let Some(JobResult::Exp(Ok(ref report))) = commit.reports {
         findings = report
             .findings
             .iter()

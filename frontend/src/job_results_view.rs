@@ -3,9 +3,10 @@ use time::macros::format_description;
 use yew::prelude::*;
 use yewdux::prelude::*;
 
-use common::data_types::{Job, JobConfig, JobResult, JobStatus, Report};
+use common::data_types::{Algorithm, Job, JobConfig, JobResult, JobStatus, Report};
 
 use crate::chartjs::Chart;
+use crate::commits::CommitState;
 use crate::components::finding::FindingCardColumn;
 use crate::modal::ModalContent;
 use crate::queue::Queue;
@@ -18,6 +19,7 @@ pub struct JobResultViewProps {
 #[function_component]
 pub fn JobResultView(JobResultViewProps { job }: &JobResultViewProps) -> Html {
     let (_content_store, content_dispatch) = use_store::<ModalContent>();
+    let commit_store = use_store_value::<CommitState>();
     let time_format = format_description!("[hour]:[minute]");
     match &job.status {
         JobStatus::Waiting => html! { <span>{"Error!"}</span> },
@@ -25,8 +27,15 @@ pub fn JobResultView(JobResultViewProps { job }: &JobResultViewProps) -> Html {
             let algs: Vec<_> = if let JobConfig::Profiling(c) = &job.config {
                 c.algorithm
                     .iter()
-                    .map(|a| a.to_string())
-                    .map(|a| html! { <span class="badge text-bg-primary m-1">{a}</span> })
+                    .map(|a| match a {
+                        Algorithm::Commit(id) => {
+                            let c = commit_store.get_id(id).expect("Could not find commit!");
+                            html! { <span class="badge text-bg-primary m-1">{c.title.clone()}</span> }
+                        }
+                        a => html! {
+                            <span class="badge text-bg-primary m-1">{a.to_string()}</span>
+                        }
+                    })
                     .collect()
             } else {
                 panic!("Can only display Profiling Jobs here!");

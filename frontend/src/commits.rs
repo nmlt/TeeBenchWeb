@@ -17,8 +17,8 @@ use crate::modal::ModalContent;
 use crate::navigation::Navigation;
 
 use common::data_types::{
-    Algorithm, Commit, CompilationStatus, Job, JobConfig, JobStatus, Operator, PerfReportConfig,
-    VariantNames,
+    Algorithm, Commit, CommitIdType, CompilationStatus, Job, JobConfig, JobStatus, Operator,
+    PerfReportConfig, VariantNames,
 };
 
 use yew_router::components::Link;
@@ -26,7 +26,7 @@ use yew_router::components::Link;
 use crate::Route;
 
 // TODO This is probably a bad idea. Just put the counter in the UploadCommitFormState. Then I have to update that state after HTTP GET'ting the already present commits from the server.
-static mut COMMIT_ID_COUNTER: usize = 0;
+static mut COMMIT_ID_COUNTER: CommitIdType = 0;
 
 // TODO Would it be a good idea to put another field in here that encodes an error to communicate with the server? Depending on its value the commit list could display a field to reload the list.
 #[derive(Debug, Clone, PartialEq, Default, Store)]
@@ -35,6 +35,18 @@ pub struct CommitState(pub Vec<Commit>);
 impl CommitState {
     pub fn new(commits: Vec<Commit>) -> Self {
         Self(commits)
+    }
+    pub fn get_id(&self, id: &CommitIdType) -> Option<&Commit> {
+        self.0.iter().find(|c| &c.id == id)
+    }
+    pub fn get_id_mut(&mut self, id: &CommitIdType) -> Option<&mut Commit> {
+        self.0.iter_mut().find(|c| &c.id == id)
+    }
+    pub fn get_title(&self, title: &str) -> Vec<&Commit> {
+        self.0.iter().filter(|c| c.title == title).collect()
+    }
+    pub fn get_latest(&self) -> Option<&Commit> {
+        self.0.iter().max_by(|a, b| a.id.cmp(&b.id))
     }
 }
 
@@ -370,12 +382,9 @@ pub fn Commits() -> Html {
                 match resp {
                     Ok(json) => {
                         //log!(format!("got commits: {json:?}"));
-                        let largest = json
-                            .iter()
-                            .max_by(|x, y| x.id.cmp(&y.id))
-                            .map(|c| c.id)
-                            .unwrap_or(0);
-                        commit_dispatch.set(CommitState::new(json));
+                        let commit_store = CommitState::new(json);
+                        let largest = commit_store.get_latest().map(|c| c.id).unwrap_or(0);
+                        commit_dispatch.set(commit_store);
                         unsafe {
                             COMMIT_ID_COUNTER = largest;
                         }

@@ -393,26 +393,17 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                 },
                 JobConfig::PerfReport(pr_conf) => {
                     let alg_a = commit_store
-                        .0
-                        .iter()
-                        .find_map(|c| {
-                            if c.id == pr_conf.id {
-                                Some(c.title.clone())
-                            } else {
-                                None
-                            }
-                        })
-                        .unwrap();
+                        .get_id(&pr_conf.id)
+                        .expect("Performance Report Config has a nonexistent commit id!")
+                        .title
+                        .clone();
                     let alg_b;
-                    if let common::data_types::Algorithm::Commit(id) = pr_conf.baseline {
-                        for c in &commit_store.0 {
-                            if c.id == id {
-                                // TODO Why is rust warning about this never being read?
-                                alg_b = c.title.clone();
-                                break;
-                            }
-                        }
-                        panic!("Could not find the commit!");
+                    if let common::data_types::Algorithm::Commit(ref id) = pr_conf.baseline {
+                        alg_b = commit_store
+                            .get_id(id)
+                            .expect("Performance Report Config has a nonexistent commit id!")
+                            .title
+                            .clone();
                     } else {
                         alg_b = pr_conf.baseline.to_string();
                     }
