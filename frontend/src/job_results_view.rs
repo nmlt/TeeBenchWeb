@@ -6,10 +6,10 @@ use yewdux::prelude::*;
 use common::data_types::{Algorithm, Job, JobConfig, JobResult, JobStatus, Report};
 
 use crate::chartjs::Chart;
-use crate::commits::CommitState;
 use crate::components::finding::FindingCardColumn;
 use crate::modal::ModalContent;
 use crate::queue::Queue;
+use common::commit::CommitState;
 
 #[derive(Debug, Clone, PartialEq, Properties)]
 pub struct JobResultViewProps {

@@ -1,4 +1,5 @@
 pub mod commandline;
+pub mod commit;
 pub mod data_types;
 pub mod hardcoded;
 

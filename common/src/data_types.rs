@@ -11,6 +11,8 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fmt::Display;
 
+use crate::commit::CommitIdType;
+
 /// Error type for Experiments.
 #[derive(Error, Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub enum TeeBenchWebError {
@@ -19,77 +21,6 @@ pub enum TeeBenchWebError {
     #[error("Unknown error")]
     #[default]
     Unknown,
-}
-
-#[derive(
-    Debug, Clone, PartialEq, Serialize, Deserialize, Default, EnumString, Display, EnumVariantNames,
-)]
-#[strum(serialize_all = "UPPERCASE")]
-pub enum Operator {
-    #[default]
-    Join,
-    #[strum(to_string = "GROUP BY")]
-    GroupBy,
-    Projection,
-    #[strum(to_string = "ORDER BY")]
-    OrderBy,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum CompilationStatus {
-    Uncompiled,
-    Compiling,
-    Successful(String),
-    Failed(String),
-}
-
-pub type CommitIdType = usize;
-
-/// A commit represents an algorithm/operator and its performance report.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Commit {
-    /// What the user entered as the commit message.
-    pub title: String,
-    /// Type of the operator.
-    pub operator: Operator,
-    /// Time this operator was uploaded.
-    pub datetime: OffsetDateTime,
-    /// C or C++ code.
-    pub code: String,
-    /// Holds the finished Performance Report experiments.
-    pub reports: Option<JobResult>, // TODO Rename to report
-    /// Client-side-set ID of this commit, just gets incremented with each commit.
-    pub id: CommitIdType,
-    /// Compilation status
-    pub compilation: CompilationStatus,
-    /// Whether a PerfReport job is running right now for this commit
-    pub perf_report_running: bool,
-    /// Which other commit or Algorithm should serve as the baseline. Other commits are identified by Algorithm::Commit(CommitIdType).
-    pub baseline: Algorithm,
-}
-
-impl Commit {
-    pub fn new(
-        title: String,
-        operator: Operator,
-        datetime: OffsetDateTime,
-        code: String,
-        reports: Option<JobResult>,
-        id: usize,
-        baseline: Algorithm,
-    ) -> Self {
-        Commit {
-            title,
-            operator,
-            datetime,
-            code,
-            reports,
-            id,
-            compilation: CompilationStatus::Uncompiled,
-            perf_report_running: false,
-            baseline,
-        }
-    }
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]

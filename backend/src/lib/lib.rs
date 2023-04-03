@@ -10,9 +10,9 @@ use tokio::sync::{mpsc, oneshot};
 use tracing::{error, info, instrument, warn};
 
 use common::commandline::Commandline;
+use common::commit::{Commit, CompilationStatus};
 use common::data_types::{
-    Commit, CompilationStatus, ExperimentChart, Job, JobConfig, JobResult, JobStatus, Platform,
-    Report, TeeBenchWebError,
+    ExperimentChart, Job, JobConfig, JobResult, JobStatus, Platform, Report, TeeBenchWebError,
 };
 use common::hardcoded::{hardcoded_perf_report_commands, hardcoded_perf_report_configs};
 

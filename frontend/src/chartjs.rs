@@ -3,7 +3,7 @@ use common::data_types::{
     Platform, TeebenchArgs,
 };
 // use gloo_console::log;
-use crate::commits::CommitState;
+use common::commit::CommitState;
 use js_sys::Object;
 use serde_json::json;
 use std::collections::HashMap;

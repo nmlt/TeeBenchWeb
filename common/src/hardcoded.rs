@@ -1,6 +1,7 @@
 use crate::{
     commandline::Commandline,
-    data_types::{Algorithm, CommitIdType, JobConfig, PerfReportConfig, Platform, REPLACE_ALG},
+    commit::CommitIdType,
+    data_types::{Algorithm, JobConfig, PerfReportConfig, Platform, REPLACE_ALG},
 };
 
 /// Get the data out of the results vector of the `ExperimentChart`, depending on which experiment it is.

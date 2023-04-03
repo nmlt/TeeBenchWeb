@@ -17,7 +17,8 @@ use tokio::sync::mpsc;
 use tracing::{error, info, instrument, warn};
 
 use backend_lib::profiling_task;
-use common::data_types::{ClientMessage, Commit, Job, JobStatus, ServerMessage};
+use common::commit::Commit;
+use common::data_types::{ClientMessage, Job, JobStatus, ServerMessage};
 
 const DEFAULT_TASK_CHANNEL_SIZE: usize = 5;
 

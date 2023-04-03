@@ -16,10 +16,8 @@ use crate::modal::Modal;
 use crate::modal::ModalContent;
 use crate::navigation::Navigation;
 
-use common::data_types::{
-    Algorithm, Commit, CommitIdType, CompilationStatus, Job, JobConfig, JobStatus, Operator,
-    PerfReportConfig, VariantNames,
-};
+use common::commit::{Commit, CommitIdType, CommitState, CompilationStatus, Operator};
+use common::data_types::{Algorithm, Job, JobConfig, JobStatus, PerfReportConfig, VariantNames};
 
 use yew_router::components::Link;
 
@@ -27,28 +25,6 @@ use crate::Route;
 
 // TODO This is probably a bad idea. Just put the counter in the UploadCommitFormState. Then I have to update that state after HTTP GET'ting the already present commits from the server.
 static mut COMMIT_ID_COUNTER: CommitIdType = 0;
-
-// TODO Would it be a good idea to put another field in here that encodes an error to communicate with the server? Depending on its value the commit list could display a field to reload the list.
-#[derive(Debug, Clone, PartialEq, Default, Store)]
-pub struct CommitState(pub Vec<Commit>);
-
-impl CommitState {
-    pub fn new(commits: Vec<Commit>) -> Self {
-        Self(commits)
-    }
-    pub fn get_id(&self, id: &CommitIdType) -> Option<&Commit> {
-        self.0.iter().find(|c| &c.id == id)
-    }
-    pub fn get_id_mut(&mut self, id: &CommitIdType) -> Option<&mut Commit> {
-        self.0.iter_mut().find(|c| &c.id == id)
-    }
-    pub fn get_title(&self, title: &str) -> Vec<&Commit> {
-        self.0.iter().filter(|c| c.title == title).collect()
-    }
-    pub fn get_latest(&self) -> Option<&Commit> {
-        self.0.iter().max_by(|a, b| a.id.cmp(&b.id))
-    }
-}
 
 /// Holds the data from the upload form.
 // It's not useful for this to be an Option, because as soon as there is eg. an uploaded file, that Option becomes Some. But that doesn't mean that the title field has been filled in, so the commit might still have bogus in the title field, even though the code field is already ok.

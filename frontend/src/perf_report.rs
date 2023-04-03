@@ -2,9 +2,9 @@ use yew::prelude::*;
 use yewdux::prelude::*;
 
 use crate::{
-    chartjs::Chart, commits::CommitState, components::finding::FindingCardColumn, modal::Modal,
-    navigation::Navigation,
+    chartjs::Chart, components::finding::FindingCardColumn, modal::Modal, navigation::Navigation,
 };
+use common::commit::CommitState;
 use common::data_types::JobResult;
 
 #[derive(Debug, PartialEq, Properties)]

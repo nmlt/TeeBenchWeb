@@ -13,7 +13,6 @@ use common::data_types::{
 use std::collections::HashSet;
 use std::str::FromStr;
 
-use crate::commits::CommitState;
 use crate::components::{
     checkbox::{CheckboxData, InputCheckbox, InputCheckboxes},
     number::InputNumber,
@@ -23,6 +22,7 @@ use crate::job_results_view::JobResultsView;
 use crate::modal::Modal;
 use crate::navigation::Navigation;
 use crate::queue::QueueState;
+use common::commit::CommitState;
 
 use wasm_bindgen::JsCast;
 
