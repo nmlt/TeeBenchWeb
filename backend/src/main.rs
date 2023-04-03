@@ -17,7 +17,7 @@ use tokio::sync::mpsc;
 use tracing::{error, info, instrument, warn};
 
 use backend_lib::profiling_task;
-use common::commit::Commit;
+use common::commit::{Commit, CommitState};
 use common::data_types::{ClientMessage, Job, JobStatus, ServerMessage};
 
 const DEFAULT_TASK_CHANNEL_SIZE: usize = 5;
@@ -27,14 +27,14 @@ async fn upload_commit(State(app_state): State<AppState>, Json(payload): Json<Co
     let mut guard = app_state.commits.lock().unwrap();
     let debug_title = payload.title.clone();
     info!("Received commit: {debug_title}");
-    guard.push(payload);
+    guard.push_commit(payload);
 }
 
 #[instrument(skip(app_state))]
 async fn get_commits(State(app_state): State<AppState>) -> Json<Value> {
     let guard = app_state.commits.lock().unwrap();
     info!("Get commits {:#?}", guard);
-    Json(json!(*guard))
+    Json(json!(*guard.0))
 }
 
 #[instrument(skip(app_state, payload))]
@@ -132,7 +132,7 @@ async fn handle_socket(
 // TODO Would it be better to just wrap the AppState in an Arc? Still would need the Mutexes on the fields.
 #[derive(Debug, Clone, FromRef)]
 struct AppState {
-    commits: Arc<Mutex<Vec<Commit>>>,
+    commits: Arc<Mutex<CommitState>>,
     queue: Arc<Mutex<VecDeque<Job>>>,
     unqueued_notifier: Arc<tokio::sync::Mutex<mpsc::Receiver<Job>>>,
     worker_task_tx: Arc<mpsc::Sender<Job>>,
@@ -140,7 +140,7 @@ struct AppState {
 
 impl AppState {
     fn new(
-        commits: Arc<Mutex<Vec<Commit>>>,
+        commits: Arc<Mutex<CommitState>>,
         queue: Arc<Mutex<VecDeque<Job>>>,
         unqueued_notifier: Arc<tokio::sync::Mutex<mpsc::Receiver<Job>>>,
         worker_task_tx: Arc<mpsc::Sender<Job>>,
@@ -161,7 +161,7 @@ async fn main() {
         .with_max_level(tracing::Level::INFO)
         .init();
 
-    let commits = Arc::new(Mutex::new(vec![]));
+    let commits = Arc::new(Mutex::new(CommitState::new(vec![])));
     let queue = Arc::new(Mutex::new(VecDeque::new()));
     let (queue_tx, queue_rx) = mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);
     let (profiling_tx, profiling_rx) = mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);

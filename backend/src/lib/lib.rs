@@ -10,7 +10,7 @@ use tokio::sync::{mpsc, oneshot};
 use tracing::{error, info, instrument, warn};
 
 use common::commandline::Commandline;
-use common::commit::{Commit, CompilationStatus};
+use common::commit::{CommitState, CompilationStatus};
 use common::data_types::{
     ExperimentChart, Job, JobConfig, JobResult, JobStatus, Platform, Report, TeeBenchWebError,
 };
@@ -83,7 +83,7 @@ async fn run_experiment(
     JobResult::Exp(Ok(report))
 }
 
-async fn compile_and_run(conf: JobConfig, commits: Arc<Mutex<Vec<Commit>>>) -> JobResult {
+async fn compile_and_run(conf: JobConfig, commits: Arc<Mutex<CommitState>>) -> JobResult {
     let tee_bench_dir =
         PathBuf::from(var("TEEBENCHWEB_RUN_DIR").expect("TEEBENCHWEB_RUN_DIR not set"));
     match conf {
@@ -94,12 +94,9 @@ async fn compile_and_run(conf: JobConfig, commits: Arc<Mutex<Vec<Commit>>>) -> J
         JobConfig::PerfReport(ref pr_conf) => {
             let baseline = || {
                 let mut guard = commits.lock().unwrap();
-                // TODO I'm repeating this code too often (eg. 20 lines down). Make finding commit with id a function.
-                for c in guard.iter_mut() {
-                    if c.id == pr_conf.id {
-                        c.perf_report_running = true;
-                        return c.baseline;
-                    }
+                if let Some(mut c) = guard.get_id_mut(&pr_conf.id) {
+                    c.perf_report_running = true;
+                    return c.baseline;
                 }
                 panic!("Could not find the commit!");
             };
@@ -109,25 +106,18 @@ async fn compile_and_run(conf: JobConfig, commits: Arc<Mutex<Vec<Commit>>>) -> J
             let results = run_experiment(tee_bench_dir, confs, cmds).await;
             {
                 let mut guard = commits.lock().unwrap();
-                for c in guard.iter_mut() {
-                    if c.id == pr_conf.id {
-                        c.reports = Some(results.clone());
-                        c.perf_report_running = false;
-                        break;
-                    }
+                if let Some(mut c) = guard.get_id_mut(&pr_conf.id) {
+                    c.reports = Some(results.clone());
+                    c.perf_report_running = false;
                 }
             }
             results
         }
-        JobConfig::Compile(id) => {
+        JobConfig::Compile(ref id) => {
             {
                 let mut guard = commits.lock().unwrap();
-                // TODO I'm repeating this code too often (eg. 20 lines down). Make finding commit with id a function.
-                for c in guard.iter_mut() {
-                    if c.id == id {
-                        c.compilation = CompilationStatus::Compiling;
-                        break;
-                    }
+                if let Some(mut c) = guard.get_id_mut(id) {
+                    c.compilation = CompilationStatus::Compiling;
                 }
             }
             // TODO find file with `id`
@@ -145,18 +135,14 @@ async fn compile_and_run(conf: JobConfig, commits: Arc<Mutex<Vec<Commit>>>) -> J
             };
             {
                 let mut guard = commits.lock().unwrap();
-                for c in guard.iter_mut() {
-                    if c.id == id {
-                        c.compilation = match result {
-                            JobResult::Compile(Ok(ref msg)) => {
-                                CompilationStatus::Successful(msg.clone())
-                            }
-                            JobResult::Compile(Err(ref msg)) => {
-                                CompilationStatus::Failed(msg.clone())
-                            }
-                            _ => unreachable!(),
-                        };
-                    }
+                if let Some(mut c) = guard.get_id_mut(id) {
+                    c.compilation = match result {
+                        JobResult::Compile(Ok(ref msg)) => {
+                            CompilationStatus::Successful(msg.clone())
+                        }
+                        JobResult::Compile(Err(ref msg)) => CompilationStatus::Failed(msg.clone()),
+                        _ => unreachable!(),
+                    };
                 }
             }
             result
@@ -169,7 +155,7 @@ async fn work_on_queue(
     queue: Arc<Mutex<VecDeque<Job>>>,
     oneshot_tx: oneshot::Sender<()>,
     queue_tx: mpsc::Sender<Job>,
-    commits: Arc<Mutex<Vec<Commit>>>,
+    commits: Arc<Mutex<CommitState>>,
 ) {
     fn peek_queue(queue: Arc<Mutex<VecDeque<Job>>>) -> Option<Job> {
         let guard = queue.lock().unwrap();
@@ -227,7 +213,7 @@ async fn receive_confs(
 /// rx: incoming new profiling configs
 #[instrument(skip(commits, queue, queue_tx, rx))]
 pub async fn profiling_task(
-    commits: Arc<Mutex<Vec<Commit>>>,
+    commits: Arc<Mutex<CommitState>>,
     queue: Arc<Mutex<VecDeque<Job>>>,
     queue_tx: mpsc::Sender<Job>,
     rx: mpsc::Receiver<Job>,

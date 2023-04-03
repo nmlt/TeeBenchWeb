@@ -95,4 +95,7 @@ impl CommitState {
     pub fn get_latest(&self) -> Option<&Commit> {
         self.0.iter().max_by(|a, b| a.id.cmp(&b.id))
     }
+    pub fn push_commit(&mut self, c: Commit) {
+        self.0.push(c);
+    }
 }
