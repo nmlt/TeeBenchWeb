@@ -44,11 +44,12 @@ pub fn profiling() -> Html {
     let datasets = Dataset::VARIANTS;
     let commit_store = use_store_value::<CommitState>();
     let algs = {
+        // TODO This code is repeated in commits.rs for the baseline field.
         let mut algs = SelectDataOption::options_vec(algs);
         let found = algs.iter_mut().find(|o| o.value == "Latest Operator");
         if found.is_some() {
             let o: &mut SelectDataOption = found.unwrap(); // Putting &mut in front of the variable does not work. Type just to understand.
-            if let Some(c) = commit_store.0.first() {
+            if let Some(c) = commit_store.get_latest() {
                 o.label = format!("Latest Operator ({})", c.title).to_string();
                 // We could put the id of the commit in the value field to offer not just the latest commit, but all.
             } else {

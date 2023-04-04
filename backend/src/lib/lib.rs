@@ -41,7 +41,11 @@ async fn run_experiment(
                 let cmd = cmd_moved.clone();
                 let code_hashmap = code_hashmap_moved.clone();
                 // This assumes that the Makefile of TeeBench has a different app name ("sgx" or "native"). See `common::data_types::Platform::to_app_name()`.
-                if cmd.algorithm.is_commit() && (switched_in.is_none() || (switched_in.is_some() && switched_in.unwrap() != cmd.algorithm)) {
+                if cmd.algorithm.is_commit()
+                    && (switched_in.is_none()
+                        || (switched_in.is_some() && switched_in.unwrap() != cmd.algorithm))
+                {
+                    info!("Compiling: {cmd:?}, switched in : {switched_in:?}");
                     let new_code = code_hashmap.get(&cmd.algorithm).unwrap();
                     let mut replace_file_path = tee_bench_dir.clone();
                     replace_file_path.push(REPLACE_FILE);
@@ -90,7 +94,7 @@ async fn run_experiment(
                     tokio::fs::copy(&app_path, &bin_path)
                         .await
                         .expect(&format!("Failed to copy {enclave_name} over!"));
-                    *Arc::make_mut(&mut switched_in) = Some(cmd.algorithm);
+                    *Arc::make_mut(&mut switched_in) = Some(cmd.algorithm); // TODO Fix
                 }
                 tee_bench_dir.push(BIN_FOLDER);
                 info!("Running `{}`", cmd);

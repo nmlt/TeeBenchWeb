@@ -72,6 +72,7 @@ impl UploadCommitFormState {
 
 #[function_component]
 fn UploadCommit() -> Html {
+    let commit_store = use_store_value::<CommitState>();
     let onchange = {
         let dispatch = Dispatch::<UploadCommitFormState>::new();
         dispatch.reduce_mut_future_callback_with(|store, e: Event| {
@@ -111,13 +112,40 @@ fn UploadCommit() -> Html {
         })
     };
     let algs = Algorithm::VARIANTS;
-    let algs = SelectDataOption::options_vec(&algs);
+    let algs = {
+        let mut algs = SelectDataOption::options_vec(algs);
+        let found = algs.iter_mut().find(|o| o.value == "Latest Operator");
+        if found.is_some() {
+            let o: &mut SelectDataOption = found.unwrap(); // Putting &mut in front of the variable does not work. Type just to understand.
+            if let Some(c) = commit_store.get_latest() {
+                o.label = format!("Latest Operator ({})", c.title).to_string();
+                // We could put the id of the commit in the value field to offer not just the latest commit, but all.
+            } else {
+                o.enabled = false;
+            }
+        };
+        algs
+    };
     let algs_onchange = {
         let dispatch = Dispatch::<UploadCommitFormState>::new();
-        dispatch.reduce_mut_callback_with(|store, e: Event| {
+        let commit_store = commit_store.clone();
+        dispatch.reduce_mut_callback_with(move |store, e: Event| {
             let select_elem = e.target_unchecked_into::<HtmlSelectElement>();
             let value = select_elem.value();
-            store.baseline = Some(Algorithm::from_str(&value).unwrap());
+            let value = Algorithm::from_str(&value).unwrap();
+            store.baseline = match value {
+                Algorithm::Commit(_) => {
+                    let id = match commit_store.get_latest() {
+                        Some(c) => c.id,
+                        None => {
+                            log!("Error: No latest operator yet. Upload code in the Operator tab!");
+                            panic!("This should not have been possible to happen :(");
+                        }
+                    };
+                    Some(Algorithm::Commit(id))
+                }
+                alg_variant => Some(alg_variant),
+            };
         })
     };
     let onclick = {

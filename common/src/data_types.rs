@@ -269,6 +269,7 @@ pub enum Measurement {
     Hash,
     EnumString,
     Display,
+    EnumIter,
     EnumVariantNames,
 )]
 #[strum(serialize_all = "title_case")]
@@ -621,56 +622,65 @@ impl ProfilingConfiguration {
             }
         }
     }
+    /// Converts the configuration into a vector of commands for each chart.
+    ///
+    /// - If multiple Datasets were selected, each dataset goes to a separate chart.
+    /// -
     pub fn to_teebench_cmd(&self) -> Vec<Vec<Commandline>> {
-        todo!();
-        // let mut res = vec![];
-        // for platform in &self.platform {
-        //     let cmd = Commandline::new(*platform);
-        //     res.push(cmd);
-        // }
-        // // ProfilingConfiguration.experiment_type only relevant for output
-        // // ProfilingConfiguration.measurement only relevant for output
-        // let mut alg_iter = self.algorithm.iter();
-        // let alg = alg_iter.next().unwrap(); // There is at least one algorithm.
-        // for cmd in &mut res {
-        //     cmd.add_args("-a", alg.to_cmd_arg());
-        // }
-        // Commandline::double_cmds_with_different_arg_value(
-        //     &mut res,
-        //     &mut alg_iter.map(|a| a.to_cmd_arg()),
-        // );
+        let mut res = vec![];
+        for platform in &self.platform {
+            for alg in &self.algorithm {
+                let mut cmd = Commandline::new(*platform, *alg);
+                cmd.add_args("-a", alg.to_cmd_arg());
+                res.push(cmd);
+            }
+        }
 
-        // if self.sort_data {
-        //     for cmd in &mut res {
-        //         cmd.add_args("--sort-r", "--sort-s");
-        //     }
-        // }
-        // let mut dataset_iter = self.dataset.iter();
-        // let ds = dataset_iter.next().unwrap(); // There is always at least one dataset in a ProfilingConfiguration.
-        // for cmd in &mut res {
-        //     cmd.add_args("-d", ds.to_cmd_arg());
-        // }
-        // Commandline::double_cmds_with_different_arg_value(
-        //     &mut res,
-        //     &mut dataset_iter.map(|ds| ds.to_cmd_arg()),
-        // );
-        // let value_iter = self.param_value_iter(); // TODO Verify that these values form a valid range.
-        // let mut value_iter = value_iter.iter();
-        // let val = value_iter.next().unwrap();
-        // let p = match self.parameter {
-        //     Parameter::Threads => "-n",
-        //     Parameter::DataSkew => "-z",
-        //     Parameter::JoinSelectivity => "-l",
-        // };
-        // for cmd in &mut res {
-        //     cmd.add_args(p, val);
-        // }
-        // Commandline::double_cmds_with_different_arg_value(&mut res, &mut value_iter);
+        if self.sort_data {
+            for cmd in &mut res {
+                cmd.add_args("--sort-r", "--sort-s");
+            }
+        }
+        let mut dataset_iter = self.dataset.iter();
+        let ds = dataset_iter.next().unwrap(); // There is always at least one dataset in a ProfilingConfiguration.
+        for cmd in &mut res {
+            cmd.add_args("-d", ds.to_cmd_arg());
+        }
+        Commandline::double_cmds_with_different_arg_value(
+            &mut res,
+            &mut dataset_iter.map(|ds| ds.to_cmd_arg()),
+        );
+        let value_iter = self.param_value_iter(); // TODO Verify that these values form a valid range.
+        let mut value_iter = value_iter.iter();
+        let val = value_iter.next().unwrap();
+        let p = match self.parameter {
+            Parameter::Threads => "-n",
+            Parameter::DataSkew => "-z",
+            Parameter::JoinSelectivity => "-l",
+        };
+        for cmd in &mut res {
+            cmd.add_args(p, val);
+        }
+        Commandline::double_cmds_with_different_arg_value(&mut res, &mut value_iter);
 
-        // for cmd in &mut res {
-        //     cmd.add_flag("--csv");
-        // }
-        // res
+        for cmd in &mut res {
+            cmd.add_flag("--csv");
+        }
+        let mut ds_slice = Dataset::iter().collect::<Vec<_>>();
+        ds_slice.sort_unstable();
+        let acc = vec![vec![], vec![]];
+        res.iter().fold(acc, |mut acc, cmd| {
+            for (i, ds) in ds_slice.iter().enumerate() {
+                if cmd.args.contains(&ds.to_cmd_arg()) {
+                    if let Some(bucket) = acc.get_mut(i) {
+                        bucket.push(cmd.clone());
+                    } else {
+                        panic!("If you add more datasets, fix the acc initialization.");
+                    }
+                }
+            }
+            acc
+        })
     }
     /// Set default values for preconfigured experiment types. These then overwrite the values previously entered in the config form (if called in the frontend/profiling.rs in a dispatch). Not useful for now, as the config form can not represent the preconfigured experiments.
     // TODO This actually does not work for the <select> elements (at least it doesn't display the change. The store value changes).

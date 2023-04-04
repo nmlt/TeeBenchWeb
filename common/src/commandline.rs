@@ -9,7 +9,7 @@ use structopt::StructOpt;
 pub struct Commandline {
     pub app: Platform,
     pub algorithm: Algorithm,
-    pub args: Vec<String>,
+    pub args: Vec<String>, // TODO Make this a HashSet
 }
 
 impl Commandline {
@@ -105,7 +105,6 @@ mod test {
         }
     }
 
-    #[ignore] // TODO Fix tests
     #[test]
     fn profiling_configuration_to_teebench_cmd_multiple_cmds() {
         let c = ProfilingConfiguration::new(
@@ -121,45 +120,72 @@ mod test {
             true,
         );
         #[rustfmt::skip]
-        let cmds = [
+        let cmds = vec![
+            vec![
             Commandline::with_args(Platform::Sgx   , Algorithm::Cht, &vec!["-a","CHT","--sort-r","--sort-s","-d","cache-exceed","-z","2","--csv",],),
             Commandline::with_args(Platform::Native, Algorithm::Cht, &vec!["-a","CHT","--sort-r","--sort-s","-d","cache-exceed","-z","2","--csv",],),
             Commandline::with_args(Platform::Sgx   , Algorithm::Rho, &vec!["-a","RHO","--sort-r","--sort-s","-d","cache-exceed","-z","2","--csv",],),
             Commandline::with_args(Platform::Native, Algorithm::Rho, &vec!["-a","RHO","--sort-r","--sort-s","-d","cache-exceed","-z","2","--csv",],),
-            Commandline::with_args(Platform::Sgx   , Algorithm::Cht, &vec!["-a","CHT","--sort-r","--sort-s","-d","cache-fit"   ,"-z","2","--csv",],),
-            Commandline::with_args(Platform::Native, Algorithm::Cht, &vec!["-a","CHT","--sort-r","--sort-s","-d","cache-fit"   ,"-z","2","--csv",],),
-            Commandline::with_args(Platform::Sgx   , Algorithm::Rho, &vec!["-a","RHO","--sort-r","--sort-s","-d","cache-fit"   ,"-z","2","--csv",],),
-            Commandline::with_args(Platform::Native, Algorithm::Rho, &vec!["-a","RHO","--sort-r","--sort-s","-d","cache-fit"   ,"-z","2","--csv",],),
             Commandline::with_args(Platform::Sgx   , Algorithm::Cht, &vec!["-a","CHT","--sort-r","--sort-s","-d","cache-exceed","-z","4","--csv",],),
             Commandline::with_args(Platform::Native, Algorithm::Cht, &vec!["-a","CHT","--sort-r","--sort-s","-d","cache-exceed","-z","4","--csv",],),
             Commandline::with_args(Platform::Sgx   , Algorithm::Rho, &vec!["-a","RHO","--sort-r","--sort-s","-d","cache-exceed","-z","4","--csv",],),
             Commandline::with_args(Platform::Native, Algorithm::Rho, &vec!["-a","RHO","--sort-r","--sort-s","-d","cache-exceed","-z","4","--csv",],),
-            Commandline::with_args(Platform::Sgx   , Algorithm::Cht, &vec!["-a","CHT","--sort-r","--sort-s","-d","cache-fit"   ,"-z","4","--csv",],),
-            Commandline::with_args(Platform::Native, Algorithm::Cht, &vec!["-a","CHT","--sort-r","--sort-s","-d","cache-fit"   ,"-z","4","--csv",],),
-            Commandline::with_args(Platform::Sgx   , Algorithm::Rho, &vec!["-a","RHO","--sort-r","--sort-s","-d","cache-fit"   ,"-z","4","--csv",],),
-            Commandline::with_args(Platform::Native, Algorithm::Rho, &vec!["-a","RHO","--sort-r","--sort-s","-d","cache-fit"   ,"-z","4","--csv",],),
             Commandline::with_args(Platform::Sgx   , Algorithm::Cht, &vec!["-a","CHT","--sort-r","--sort-s","-d","cache-exceed","-z","6","--csv",],),
             Commandline::with_args(Platform::Native, Algorithm::Cht, &vec!["-a","CHT","--sort-r","--sort-s","-d","cache-exceed","-z","6","--csv",],),
             Commandline::with_args(Platform::Sgx   , Algorithm::Rho, &vec!["-a","RHO","--sort-r","--sort-s","-d","cache-exceed","-z","6","--csv",],),
             Commandline::with_args(Platform::Native, Algorithm::Rho, &vec!["-a","RHO","--sort-r","--sort-s","-d","cache-exceed","-z","6","--csv",],),
-            Commandline::with_args(Platform::Sgx   , Algorithm::Cht, &vec!["-a","CHT","--sort-r","--sort-s","-d","cache-fit"   ,"-z","6","--csv",],),
-            Commandline::with_args(Platform::Native, Algorithm::Cht, &vec!["-a","CHT","--sort-r","--sort-s","-d","cache-fit"   ,"-z","6","--csv",],),
-            Commandline::with_args(Platform::Sgx   , Algorithm::Rho, &vec!["-a","RHO","--sort-r","--sort-s","-d","cache-fit"   ,"-z","6","--csv",],),
-            Commandline::with_args(Platform::Native, Algorithm::Rho, &vec!["-a","RHO","--sort-r","--sort-s","-d","cache-fit"   ,"-z","6","--csv",],),
             Commandline::with_args(Platform::Sgx   , Algorithm::Cht, &vec!["-a","CHT","--sort-r","--sort-s","-d","cache-exceed","-z","8","--csv",],),
             Commandline::with_args(Platform::Native, Algorithm::Cht, &vec!["-a","CHT","--sort-r","--sort-s","-d","cache-exceed","-z","8","--csv",],),
             Commandline::with_args(Platform::Sgx   , Algorithm::Rho, &vec!["-a","RHO","--sort-r","--sort-s","-d","cache-exceed","-z","8","--csv",],),
             Commandline::with_args(Platform::Native, Algorithm::Rho, &vec!["-a","RHO","--sort-r","--sort-s","-d","cache-exceed","-z","8","--csv",],),
+            ],
+            vec![
+            Commandline::with_args(Platform::Sgx   , Algorithm::Cht, &vec!["-a","CHT","--sort-r","--sort-s","-d","cache-fit"   ,"-z","2","--csv",],),
+            Commandline::with_args(Platform::Native, Algorithm::Cht, &vec!["-a","CHT","--sort-r","--sort-s","-d","cache-fit"   ,"-z","2","--csv",],),
+            Commandline::with_args(Platform::Sgx   , Algorithm::Rho, &vec!["-a","RHO","--sort-r","--sort-s","-d","cache-fit"   ,"-z","2","--csv",],),
+            Commandline::with_args(Platform::Native, Algorithm::Rho, &vec!["-a","RHO","--sort-r","--sort-s","-d","cache-fit"   ,"-z","2","--csv",],),
+            Commandline::with_args(Platform::Sgx   , Algorithm::Cht, &vec!["-a","CHT","--sort-r","--sort-s","-d","cache-fit"   ,"-z","4","--csv",],),
+            Commandline::with_args(Platform::Native, Algorithm::Cht, &vec!["-a","CHT","--sort-r","--sort-s","-d","cache-fit"   ,"-z","4","--csv",],),
+            Commandline::with_args(Platform::Sgx   , Algorithm::Rho, &vec!["-a","RHO","--sort-r","--sort-s","-d","cache-fit"   ,"-z","4","--csv",],),
+            Commandline::with_args(Platform::Native, Algorithm::Rho, &vec!["-a","RHO","--sort-r","--sort-s","-d","cache-fit"   ,"-z","4","--csv",],),
+            Commandline::with_args(Platform::Sgx   , Algorithm::Cht, &vec!["-a","CHT","--sort-r","--sort-s","-d","cache-fit"   ,"-z","6","--csv",],),
+            Commandline::with_args(Platform::Native, Algorithm::Cht, &vec!["-a","CHT","--sort-r","--sort-s","-d","cache-fit"   ,"-z","6","--csv",],),
+            Commandline::with_args(Platform::Sgx   , Algorithm::Rho, &vec!["-a","RHO","--sort-r","--sort-s","-d","cache-fit"   ,"-z","6","--csv",],),
+            Commandline::with_args(Platform::Native, Algorithm::Rho, &vec!["-a","RHO","--sort-r","--sort-s","-d","cache-fit"   ,"-z","6","--csv",],),
             Commandline::with_args(Platform::Sgx   , Algorithm::Cht, &vec!["-a","CHT","--sort-r","--sort-s","-d","cache-fit"   ,"-z","8","--csv",],),
             Commandline::with_args(Platform::Native, Algorithm::Cht, &vec!["-a","CHT","--sort-r","--sort-s","-d","cache-fit"   ,"-z","8","--csv",],),
             Commandline::with_args(Platform::Sgx   , Algorithm::Rho, &vec!["-a","RHO","--sort-r","--sort-s","-d","cache-fit"   ,"-z","8","--csv",],),
             Commandline::with_args(Platform::Native, Algorithm::Rho, &vec!["-a","RHO","--sort-r","--sort-s","-d","cache-fit"   ,"-z","8","--csv",],),
+            ],
         ];
         let to_be_tested = c.to_teebench_cmd();
 
         assert_eq!(to_be_tested.len(), cmds.len());
-        // for tested_cmd in to_be_tested { // TODO
-        //     assert!(cmds.contains(&vec![tested_cmd]));
-        // }
+        for tested_cmds in to_be_tested {
+            let expected_cmds = if tested_cmds[0].args[5] == "cache-exceed" {
+                &cmds[0]
+            } else {
+                &cmds[1]
+            };
+            for tested_cmd in tested_cmds {
+                println!("tested_cmd: {tested_cmd:#?}");
+                let mut found = false;
+                for expected_cmd in expected_cmds {
+                    if &tested_cmd == expected_cmd {
+                        println!("equal: {expected_cmd}");
+                        found = true;
+                        break;
+                    } else {
+                        println!("not equal: {expected_cmd}");
+                    }
+                }
+                if !found {
+                    panic!();
+                }
+                // println!("expected_cmds: {expected_cmds:#?}");
+                // let contained = expected_cmds.contains(&tested_cmd);
+                // assert!(contained);
+            }
+        }
     }
 }
