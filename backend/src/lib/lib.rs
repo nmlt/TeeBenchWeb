@@ -19,12 +19,14 @@ use common::hardcoded::{hardcoded_perf_report_commands, hardcoded_perf_report_co
 const BIN_FOLDER: &str = "bin";
 const REPLACE_FILE: &str = "Joins/TBW/OperatorJoin.cpp";
 
+type SwitchedInType = Arc<tokio::sync::Mutex<Option<Algorithm>>>;
+
 async fn run_experiment(
     tee_bench_dir: PathBuf,
     configs: Vec<JobConfig>,
     cmds: Vec<Vec<Commandline>>,
     code_hashmap: HashMap<Algorithm, String>,
-    currently_switched_in: Arc<Option<Algorithm>>,
+    currently_switched_in: SwitchedInType,
 ) -> JobResult {
     let mut all_tasks = vec![];
     for (chart_cmds, conf) in cmds.iter().zip(configs) {
@@ -37,7 +39,8 @@ async fn run_experiment(
             // Each task should get the full "power" of the machine, so don't run them in parallel (by awaiting the handle).
             // TODO Do we have to spawn here? I think I just did that when I failed to see the `current_dir` option on `Command`. This was to avoid changing the cwd for the whole axum server.
             let handle = tokio::task::spawn(async move {
-                let mut switched_in = currently_switched_in_moved.clone();
+                let switched_in = currently_switched_in_moved;
+                let mut switched_in = switched_in.lock().await;
                 let cmd = cmd_moved.clone();
                 let code_hashmap = code_hashmap_moved.clone();
                 // This assumes that the Makefile of TeeBench has a different app name ("sgx" or "native"). See `common::data_types::Platform::to_app_name()`.
@@ -94,7 +97,7 @@ async fn run_experiment(
                     tokio::fs::copy(&app_path, &bin_path)
                         .await
                         .expect(&format!("Failed to copy {enclave_name} over!"));
-                    *Arc::make_mut(&mut switched_in) = Some(cmd.algorithm); // TODO Fix
+                    switched_in.replace(cmd.algorithm);
                 }
                 tee_bench_dir.push(BIN_FOLDER);
                 info!("Running `{}`", cmd);
@@ -140,7 +143,7 @@ async fn run_experiment(
 async fn runner(
     conf: JobConfig,
     commits: Arc<Mutex<CommitState>>,
-    currently_switched_in: Arc<Option<Algorithm>>,
+    currently_switched_in: SwitchedInType,
 ) -> JobResult {
     let tee_bench_dir =
         PathBuf::from(var("TEEBENCHWEB_RUN_DIR").expect("TEEBENCHWEB_RUN_DIR not set"));
@@ -239,7 +242,7 @@ async fn work_on_queue(
     oneshot_tx: oneshot::Sender<()>,
     queue_tx: mpsc::Sender<Job>,
     commits: Arc<Mutex<CommitState>>,
-    currently_switched_in: Arc<Option<Algorithm>>,
+    currently_switched_in: SwitchedInType,
 ) {
     fn peek_queue(queue: Arc<Mutex<VecDeque<Job>>>) -> Option<Job> {
         let guard = queue.lock().unwrap();
@@ -310,7 +313,7 @@ pub async fn profiling_task(
     // Using a tokio Mutex here to make it Send. Which is required...
     let rx = Arc::new(tokio::sync::Mutex::new(rx));
     // TODO Make this just a &mut, Arc should not be needed except if the compiler requires it, but it is never concurrently accessed.
-    let currently_switched_in = Arc::new(None);
+    let currently_switched_in = Arc::new(tokio::sync::Mutex::new(None));
     loop {
         receive_confs(queue.clone(), rx.clone()).await;
         let (work_finished_tx, mut work_finished_rx) = oneshot::channel();
