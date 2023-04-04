@@ -49,9 +49,32 @@ pub fn Websocket() -> Html {
     log!("Establishing Websocket...");
     let (tx, mut rx) = unbounded::<ClientMessage>();
     let dispatch = Dispatch::<WebsocketState>::new();
+    let commit_dispatch = Dispatch::<CommitState>::new();
     dispatch.set(WebsocketState::new(tx));
     use_effect_with_deps(
         move |_| {
+            use common::commit::Commit;
+            use gloo_net::http::{Method, Request};
+            let commit_dispatch = commit_dispatch.clone();
+            spawn_local(async move {
+                let commit_dispatch = commit_dispatch.clone();
+                let resp: Result<Vec<Commit>, _> = Request::get("/api/commit")
+                    .method(Method::GET)
+                    .send()
+                    .await
+                    .expect("Server didn't respond. Is it running?")
+                    .json()
+                    .await;
+                //log!(format!("GET /api/commits: Response: {:?}", resp));
+                match resp {
+                    Ok(json) => {
+                        //log!(format!("got commits: {json:?}"));
+                        let commit_store = CommitState::new(json);
+                        commit_dispatch.set(commit_store);
+                    }
+                    Err(e) => log!("Error getting commit json: ", e.to_string()),
+                }
+            });
             // TODO Find a way for the frontend to get the websites actual address (not localhost)
             let ws = match WebSocket::open("ws://localhost:3000/api/ws") {
                 // `ws://` is required, otherwise there's an error.

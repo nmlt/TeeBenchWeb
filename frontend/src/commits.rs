@@ -3,7 +3,6 @@ use gloo_file::{futures::read_as_text, File};
 use gloo_net::http::{Method, Request};
 use js_sys;
 use time::OffsetDateTime;
-use wasm_bindgen_futures::spawn_local;
 use web_sys::{HtmlFormElement, HtmlInputElement, HtmlSelectElement};
 use yew::prelude::*;
 use yewdux::prelude::*;
@@ -73,6 +72,16 @@ impl UploadCommitFormState {
 #[function_component]
 fn UploadCommit() -> Html {
     let commit_store = use_store_value::<CommitState>();
+    let commit_store_moved = commit_store.clone();
+    use_effect_with_deps(
+        move |_| {
+            let largest = commit_store_moved.get_latest().map(|c| c.id).unwrap_or(0);
+            unsafe {
+                COMMIT_ID_COUNTER = largest;
+            }
+        },
+        commit_store.clone(),
+    );
     let onchange = {
         let dispatch = Dispatch::<UploadCommitFormState>::new();
         dispatch.reduce_mut_future_callback_with(|store, e: Event| {
@@ -369,36 +378,6 @@ fn CommitsList() -> Html {
 
 #[function_component]
 pub fn Commits() -> Html {
-    let (_commit_state, commit_dispatch) = use_store::<CommitState>();
-    use_effect_with_deps(
-        move |_| {
-            let commit_dispatch = commit_dispatch.clone();
-            spawn_local(async move {
-                let commit_dispatch = commit_dispatch.clone();
-                let resp: Result<Vec<Commit>, _> = Request::get("/api/commit")
-                    .method(Method::GET)
-                    .send()
-                    .await
-                    .expect("Server didn't respond. Is it running?")
-                    .json()
-                    .await;
-                //log!(format!("GET /api/commits: Response: {:?}", resp));
-                match resp {
-                    Ok(json) => {
-                        //log!(format!("got commits: {json:?}"));
-                        let commit_store = CommitState::new(json);
-                        let largest = commit_store.get_latest().map(|c| c.id).unwrap_or(0);
-                        commit_dispatch.set(commit_store);
-                        unsafe {
-                            COMMIT_ID_COUNTER = largest;
-                        }
-                    }
-                    Err(e) => log!("Error getting commit json: ", e.to_string()),
-                }
-            });
-        },
-        (),
-    );
     html! {
         <div class="container-fluid">
             <div class="row vh-100">
