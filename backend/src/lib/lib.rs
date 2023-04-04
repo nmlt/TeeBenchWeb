@@ -12,14 +12,19 @@ use tracing::{error, info, instrument, warn};
 use common::commandline::Commandline;
 use common::commit::{CommitState, CompilationStatus};
 use common::data_types::{
-    ExperimentChart, Job, JobConfig, JobResult, JobStatus, Platform, Report, TeeBenchWebError,
+    Algorithm, ExperimentChart, Job, JobConfig, JobResult, JobStatus, Report, TeeBenchWebError,
 };
 use common::hardcoded::{hardcoded_perf_report_commands, hardcoded_perf_report_configs};
+
+const BIN_FOLDER: &str = "bin";
+const REPLACE_FILE: &str = "Joins/TBW/OperatorJoin.cpp";
 
 async fn run_experiment(
     tee_bench_dir: PathBuf,
     configs: Vec<JobConfig>,
     cmds: Vec<Vec<Commandline>>,
+    code_hashmap: HashMap<Algorithm, String>,
+    currently_switched_in: Arc<Option<Algorithm>>,
 ) -> JobResult {
     let mut all_tasks = vec![];
     for (chart_cmds, conf) in cmds.iter().zip(configs) {
@@ -27,28 +32,73 @@ async fn run_experiment(
         for cmd in chart_cmds {
             let mut tee_bench_dir = tee_bench_dir.clone();
             let cmd_moved = cmd.clone();
+            let currently_switched_in_moved = currently_switched_in.clone();
+            let code_hashmap_moved = code_hashmap.clone();
             // Each task should get the full "power" of the machine, so don't run them in parallel (by awaiting the handle).
             // TODO Do we have to spawn here? I think I just did that when I failed to see the `current_dir` option on `Command`. This was to avoid changing the cwd for the whole axum server.
             let handle = tokio::task::spawn(async move {
+                let mut switched_in = currently_switched_in_moved.clone();
                 let cmd = cmd_moved.clone();
-                match cmd.app {
-                    Platform::Sgx => {
-                        tee_bench_dir.push("sgx");
-                    }
-                    Platform::Native => {
-                        tee_bench_dir.push("native");
-                    }
-                }
-                // TODO Put the right file into the right folder, if necessary. This requires the JobConfig.
+                let code_hashmap = code_hashmap_moved.clone();
                 // This assumes that the Makefile of TeeBench has a different app name ("sgx" or "native"). See `common::data_types::Platform::to_app_name()`.
-                // TokioCommand::new("make").current_dir(tee_bench_dir).args(["clean"]).status().await.expect("Failed to run make clean");
-                // TokioCommand::new("make").current_dir(tee_bench_dir).args(["-B", "sgx"]).status().await.expect("Failed to compile sgx version of TeeBench");
+                if cmd.algorithm.is_commit() && (switched_in.is_none() || (switched_in.is_some() && switched_in.unwrap() != cmd.algorithm)) {
+                    let new_code = code_hashmap.get(&cmd.algorithm).unwrap();
+                    let mut replace_file_path = tee_bench_dir.clone();
+                    replace_file_path.push(REPLACE_FILE);
+                    tokio::fs::write(replace_file_path, new_code)
+                        .await
+                        .expect(&format!("Failed to write new operator to {REPLACE_FILE}"));
+                    let compile_args_sgx = ["-B", "sgx"];
+                    let compile_args_native = ["native", "CFLAGS=-DNATIVE_COMPILATION"];
+                    let enclave_name = "enclave.signed.so";
+                    //TokioCommand::new("make").current_dir(tee_bench_dir.clone()).args(["clean"]).status().await.expect("Failed to run make clean");
+                    TokioCommand::new("make")
+                        .current_dir(tee_bench_dir.clone())
+                        .args(compile_args_native)
+                        .status()
+                        .await
+                        .expect("Failed to compile native TeeBench");
+                    let (mut app_path, mut bin_path) =
+                        (tee_bench_dir.clone(), tee_bench_dir.clone());
+                    bin_path.push(BIN_FOLDER);
+                    tokio::fs::create_dir_all(&bin_path)
+                        .await
+                        .expect(&format!("Failed to create $TEE_BENCH_DIR/{BIN_FOLDER}!"));
+                    app_path.push("app");
+                    bin_path.push("native");
+                    info!("Copying from {app_path:?} to {bin_path:?}");
+                    tokio::fs::copy(&app_path, &bin_path)
+                        .await
+                        .expect("Failed to copy binary over!");
+                    TokioCommand::new("make")
+                        .current_dir(tee_bench_dir.clone())
+                        .args(compile_args_sgx)
+                        .status()
+                        .await
+                        .expect("Failed to compile SGX TeeBench");
+                    bin_path.pop();
+                    bin_path.push("sgx");
+                    info!("Copying from {app_path:?} to {bin_path:?}");
+                    tokio::fs::copy(&app_path, &bin_path)
+                        .await
+                        .expect("Failed to copy binary over!");
+                    bin_path.pop();
+                    bin_path.push(enclave_name);
+                    app_path.pop();
+                    app_path.push(enclave_name);
+                    info!("Copying from {app_path:?} to {bin_path:?}");
+                    tokio::fs::copy(&app_path, &bin_path)
+                        .await
+                        .expect(&format!("Failed to copy {enclave_name} over!"));
+                    *Arc::make_mut(&mut switched_in) = Some(cmd.algorithm);
+                }
+                tee_bench_dir.push(BIN_FOLDER);
+                info!("Running `{}`", cmd);
                 let output = to_command(cmd.clone())
                     .current_dir(tee_bench_dir)
                     .output()
                     .await
                     .expect("Failed to run TeeBench");
-                info!("Running `{cmd}`");
                 if !output.status.success() {
                     error!("Command failed with {output:#?}");
                     return Err(());
@@ -83,13 +133,28 @@ async fn run_experiment(
     JobResult::Exp(Ok(report))
 }
 
-async fn compile_and_run(conf: JobConfig, commits: Arc<Mutex<CommitState>>) -> JobResult {
+async fn runner(
+    conf: JobConfig,
+    commits: Arc<Mutex<CommitState>>,
+    currently_switched_in: Arc<Option<Algorithm>>,
+) -> JobResult {
     let tee_bench_dir =
         PathBuf::from(var("TEEBENCHWEB_RUN_DIR").expect("TEEBENCHWEB_RUN_DIR not set"));
     match conf {
         JobConfig::Profiling(ref c) => {
             let cmds = c.to_teebench_cmd();
-            run_experiment(tee_bench_dir, vec![conf], vec![cmds]).await
+            let code_hashmap = {
+                let guard = commits.lock().unwrap();
+                guard.get_used_code(&c.algorithm)
+            };
+            run_experiment(
+                tee_bench_dir,
+                vec![conf],
+                cmds,
+                code_hashmap,
+                currently_switched_in,
+            )
+            .await
         }
         JobConfig::PerfReport(ref pr_conf) => {
             let baseline = || {
@@ -100,10 +165,24 @@ async fn compile_and_run(conf: JobConfig, commits: Arc<Mutex<CommitState>>) -> J
                 }
                 panic!("Could not find the commit!");
             };
+            // TODO Refactor to only unlock CommitState mutex once.
+            let code_hashmap = {
+                let guard = commits.lock().unwrap();
+                use std::collections::HashSet;
+                let set = HashSet::from([Algorithm::Commit(pr_conf.id), pr_conf.baseline]);
+                guard.get_used_code(&set)
+            };
             let baseline = baseline();
-            let cmds = hardcoded_perf_report_commands(&baseline);
+            let cmds = hardcoded_perf_report_commands(pr_conf.id, &baseline);
             let confs = hardcoded_perf_report_configs(pr_conf.id, baseline);
-            let results = run_experiment(tee_bench_dir, confs, cmds).await;
+            let results = run_experiment(
+                tee_bench_dir,
+                confs,
+                cmds,
+                code_hashmap,
+                currently_switched_in,
+            )
+            .await;
             {
                 let mut guard = commits.lock().unwrap();
                 if let Some(mut c) = guard.get_id_mut(&pr_conf.id) {
@@ -156,6 +235,7 @@ async fn work_on_queue(
     oneshot_tx: oneshot::Sender<()>,
     queue_tx: mpsc::Sender<Job>,
     commits: Arc<Mutex<CommitState>>,
+    currently_switched_in: Arc<Option<Algorithm>>,
 ) {
     fn peek_queue(queue: Arc<Mutex<VecDeque<Job>>>) -> Option<Job> {
         let guard = queue.lock().unwrap();
@@ -165,7 +245,12 @@ async fn work_on_queue(
     // Probably by making the above function a closure, which would also be more idiomatic.
     while let Some(current_job) = peek_queue(queue.clone()) {
         info!("Working on {current_job:#?}...");
-        let result = compile_and_run(current_job.config.clone(), commits.clone()).await;
+        let result = runner(
+            current_job.config.clone(),
+            commits.clone(),
+            currently_switched_in.clone(),
+        )
+        .await;
         info!("Process completed with {result:?}.");
         let finished_job = Job {
             status: JobStatus::Done {
@@ -220,6 +305,8 @@ pub async fn profiling_task(
 ) {
     // Using a tokio Mutex here to make it Send. Which is required...
     let rx = Arc::new(tokio::sync::Mutex::new(rx));
+    // TODO Make this just a &mut, Arc should not be needed except if the compiler requires it, but it is never concurrently accessed.
+    let currently_switched_in = Arc::new(None);
     loop {
         receive_confs(queue.clone(), rx.clone()).await;
         let (work_finished_tx, mut work_finished_rx) = oneshot::channel();
@@ -228,6 +315,7 @@ pub async fn profiling_task(
             work_finished_tx,
             queue_tx.clone(),
             commits.clone(),
+            currently_switched_in.clone(),
         ));
         loop {
             // Following the advice in the tokio::oneshot documentation to make the rx &mut.

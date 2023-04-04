@@ -35,61 +35,64 @@ pub fn hardcoded_perf_report_configs(id: CommitIdType, baseline: Algorithm) -> V
     ]
 }
 
-pub fn hardcoded_perf_report_commands(baseline: &Algorithm) -> Vec<Vec<Commandline>> {
-    let baseline = &baseline.to_string();
+pub fn hardcoded_perf_report_commands(
+    id: CommitIdType,
+    baseline_t: &Algorithm,
+) -> Vec<Vec<Commandline>> {
+    let baseline = &baseline_t.to_string();
     #[rustfmt::skip]
     let res = vec![
         // Throughput Cache-Fit
         vec![
-            Commandline::with_args(Platform::Sgx   ,&vec!["-a",REPLACE_ALG,"-d","cache-fit"   ,"-n","2","--csv"]),
-            Commandline::with_args(Platform::Native,&vec!["-a",REPLACE_ALG,"-d","cache-fit"   ,"-n","2","--csv"]),
-            Commandline::with_args(Platform::Sgx   ,&vec!["-a",baseline   ,"-d","cache-fit"   ,"-n","2","--csv"]),
-            Commandline::with_args(Platform::Native,&vec!["-a",baseline   ,"-d","cache-fit"   ,"-n","2","--csv"]),
+            Commandline::with_args(Platform::Sgx   , Algorithm::Commit(id), &vec!["-a",REPLACE_ALG,"-d","cache-fit"   ,"-n","2","--csv"]),
+            Commandline::with_args(Platform::Native, Algorithm::Commit(id), &vec!["-a",REPLACE_ALG,"-d","cache-fit"   ,"-n","2","--csv"]),
+            Commandline::with_args(Platform::Sgx   , *baseline_t          , &vec!["-a",baseline   ,"-d","cache-fit"   ,"-n","2","--csv"]),
+            Commandline::with_args(Platform::Native, *baseline_t          , &vec!["-a",baseline   ,"-d","cache-fit"   ,"-n","2","--csv"]),
         ],
         // Throughput Cache-Exceed
         vec![
-            Commandline::with_args(Platform::Sgx   ,&vec!["-a",REPLACE_ALG,"-d","cache-exceed","-n","2","--csv"]),
-            Commandline::with_args(Platform::Native,&vec!["-a",REPLACE_ALG,"-d","cache-exceed","-n","2","--csv"]),
-            Commandline::with_args(Platform::Sgx   ,&vec!["-a",baseline   ,"-d","cache-exceed","-n","2","--csv"]),
-            Commandline::with_args(Platform::Native,&vec!["-a",baseline   ,"-d","cache-exceed","-n","2","--csv"]),
+            Commandline::with_args(Platform::Sgx   , *baseline_t          , &vec!["-a",baseline   ,"-d","cache-exceed","-n","2","--csv"]),
+            Commandline::with_args(Platform::Native, *baseline_t          , &vec!["-a",baseline   ,"-d","cache-exceed","-n","2","--csv"]),
+            Commandline::with_args(Platform::Sgx   , Algorithm::Commit(id), &vec!["-a",REPLACE_ALG,"-d","cache-exceed","-n","2","--csv"]),
+            Commandline::with_args(Platform::Native, Algorithm::Commit(id), &vec!["-a",REPLACE_ALG,"-d","cache-exceed","-n","2","--csv"]),
         ],
         // Scalability Cache-Fit
         vec![
-            Commandline::with_args(Platform::Sgx   ,&vec!["-a",REPLACE_ALG,"-d","cache-fit"   ,"-n","1","--csv"]),
-            Commandline::with_args(Platform::Sgx   ,&vec!["-a",REPLACE_ALG,"-d","cache-fit"   ,"-n","2","--csv"]),
-            Commandline::with_args(Platform::Sgx   ,&vec!["-a",REPLACE_ALG,"-d","cache-fit"   ,"-n","3","--csv"]),
-            Commandline::with_args(Platform::Sgx   ,&vec!["-a",REPLACE_ALG,"-d","cache-fit"   ,"-n","4","--csv"]),
-            Commandline::with_args(Platform::Sgx   ,&vec!["-a",REPLACE_ALG,"-d","cache-fit"   ,"-n","5","--csv"]),
-            Commandline::with_args(Platform::Sgx   ,&vec!["-a",REPLACE_ALG,"-d","cache-fit"   ,"-n","6","--csv"]),
-            Commandline::with_args(Platform::Sgx   ,&vec!["-a",REPLACE_ALG,"-d","cache-fit"   ,"-n","7","--csv"]),
-            Commandline::with_args(Platform::Sgx   ,&vec!["-a",REPLACE_ALG,"-d","cache-fit"   ,"-n","8","--csv"]),
-            Commandline::with_args(Platform::Sgx   ,&vec!["-a",baseline   ,"-d","cache-fit"   ,"-n","1","--csv"]),
-            Commandline::with_args(Platform::Sgx   ,&vec!["-a",baseline   ,"-d","cache-fit"   ,"-n","2","--csv"]),
-            Commandline::with_args(Platform::Sgx   ,&vec!["-a",baseline   ,"-d","cache-fit"   ,"-n","3","--csv"]),
-            Commandline::with_args(Platform::Sgx   ,&vec!["-a",baseline   ,"-d","cache-fit"   ,"-n","4","--csv"]),
-            Commandline::with_args(Platform::Sgx   ,&vec!["-a",baseline   ,"-d","cache-fit"   ,"-n","5","--csv"]),
-            Commandline::with_args(Platform::Sgx   ,&vec!["-a",baseline   ,"-d","cache-fit"   ,"-n","6","--csv"]),
-            Commandline::with_args(Platform::Sgx   ,&vec!["-a",baseline   ,"-d","cache-fit"   ,"-n","7","--csv"]),
-            Commandline::with_args(Platform::Sgx   ,&vec!["-a",baseline   ,"-d","cache-fit"   ,"-n","8","--csv"]),
+            Commandline::with_args(Platform::Sgx   , Algorithm::Commit(id), &vec!["-a",REPLACE_ALG,"-d","cache-fit"   ,"-n","1","--csv"]),
+            Commandline::with_args(Platform::Sgx   , Algorithm::Commit(id), &vec!["-a",REPLACE_ALG,"-d","cache-fit"   ,"-n","2","--csv"]),
+            Commandline::with_args(Platform::Sgx   , Algorithm::Commit(id), &vec!["-a",REPLACE_ALG,"-d","cache-fit"   ,"-n","3","--csv"]),
+            Commandline::with_args(Platform::Sgx   , Algorithm::Commit(id), &vec!["-a",REPLACE_ALG,"-d","cache-fit"   ,"-n","4","--csv"]),
+            Commandline::with_args(Platform::Sgx   , Algorithm::Commit(id), &vec!["-a",REPLACE_ALG,"-d","cache-fit"   ,"-n","5","--csv"]),
+            Commandline::with_args(Platform::Sgx   , Algorithm::Commit(id), &vec!["-a",REPLACE_ALG,"-d","cache-fit"   ,"-n","6","--csv"]),
+            Commandline::with_args(Platform::Sgx   , Algorithm::Commit(id), &vec!["-a",REPLACE_ALG,"-d","cache-fit"   ,"-n","7","--csv"]),
+            Commandline::with_args(Platform::Sgx   , Algorithm::Commit(id), &vec!["-a",REPLACE_ALG,"-d","cache-fit"   ,"-n","8","--csv"]),
+            Commandline::with_args(Platform::Sgx   , *baseline_t          , &vec!["-a",baseline   ,"-d","cache-fit"   ,"-n","1","--csv"]),
+            Commandline::with_args(Platform::Sgx   , *baseline_t          , &vec!["-a",baseline   ,"-d","cache-fit"   ,"-n","2","--csv"]),
+            Commandline::with_args(Platform::Sgx   , *baseline_t          , &vec!["-a",baseline   ,"-d","cache-fit"   ,"-n","3","--csv"]),
+            Commandline::with_args(Platform::Sgx   , *baseline_t          , &vec!["-a",baseline   ,"-d","cache-fit"   ,"-n","4","--csv"]),
+            Commandline::with_args(Platform::Sgx   , *baseline_t          , &vec!["-a",baseline   ,"-d","cache-fit"   ,"-n","5","--csv"]),
+            Commandline::with_args(Platform::Sgx   , *baseline_t          , &vec!["-a",baseline   ,"-d","cache-fit"   ,"-n","6","--csv"]),
+            Commandline::with_args(Platform::Sgx   , *baseline_t          , &vec!["-a",baseline   ,"-d","cache-fit"   ,"-n","7","--csv"]),
+            Commandline::with_args(Platform::Sgx   , *baseline_t          , &vec!["-a",baseline   ,"-d","cache-fit"   ,"-n","8","--csv"]),
         ],
             // Scalability Cache-Exceed
         vec![
-            Commandline::with_args(Platform::Sgx   ,&vec!["-a",REPLACE_ALG,"-d","cache-exceed","-n","1","--csv"]),
-            Commandline::with_args(Platform::Sgx   ,&vec!["-a",REPLACE_ALG,"-d","cache-exceed","-n","2","--csv"]),
-            Commandline::with_args(Platform::Sgx   ,&vec!["-a",REPLACE_ALG,"-d","cache-exceed","-n","3","--csv"]),
-            Commandline::with_args(Platform::Sgx   ,&vec!["-a",REPLACE_ALG,"-d","cache-exceed","-n","4","--csv"]),
-            Commandline::with_args(Platform::Sgx   ,&vec!["-a",REPLACE_ALG,"-d","cache-exceed","-n","5","--csv"]),
-            Commandline::with_args(Platform::Sgx   ,&vec!["-a",REPLACE_ALG,"-d","cache-exceed","-n","6","--csv"]),
-            Commandline::with_args(Platform::Sgx   ,&vec!["-a",REPLACE_ALG,"-d","cache-exceed","-n","7","--csv"]),
-            Commandline::with_args(Platform::Sgx   ,&vec!["-a",REPLACE_ALG,"-d","cache-exceed","-n","8","--csv"]),
-            Commandline::with_args(Platform::Sgx   ,&vec!["-a",baseline   ,"-d","cache-exceed","-n","1","--csv"]),
-            Commandline::with_args(Platform::Sgx   ,&vec!["-a",baseline   ,"-d","cache-exceed","-n","2","--csv"]),
-            Commandline::with_args(Platform::Sgx   ,&vec!["-a",baseline   ,"-d","cache-exceed","-n","3","--csv"]),
-            Commandline::with_args(Platform::Sgx   ,&vec!["-a",baseline   ,"-d","cache-exceed","-n","4","--csv"]),
-            Commandline::with_args(Platform::Sgx   ,&vec!["-a",baseline   ,"-d","cache-exceed","-n","5","--csv"]),
-            Commandline::with_args(Platform::Sgx   ,&vec!["-a",baseline   ,"-d","cache-exceed","-n","6","--csv"]),
-            Commandline::with_args(Platform::Sgx   ,&vec!["-a",baseline   ,"-d","cache-exceed","-n","7","--csv"]),
-            Commandline::with_args(Platform::Sgx   ,&vec!["-a",baseline   ,"-d","cache-exceed","-n","8","--csv"]),
+            Commandline::with_args(Platform::Sgx   , Algorithm::Commit(id), &vec!["-a",baseline   ,"-d","cache-exceed","-n","1","--csv"]),
+            Commandline::with_args(Platform::Sgx   , Algorithm::Commit(id), &vec!["-a",baseline   ,"-d","cache-exceed","-n","2","--csv"]),
+            Commandline::with_args(Platform::Sgx   , Algorithm::Commit(id), &vec!["-a",baseline   ,"-d","cache-exceed","-n","3","--csv"]),
+            Commandline::with_args(Platform::Sgx   , Algorithm::Commit(id), &vec!["-a",baseline   ,"-d","cache-exceed","-n","4","--csv"]),
+            Commandline::with_args(Platform::Sgx   , Algorithm::Commit(id), &vec!["-a",baseline   ,"-d","cache-exceed","-n","5","--csv"]),
+            Commandline::with_args(Platform::Sgx   , Algorithm::Commit(id), &vec!["-a",baseline   ,"-d","cache-exceed","-n","6","--csv"]),
+            Commandline::with_args(Platform::Sgx   , Algorithm::Commit(id), &vec!["-a",baseline   ,"-d","cache-exceed","-n","7","--csv"]),
+            Commandline::with_args(Platform::Sgx   , Algorithm::Commit(id), &vec!["-a",baseline   ,"-d","cache-exceed","-n","8","--csv"]),
+            Commandline::with_args(Platform::Sgx   , *baseline_t          , &vec!["-a",REPLACE_ALG,"-d","cache-exceed","-n","1","--csv"]),
+            Commandline::with_args(Platform::Sgx   , *baseline_t          , &vec!["-a",REPLACE_ALG,"-d","cache-exceed","-n","2","--csv"]),
+            Commandline::with_args(Platform::Sgx   , *baseline_t          , &vec!["-a",REPLACE_ALG,"-d","cache-exceed","-n","3","--csv"]),
+            Commandline::with_args(Platform::Sgx   , *baseline_t          , &vec!["-a",REPLACE_ALG,"-d","cache-exceed","-n","4","--csv"]),
+            Commandline::with_args(Platform::Sgx   , *baseline_t          , &vec!["-a",REPLACE_ALG,"-d","cache-exceed","-n","5","--csv"]),
+            Commandline::with_args(Platform::Sgx   , *baseline_t          , &vec!["-a",REPLACE_ALG,"-d","cache-exceed","-n","6","--csv"]),
+            Commandline::with_args(Platform::Sgx   , *baseline_t          , &vec!["-a",REPLACE_ALG,"-d","cache-exceed","-n","7","--csv"]),
+            Commandline::with_args(Platform::Sgx   , *baseline_t          , &vec!["-a",REPLACE_ALG,"-d","cache-exceed","-n","8","--csv"]),
         ],
         // EPC Paging Commit
         // TODO

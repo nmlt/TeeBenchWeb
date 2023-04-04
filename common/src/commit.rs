@@ -99,3 +99,19 @@ impl CommitState {
         self.0.push(c);
     }
 }
+
+use std::collections::{HashMap, HashSet};
+impl CommitState {
+    pub fn get_used_code(&self, algorithms: &HashSet<Algorithm>) -> HashMap<Algorithm, String> {
+        let mut map = HashMap::new();
+        for a in algorithms {
+            if let Algorithm::Commit(id) = a {
+                let c = self
+                    .get_id(id)
+                    .expect("TODO Frontend might have sent a nonexistent commit id!");
+                map.insert(*a, c.code.clone());
+            }
+        }
+        map
+    }
+}
