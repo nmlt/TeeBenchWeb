@@ -120,6 +120,7 @@ pub fn Websocket() -> Html {
                                         if let JobStatus::Done { result, .. } = finished_job.status
                                         {
                                             commit.reports = Some(result);
+                                            commit.perf_report_running = false;
                                         } else {
                                             log!("Error: Got an unfinished job in the websocket.");
                                         }
