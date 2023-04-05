@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use std::collections::VecDeque;
+use std::collections::{HashMap, HashSet};
 use std::env::var;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -154,9 +154,18 @@ async fn runner(
                 let guard = commits.lock().unwrap();
                 guard.get_used_code(&c.algorithm)
             };
+            let confs = c
+                .dataset
+                .iter()
+                .map(|ds| {
+                    let mut clone = c.clone();
+                    clone.dataset = HashSet::from([*ds]);
+                    JobConfig::Profiling(clone)
+                })
+                .collect();
             run_experiment(
                 tee_bench_dir,
-                vec![conf],
+                confs,
                 cmds,
                 code_hashmap,
                 currently_switched_in,
@@ -175,7 +184,6 @@ async fn runner(
             // TODO Refactor to only unlock CommitState mutex once.
             let code_hashmap = {
                 let guard = commits.lock().unwrap();
-                use std::collections::HashSet;
                 let set = HashSet::from([Algorithm::Commit(pr_conf.id), pr_conf.baseline]);
                 guard.get_used_code(&set)
             };

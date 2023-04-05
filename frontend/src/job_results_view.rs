@@ -77,6 +77,11 @@ pub fn JobResultView(JobResultViewProps { job }: &JobResultViewProps) -> Html {
                                 }
                             }
                         });
+                        let charts = report.charts.iter().map(|exp_chart| {
+                            html! {
+                                <Chart exp_chart={exp_chart.clone()}/>
+                            }
+                        });
                         ModalContent {
                             content: html! {
                                 <div class="modal-content">
@@ -85,7 +90,7 @@ pub fn JobResultView(JobResultViewProps { job }: &JobResultViewProps) -> Html {
                                         <button type="button" class="btn-close" onclick={destroy_onclick.clone()} data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
                                     <div class="modal-body">
-                                        <Chart exp_chart={report.charts[0].clone()}/> // TODO Put the proper chart here
+                                        {for charts}
                                     </div>
                                     <div class="modal-header">
                                         <h5 class="modal-title">{"Analyser Findings"}</h5>
