@@ -29,16 +29,21 @@ async fn run_experiment(
     currently_switched_in: SwitchedInType,
 ) -> JobResult {
     let mut all_tasks = vec![];
+    let mut no_errors = true;
     for (chart_cmds, conf) in cmds.iter().zip(configs) {
-        let mut cmd_tasks = HashMap::new();
+        let mut cmd_tasks: HashMap<common::data_types::TeebenchArgs, Result<Vec<u8>, ()>> =
+            HashMap::new();
         for cmd in chart_cmds {
+            if !no_errors {
+                break;
+            }
             let mut tee_bench_dir = tee_bench_dir.clone();
             let cmd_moved = cmd.clone();
             let currently_switched_in_moved = currently_switched_in.clone();
             let code_hashmap_moved = code_hashmap.clone();
             // Each task should get the full "power" of the machine, so don't run them in parallel (by awaiting the handle).
-            // TODO Do we have to spawn here? I think I just did that when I failed to see the `current_dir` option on `Command`. This was to avoid changing the cwd for the whole axum server.
-            let handle = tokio::task::spawn(async move {
+            // TODO Clean up clone calls from when we spawned here to not run TB in parallel. That doesn't happen now, right?
+            {
                 let switched_in = currently_switched_in_moved;
                 let mut switched_in = switched_in.lock().await;
                 let cmd = cmd_moved.clone();
@@ -100,20 +105,21 @@ async fn run_experiment(
                     switched_in.replace(cmd.algorithm);
                 }
                 tee_bench_dir.push(BIN_FOLDER);
+                let args_key = cmd.to_teebench_args();
                 info!("Running `{}`", cmd);
-                let output = to_command(cmd.clone())
+                let output = to_command(cmd)
                     .current_dir(tee_bench_dir)
                     .output()
                     .await
                     .expect("Failed to run TeeBench");
                 if !output.status.success() {
                     error!("Command failed with {output:#?}");
-                    return Err(());
+                    no_errors = false;
+                    cmd_tasks.insert(args_key, Err(()));
+                } else {
+                    cmd_tasks.insert(args_key, Ok(output.stdout));
                 }
-                Ok(output.stdout)
-            })
-            .await;
-            cmd_tasks.insert(cmd.to_teebench_args(), handle);
+            }
         }
         all_tasks.push((conf, cmd_tasks));
     }
@@ -124,7 +130,7 @@ async fn run_experiment(
     for (conf, tasks) in all_tasks {
         let mut experiment_chart = ExperimentChart::new(conf, vec![], vec![]);
         for (args, task) in tasks {
-            let Ok(res) = task.unwrap() else {
+            let Ok(res) = task else {
                 return JobResult::Exp(Err(TeeBenchWebError::default()));
             };
             let human_readable = String::from_utf8(res.clone()).unwrap();
@@ -132,7 +138,10 @@ async fn run_experiment(
             let mut rdr = csv::Reader::from_reader(&*res);
             let mut iter = rdr.deserialize();
             // iter.next(); // First line is skipped anyway because a header is expected.
-            let exp_result: HashMap<String, String> = iter.next().unwrap().unwrap();
+            let exp_result: HashMap<String, String> = match iter.next() {
+                Some(csv_parse_result) => csv_parse_result.expect("Error processing CSV!"),
+                None => return JobResult::Exp(Err(TeeBenchWebError::NoOutputData)),
+            };
             experiment_chart.results.push((args, exp_result));
         }
         report.charts.push(experiment_chart);

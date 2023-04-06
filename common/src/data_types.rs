@@ -18,6 +18,8 @@ use crate::commit::CommitIdType;
 pub enum TeeBenchWebError {
     #[error("Could not retrieve results")]
     NoResults,
+    #[error("TeeBench did not produce any output!")]
+    NoOutputData,
     #[error("Unknown error")]
     #[default]
     Unknown,
@@ -127,7 +129,7 @@ pub enum ServerMessage {
 }
 
 /// Name of the algorithm for Teebench that is always replaced with the current commit's code.
-pub const REPLACE_ALG: &str = "___";
+pub const REPLACE_ALG: &str = "OperatorJoin";
 
 // TODO Do not use strum for from_str and to_string. Write your own that takes into account the id of the Commit(id) variant.
 #[derive(
