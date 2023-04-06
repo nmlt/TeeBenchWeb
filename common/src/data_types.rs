@@ -539,9 +539,11 @@ use strum::IntoEnumIterator;
 impl Default for ProfilingConfiguration {
     /// Like Figure 4 off the shelf performance: throughput of all algorithms.
     fn default() -> Self {
-        let algorithm = Algorithm::iter().collect();
+        // If you want to do this, you have to exclude the latest commit, because it can't be
+        // corrected here to an existent id - or there might not even be one.
+        //let algorithm = Algorithm::iter().collect();
         Self {
-            algorithm,
+            algorithm: HashSet::from([Algorithm::Rho]),
             experiment_type: ExperimentType::default(),
             parameter: Parameter::default(),
             measurement: Measurement::default(),
