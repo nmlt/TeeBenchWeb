@@ -27,6 +27,22 @@ Running the axum server from the workspace does not work, as the path to the `di
 
 ==BUG:== There is a bug in trunk/cargo that makes any rebuild a full rebuild (ie. not reusing previous unchanged artifacts). The workaround I used is to change the artifact directory of the trunk build (via `frontend/.cargo/config.toml`). It still seems to happen sometimes, but not always.
 
+Testing on DIMA Cluster
+-----------------------
+
+To do this you have to forward any connection to your local port 3000 to port 3000 on `sr250-wn-b-05.dima.tu-berlin.de` on the cluster. You need to have a configuration for `dima1` in your `.ssh/config` file, eg.:
+```conf
+Host dima1
+        HostName sr250-wn-b-01.dima.tu-berlin.de
+        User <your username>
+        IdentityFile "<your ssh key>"
+```
+Then run this command in the background locally and run TeeBenchWeb as described above on the cluster (here node 05).
+```sh
+ssh -i "<path to your ssh key>" -l <your username> -J dima1 -N -L localhost:3000:localhost:3000 sr250-wn-b-05.dima.tu-berlin.de
+```
+Now you can open `http://0.0.0.0:3000/` in your local webbrowser and use TeeBenchWeb.
+
 Testing the web app
 -------------------
 
