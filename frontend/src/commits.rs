@@ -10,6 +10,7 @@ use yewdux::prelude::*;
 use std::str::FromStr;
 
 use crate::chartjs::hljs_highlight;
+use crate::components::collapse::Collapse;
 use crate::components::select::{InputSelect, SelectDataOption};
 use crate::modal::Modal;
 use crate::modal::ModalContent;
@@ -279,6 +280,8 @@ fn CommitsList() -> Html {
                 }
             })
         };
+        let commit_id = commit.id;
+        let output_html_id = format!("commit{commit_id}CompilerOutputCollapse");
         let compile_status_view = match commit.compilation {
             CompilationStatus::Uncompiled => html! {"waiting to start compilation..."},
             CompilationStatus::Compiling => html! {"compiling..."},
@@ -287,19 +290,19 @@ fn CommitsList() -> Html {
                     html! {"Successfully compiled."}
                 } else {
                     html! {
-                        <>
-                        {"There were some warnings."}
-                        {warnings}
-                        </>
+                        <Collapse id={output_html_id} label="Show Compiler Output" style="btn-primary">
+                            {warnings}
+                        </Collapse>
                     }
                 }
             }
             CompilationStatus::Failed(ref e) => {
                 html! {
-                    <>
-                    {"Failed to compile"}
-                    {e}
-                    </>
+                    html! {
+                        <Collapse id={output_html_id} label="Show Compiler Output" style="btn-danger">
+                            {e}
+                        </Collapse>
+                    }
                 }
             }
         };

@@ -1,4 +1,5 @@
 pub mod checkbox;
+pub mod collapse;
 pub mod finding;
 pub mod number;
 pub mod select;
