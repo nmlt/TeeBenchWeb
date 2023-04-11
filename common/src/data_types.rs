@@ -16,11 +16,13 @@ use crate::commit::CommitIdType;
 /// Error type for Experiments.
 #[derive(Error, Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub enum TeeBenchWebError {
-    #[error("Could not retrieve results")]
+    #[error("Compilation or file operation failed with: {0}")]
+    Compile(String),
+    #[error("Could not retrieve results!")]
     NoResults,
     #[error("TeeBench did not produce any output!")]
     NoOutputData,
-    #[error("Unknown error")]
+    #[error("Unknown error!")]
     #[default]
     Unknown,
 }

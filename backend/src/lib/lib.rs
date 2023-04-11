@@ -1,3 +1,4 @@
+use anyhow::{Context, Result};
 use std::collections::VecDeque;
 use std::collections::{HashMap, HashSet};
 use std::env::var;
@@ -21,6 +22,64 @@ const REPLACE_FILE: &str = "Joins/TBW/OperatorJoin.cpp";
 
 type SwitchedInType = Arc<tokio::sync::Mutex<Option<Algorithm>>>;
 
+async fn compile(
+    alg: &Algorithm,
+    tee_bench_dir: &PathBuf,
+    code_hashmap: HashMap<Algorithm, String>,
+) -> Result<String> {
+    let mut output = String::new();
+    let new_code = code_hashmap.get(alg).unwrap();
+    let mut replace_file_path = tee_bench_dir.clone();
+    replace_file_path.push(REPLACE_FILE);
+    tokio::fs::write(replace_file_path, new_code)
+        .await
+        .with_context(|| format!("Failed to write new operator to {REPLACE_FILE}"))?;
+    let compile_args_sgx = ["-B", "sgx"];
+    let compile_args_native = ["native", "CFLAGS=-DNATIVE_COMPILATION"];
+    let enclave_name = "enclave.signed.so";
+    //TokioCommand::new("make").current_dir(tee_bench_dir.clone()).args(["clean"]).status().await.expect("Failed to run make clean");
+    let cmd_out = TokioCommand::new("make")
+        .current_dir(tee_bench_dir)
+        .args(compile_args_native)
+        .output()
+        .await
+        .context("Failed to compile native TeeBench")?;
+    output.push_str(&format!("Compile Native: {:?}", cmd_out));
+    let (mut app_path, mut bin_path) = (tee_bench_dir.clone(), tee_bench_dir.clone());
+    bin_path.push(BIN_FOLDER);
+    tokio::fs::create_dir_all(&bin_path)
+        .await
+        .with_context(|| format!("Failed to create $TEE_BENCH_DIR/{BIN_FOLDER}!"))?;
+    app_path.push("app");
+    bin_path.push("native");
+    info!("Copying from {app_path:?} to {bin_path:?}");
+    tokio::fs::copy(&app_path, &bin_path)
+        .await
+        .context("Failed to copy native binary over!")?;
+    let cmd_out = TokioCommand::new("make")
+        .current_dir(tee_bench_dir)
+        .args(compile_args_sgx)
+        .output()
+        .await
+        .context("Failed to compile SGX TeeBench")?;
+    output.push_str(&format!("Compile SGX: {:?}", cmd_out));
+    bin_path.pop();
+    bin_path.push("sgx");
+    info!("Copying from {app_path:?} to {bin_path:?}");
+    tokio::fs::copy(&app_path, &bin_path)
+        .await
+        .context("Failed to copy sgx binary over!")?;
+    bin_path.pop();
+    bin_path.push(enclave_name);
+    app_path.pop();
+    app_path.push(enclave_name);
+    info!("Copying from {app_path:?} to {bin_path:?}");
+    tokio::fs::copy(&app_path, &bin_path)
+        .await
+        .with_context(|| format!("Failed to copy {enclave_name} over!"))?;
+    Ok(output)
+}
+
 async fn run_experiment(
     tee_bench_dir: PathBuf,
     configs: Vec<JobConfig>,
@@ -29,14 +88,10 @@ async fn run_experiment(
     currently_switched_in: SwitchedInType,
 ) -> JobResult {
     let mut all_tasks = vec![];
-    let mut no_errors = true;
     for (chart_cmds, conf) in cmds.iter().zip(configs) {
         let mut cmd_tasks: HashMap<common::data_types::TeebenchArgs, Result<Vec<u8>, ()>> =
             HashMap::new();
         for cmd in chart_cmds {
-            if !no_errors {
-                break;
-            }
             let mut tee_bench_dir = tee_bench_dir.clone();
             let cmd_moved = cmd.clone();
             let currently_switched_in_moved = currently_switched_in.clone();
@@ -54,54 +109,10 @@ async fn run_experiment(
                         || (switched_in.is_some() && switched_in.unwrap() != cmd.algorithm))
                 {
                     info!("Compiling: {cmd:?}, switched in : {switched_in:?}");
-                    let new_code = code_hashmap.get(&cmd.algorithm).unwrap();
-                    let mut replace_file_path = tee_bench_dir.clone();
-                    replace_file_path.push(REPLACE_FILE);
-                    tokio::fs::write(replace_file_path, new_code)
-                        .await
-                        .expect(&format!("Failed to write new operator to {REPLACE_FILE}"));
-                    let compile_args_sgx = ["-B", "sgx"];
-                    let compile_args_native = ["native", "CFLAGS=-DNATIVE_COMPILATION"];
-                    let enclave_name = "enclave.signed.so";
-                    //TokioCommand::new("make").current_dir(tee_bench_dir.clone()).args(["clean"]).status().await.expect("Failed to run make clean");
-                    TokioCommand::new("make")
-                        .current_dir(tee_bench_dir.clone())
-                        .args(compile_args_native)
-                        .status()
-                        .await
-                        .expect("Failed to compile native TeeBench");
-                    let (mut app_path, mut bin_path) =
-                        (tee_bench_dir.clone(), tee_bench_dir.clone());
-                    bin_path.push(BIN_FOLDER);
-                    tokio::fs::create_dir_all(&bin_path)
-                        .await
-                        .expect(&format!("Failed to create $TEE_BENCH_DIR/{BIN_FOLDER}!"));
-                    app_path.push("app");
-                    bin_path.push("native");
-                    info!("Copying from {app_path:?} to {bin_path:?}");
-                    tokio::fs::copy(&app_path, &bin_path)
-                        .await
-                        .expect("Failed to copy binary over!");
-                    TokioCommand::new("make")
-                        .current_dir(tee_bench_dir.clone())
-                        .args(compile_args_sgx)
-                        .status()
-                        .await
-                        .expect("Failed to compile SGX TeeBench");
-                    bin_path.pop();
-                    bin_path.push("sgx");
-                    info!("Copying from {app_path:?} to {bin_path:?}");
-                    tokio::fs::copy(&app_path, &bin_path)
-                        .await
-                        .expect("Failed to copy binary over!");
-                    bin_path.pop();
-                    bin_path.push(enclave_name);
-                    app_path.pop();
-                    app_path.push(enclave_name);
-                    info!("Copying from {app_path:?} to {bin_path:?}");
-                    tokio::fs::copy(&app_path, &bin_path)
-                        .await
-                        .expect(&format!("Failed to copy {enclave_name} over!"));
+                    if let Err(e) = compile(&cmd.algorithm, &tee_bench_dir, code_hashmap).await {
+                        error!("Error while switching in code and compiling commit for experiment:\n{e}");
+                        return JobResult::Exp(Err(TeeBenchWebError::Compile(e.to_string())));
+                    }
                     switched_in.replace(cmd.algorithm);
                 }
                 tee_bench_dir.push(BIN_FOLDER);
@@ -114,8 +125,8 @@ async fn run_experiment(
                     .expect("Failed to run TeeBench");
                 if !output.status.success() {
                     error!("Command failed with {output:#?}");
-                    no_errors = false;
                     cmd_tasks.insert(args_key, Err(()));
+                    break;
                 } else {
                     cmd_tasks.insert(args_key, Ok(output.stdout));
                 }
@@ -156,14 +167,20 @@ async fn runner(
 ) -> JobResult {
     let tee_bench_dir =
         PathBuf::from(var("TEEBENCHWEB_RUN_DIR").expect("TEEBENCHWEB_RUN_DIR not set"));
+    // TODO Move to JobConfig method.
+    let algs = match conf {
+        JobConfig::Profiling(ref c) => c.algorithm.clone(),
+        JobConfig::PerfReport(ref c) => HashSet::from([Algorithm::Commit(c.id)]),
+        JobConfig::Compile(id) => HashSet::from([Algorithm::Commit(id)]),
+    };
+    let code_hashmap = {
+        let guard = commits.lock().unwrap();
+        guard.get_used_code(&algs)
+    };
     match conf {
         JobConfig::Profiling(ref c) => {
             let cmds = c.to_teebench_cmd();
-            let code_hashmap = {
-                let guard = commits.lock().unwrap();
-                guard.get_used_code(&c.algorithm)
-            };
-            let confs = c
+            let configs = c
                 .dataset
                 .iter()
                 .map(|ds| {
@@ -174,7 +191,7 @@ async fn runner(
                 .collect();
             run_experiment(
                 tee_bench_dir,
-                confs,
+                configs,
                 cmds,
                 code_hashmap,
                 currently_switched_in,
@@ -190,18 +207,12 @@ async fn runner(
                 }
                 panic!("Could not find the commit!");
             };
-            // TODO Refactor to only unlock CommitState mutex once.
-            let code_hashmap = {
-                let guard = commits.lock().unwrap();
-                let set = HashSet::from([Algorithm::Commit(pr_conf.id), pr_conf.baseline]);
-                guard.get_used_code(&set)
-            };
             let baseline = baseline();
             let cmds = hardcoded_perf_report_commands(pr_conf.id, &baseline);
-            let confs = hardcoded_perf_report_configs(pr_conf.id, baseline);
+            let configs = hardcoded_perf_report_configs(pr_conf.id, baseline);
             let results = run_experiment(
                 tee_bench_dir,
-                confs,
+                configs,
                 cmds,
                 code_hashmap,
                 currently_switched_in,
@@ -223,19 +234,11 @@ async fn runner(
                     c.compilation = CompilationStatus::Compiling;
                 }
             }
-            // TODO find file with `id`
-            // put it in the right place in teebench src dir
-            // OR: give this function access to CommitState (`ServerState`). That is probably the way to go :(
-            tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-
-            let output;
-            let result = if true {
-                output = "warning: This is a placeholder warning".to_string();
-                JobResult::Compile(Ok(output))
-            } else {
-                output = "Fortuna wasn't merciful this time".to_string();
-                JobResult::Compile(Err(output))
-            };
+            let result = JobResult::Compile(
+                compile(&Algorithm::Commit(*id), &tee_bench_dir, code_hashmap)
+                    .await
+                    .map_err(|e| e.to_string()),
+            );
             {
                 let mut guard = commits.lock().unwrap();
                 if let Some(mut c) = guard.get_id_mut(id) {

@@ -211,6 +211,10 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                 heading.push_str("Join Selectivity");
                             }
                         }
+                        match conf.dataset.iter().next().unwrap() {
+                            Dataset::CacheExceed => heading.push_str(" with dataset Cache Exceed"),
+                            Dataset::CacheFit => heading.push_str(" with dataset Cache Fit"),
+                        }
                         let steps: Vec<_> = conf.param_value_iter();
                         labels = json!(steps);
                         let mut data = HashMap::new();
@@ -228,11 +232,11 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                         }
                         let mut datasets_prep = vec![];
 
-                        for (((alg, platform, ds), data_value), color) in
+                        for (((alg, platform, _dataset), data_value), color) in
                             data.iter().zip(COLORS.iter().cycle())
                         {
                             datasets_prep.push(json!({
-                                "label": format!("{alg} on {platform} with dataset {ds}"),
+                                "label": format!("{alg} on {platform}"),
                                 "data": data_value,
                                 "backgroundColor": color,
                                 "borderColor": color,
