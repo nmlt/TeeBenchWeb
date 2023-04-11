@@ -291,7 +291,9 @@ fn CommitsList() -> Html {
                 } else {
                     html! {
                         <Collapse id={output_html_id} label="Show Compiler Output" style="btn-primary">
-                            {warnings}
+                            <pre>
+                                {warnings}
+                            </pre>
                         </Collapse>
                     }
                 }
@@ -300,7 +302,9 @@ fn CommitsList() -> Html {
                 html! {
                     html! {
                         <Collapse id={output_html_id} label="Show Compiler Output" style="btn-danger">
-                            {e}
+                            <pre>
+                                {e}
+                            </pre>
                         </Collapse>
                     }
                 }

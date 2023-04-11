@@ -134,7 +134,7 @@ pub fn Websocket() -> Html {
                                         if let JobStatus::Done { result, .. } = finished_job.status {
                                             if let JobResult::Compile(r) = result {
                                                 match r {
-                                                    Ok(_teebenchweberror) => commit.compilation = CompilationStatus::Successful("TODO".to_string()),
+                                                    Ok(msg) => commit.compilation = CompilationStatus::Successful(msg),
                                                     Err(e) => commit.compilation = CompilationStatus::Failed(e),
                                                 }
                                             } else {

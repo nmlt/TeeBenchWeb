@@ -14,6 +14,7 @@ use common::commandline::Commandline;
 use common::commit::{CommitState, CompilationStatus};
 use common::data_types::{
     Algorithm, ExperimentChart, Job, JobConfig, JobResult, JobStatus, Report, TeeBenchWebError,
+    REPLACE_ALG,
 };
 use common::hardcoded::{hardcoded_perf_report_commands, hardcoded_perf_report_configs};
 
@@ -21,6 +22,20 @@ const BIN_FOLDER: &str = "bin";
 const REPLACE_FILE: &str = "Joins/TBW/OperatorJoin.cpp";
 
 type SwitchedInType = Arc<tokio::sync::Mutex<Option<Algorithm>>>;
+
+fn display_command_output(o: std::process::Output, cmd: String) -> String {
+    let mut res = String::new();
+    res.push_str(&format!("Command `{cmd}` "));
+    if o.status.success() {
+        res.push_str("succeeded with:\n");
+    } else {
+        let code = o.status.code();
+        res.push_str(&format!("failed (returned {code:?}) with:\n"));
+    }
+    res.push_str(&String::from_utf8(o.stdout).unwrap());
+    res.push_str(&String::from_utf8(o.stderr).unwrap());
+    res
+}
 
 async fn compile(
     alg: &Algorithm,
@@ -44,7 +59,11 @@ async fn compile(
         .output()
         .await
         .context("Failed to compile native TeeBench")?;
-    output.push_str(&format!("Compile Native: {:?}", cmd_out));
+    let compiler_args_native_joined = compile_args_native.join(" ");
+    output.push_str(&display_command_output(
+        cmd_out,
+        format!("make {compiler_args_native_joined}"),
+    ));
     let (mut app_path, mut bin_path) = (tee_bench_dir.clone(), tee_bench_dir.clone());
     bin_path.push(BIN_FOLDER);
     tokio::fs::create_dir_all(&bin_path)
@@ -56,13 +75,28 @@ async fn compile(
     tokio::fs::copy(&app_path, &bin_path)
         .await
         .context("Failed to copy native binary over!")?;
+    bin_path.pop();
+    let cmd_out = TokioCommand::new("./native")
+        .args(&["-a", REPLACE_ALG])
+        .current_dir(&bin_path)
+        .output()
+        .await
+        .with_context(|| format!("Failed to run native example of {alg}"))?;
+    output.push_str(&display_command_output(
+        cmd_out,
+        format!("./native -a {REPLACE_ALG}"),
+    ));
     let cmd_out = TokioCommand::new("make")
         .current_dir(tee_bench_dir)
         .args(compile_args_sgx)
         .output()
         .await
         .context("Failed to compile SGX TeeBench")?;
-    output.push_str(&format!("Compile SGX: {:?}", cmd_out));
+    let compile_args_sgx_joined = compile_args_sgx.join(" ");
+    output.push_str(&display_command_output(
+        cmd_out,
+        format!("make {compile_args_sgx_joined}"),
+    ));
     bin_path.pop();
     bin_path.push("sgx");
     info!("Copying from {app_path:?} to {bin_path:?}");
@@ -77,6 +111,17 @@ async fn compile(
     tokio::fs::copy(&app_path, &bin_path)
         .await
         .with_context(|| format!("Failed to copy {enclave_name} over!"))?;
+    bin_path.pop();
+    let cmd_out = TokioCommand::new("./sgx")
+        .args(&["-a", REPLACE_ALG])
+        .current_dir(&bin_path)
+        .output()
+        .await
+        .with_context(|| format!("Failed to run SGX example of {alg}"))?;
+    output.push_str(&display_command_output(
+        cmd_out,
+        format!("./sgx -a {REPLACE_ALG}"),
+    ));
     Ok(output)
 }
 
@@ -278,7 +323,8 @@ async fn work_on_queue(
             currently_switched_in.clone(),
         )
         .await;
-        info!("Process completed with {result:?}.");
+        let result_type = if result.is_ok() { "Sucess" } else { "Failure" };
+        info!("Process completed: {result_type}.");
         let finished_job = Job {
             status: JobStatus::Done {
                 runtime: Duration::new(5, 0), // TODO Get actual runtime from teebench output.

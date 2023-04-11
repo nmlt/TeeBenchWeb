@@ -20,7 +20,7 @@ pub fn Collapse(
     let class = classes!("btn", style);
     html! {
         <>
-            <button classes={class} type="button" data-bs-toggle="collapse" data-bs-target={format!("#{id}")} aria-expanded="false" aria-controls={id.clone()}>
+            <button class={class} type="button" data-bs-toggle="collapse" data-bs-target={format!("#{id}")} aria-expanded="false" aria-controls={id.clone()}>
             {label}
             </button>
             <div class="collapse" id={id.clone()}>

@@ -88,6 +88,15 @@ pub enum JobResult {
     Compile(Result<String, String>),
 }
 
+impl JobResult {
+    pub fn is_ok(&self) -> bool {
+        match self {
+            Self::Exp(r) => r.is_ok(),
+            Self::Compile(r) => r.is_ok(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub enum JobStatus {
     #[default]
