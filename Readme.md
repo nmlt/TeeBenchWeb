@@ -21,6 +21,8 @@ If you do not set this environment variable, TeeBenchWeb will use a fake version
 export TEEBENCHWEB_RUN_DIR="<path to TeeBench>"; ./run.sh
 ```
 
+==FIRST RUN==: On the first run, first upload an operator (that compiles successfully) to compile TeeBench. Otherwise Profiling will crash the application. Afterwards, even after restarting TBW, the `bin` directory should already exist and always be filled with functioning executables.
+
 Or, first build the web app while in the `frontend` directory with `trunk build`. Then change to the `backend` directory and run the axum server: `cargo run` (This part needs the environment variable `TEEBENCHWEB_RUN_DIR` set to the directory of TeeBench, as explained above).
 
 Running the axum server from the workspace does not work, as the path to the `dist` directory that trunk created is then wrong. Just switch to the `backend` directory or use the `run.sh` script.

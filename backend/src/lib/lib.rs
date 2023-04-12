@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use std::collections::VecDeque;
 use std::collections::{HashMap, HashSet};
 use std::env::var;
@@ -23,7 +23,7 @@ const REPLACE_FILE: &str = "Joins/TBW/OperatorJoin.cpp";
 
 type SwitchedInType = Arc<tokio::sync::Mutex<Option<Algorithm>>>;
 
-fn display_command_output(o: std::process::Output, cmd: String) -> String {
+fn display_command_output(o: &std::process::Output, cmd: String) -> String {
     let mut res = String::new();
     res.push_str(&format!("Command `{cmd}` "));
     if o.status.success() {
@@ -32,11 +32,18 @@ fn display_command_output(o: std::process::Output, cmd: String) -> String {
         let code = o.status.code();
         res.push_str(&format!("failed (returned {code:?}) with:\n"));
     }
-    res.push_str(&String::from_utf8(o.stdout).unwrap());
-    res.push_str(&String::from_utf8(o.stderr).unwrap());
+    res.push_str("---STDOUT---\n");
+    res.push_str(&String::from_utf8(o.stdout.clone()).unwrap());
+    res.push_str("---STDERR---\n");
+    res.push_str(&String::from_utf8(o.stderr.clone()).unwrap());
+    res.push_str("---END---\n");
     res
 }
 
+// TODO Rewrite with a better Command library, eg. duct (if that works for async?). Problems:
+// - Commands that return nonzero exit status don't return an Err. The returned result is whether it could even start the command. Makes my code more complicated.
+// - Nicer way to get the actual string representing the command for logging.
+// - Nicer way to get the interleaved output of stdin and stderr (not the function `display_command_output`!). Might be a problem when compiling SGX: CXX <= File is printed to stdout, compiler errors to stderr.
 async fn compile(
     alg: &Algorithm,
     tee_bench_dir: &PathBuf,
@@ -51,19 +58,23 @@ async fn compile(
         .with_context(|| format!("Failed to write new operator to {REPLACE_FILE}"))?;
     let compile_args_sgx = ["-B", "sgx"];
     let compile_args_native = ["native", "CFLAGS=-DNATIVE_COMPILATION"];
+    let compile_args_native_joined = compile_args_native.join(" ");
+    let compile_args_sgx_joined = compile_args_sgx.join(" ");
     let enclave_name = "enclave.signed.so";
     //TokioCommand::new("make").current_dir(tee_bench_dir.clone()).args(["clean"]).status().await.expect("Failed to run make clean");
-    let cmd_out = TokioCommand::new("make")
+    let make_out = TokioCommand::new("make")
         .current_dir(tee_bench_dir)
         .args(compile_args_native)
         .output()
         .await
-        .context("Failed to compile native TeeBench")?;
-    let compiler_args_native_joined = compile_args_native.join(" ");
+        .with_context(|| format!("Failed to run `make {compile_args_native_joined}`"))?;
     output.push_str(&display_command_output(
-        cmd_out,
-        format!("make {compiler_args_native_joined}"),
+        &make_out,
+        format!("make {compile_args_native_joined}"),
     ));
+    if !make_out.status.success() {
+        bail!("Failed to compile native version:\n{output}");
+    }
     let (mut app_path, mut bin_path) = (tee_bench_dir.clone(), tee_bench_dir.clone());
     bin_path.push(BIN_FOLDER);
     tokio::fs::create_dir_all(&bin_path)
@@ -77,27 +88,31 @@ async fn compile(
         .context("Failed to copy native binary over!")?;
     bin_path.pop();
     let cmd_out = TokioCommand::new("./native")
-        .args(&["-a", REPLACE_ALG])
+        .args(&["-a", REPLACE_ALG]) // TODO Check this and sgx version for output in csv. That's what has to work!
         .current_dir(&bin_path)
         .output()
         .await
-        .with_context(|| format!("Failed to run native example of {alg}"))?;
+        .with_context(|| format!("Failed to run `./native -a {REPLACE_ALG}`"))?;
     output.push_str(&display_command_output(
-        cmd_out,
+        &cmd_out,
         format!("./native -a {REPLACE_ALG}"),
     ));
+    if !cmd_out.status.success() {
+        bail!("Running native example failed with:\n{output}");
+    }
     let cmd_out = TokioCommand::new("make")
         .current_dir(tee_bench_dir)
         .args(compile_args_sgx)
         .output()
         .await
-        .context("Failed to compile SGX TeeBench")?;
-    let compile_args_sgx_joined = compile_args_sgx.join(" ");
+        .with_context(|| format!("Failed to run `make {compile_args_sgx_joined}`"))?;
     output.push_str(&display_command_output(
-        cmd_out,
+        &cmd_out,
         format!("make {compile_args_sgx_joined}"),
     ));
-    bin_path.pop();
+    if !cmd_out.status.success() {
+        bail!("Failed to compile SGX version:\n{output}");
+    }
     bin_path.push("sgx");
     info!("Copying from {app_path:?} to {bin_path:?}");
     tokio::fs::copy(&app_path, &bin_path)
@@ -117,11 +132,14 @@ async fn compile(
         .current_dir(&bin_path)
         .output()
         .await
-        .with_context(|| format!("Failed to run SGX example of {alg}"))?;
+        .with_context(|| format!("Failed to run ./sgx -a {REPLACE_ALG}"))?;
     output.push_str(&display_command_output(
-        cmd_out,
+        &cmd_out,
         format!("./sgx -a {REPLACE_ALG}"),
     ));
+    if !cmd_out.status.success() {
+        bail!("Running SGX example failed with:\n{output}");
+    }
     Ok(output)
 }
 
@@ -155,8 +173,8 @@ async fn run_experiment(
                 {
                     info!("Compiling: {cmd:?}, switched in : {switched_in:?}");
                     if let Err(e) = compile(&cmd.algorithm, &tee_bench_dir, code_hashmap).await {
-                        error!("Error while switching in code and compiling commit for experiment:\n{e}");
-                        return JobResult::Exp(Err(TeeBenchWebError::Compile(e.to_string())));
+                        error!("Error while switching in code and compiling commit for experiment:\n{e:#}");
+                        return JobResult::Exp(Err(TeeBenchWebError::Compile(format!("{e:#}"))));
                     }
                     switched_in.replace(cmd.algorithm);
                 }
@@ -323,7 +341,11 @@ async fn work_on_queue(
             currently_switched_in.clone(),
         )
         .await;
-        let result_type = if result.is_ok() { "Sucess" } else { "Failure" };
+        let result_type = if result.is_ok() {
+            "Sucess".to_string()
+        } else {
+            format!("Failure: {result:?}")
+        };
         info!("Process completed: {result_type}.");
         let finished_job = Job {
             status: JobStatus::Done {
