@@ -151,7 +151,7 @@ async fn run_experiment(
     currently_switched_in: SwitchedInType,
 ) -> JobResult {
     let mut all_tasks = vec![];
-    for (chart_cmds, conf) in cmds.iter().zip(configs) {
+    'outer: for (chart_cmds, conf) in cmds.iter().zip(configs) {
         let mut cmd_tasks: HashMap<common::data_types::TeebenchArgs, Result<Vec<u8>, ()>> =
             HashMap::new();
         for cmd in chart_cmds {
@@ -189,7 +189,7 @@ async fn run_experiment(
                 if !output.status.success() {
                     error!("Command failed with {output:#?}");
                     cmd_tasks.insert(args_key, Err(()));
-                    break;
+                    break 'outer;
                 } else {
                     cmd_tasks.insert(args_key, Ok(output.stdout));
                 }
