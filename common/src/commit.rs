@@ -28,7 +28,7 @@ pub enum CompilationStatus {
 
 pub type CommitIdType = usize;
 
-/// A commit xresents an algorithm/operator and its performance report.
+/// A commit represents an algorithm/operator and its performance report.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Commit {
     /// What the user entered as the commit message.

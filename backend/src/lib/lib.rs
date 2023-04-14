@@ -152,7 +152,7 @@ async fn run_experiment(
 ) -> JobResult {
     let mut all_tasks = vec![];
     'outer: for (chart_cmds, conf) in cmds.iter().zip(configs) {
-        let mut cmd_tasks: HashMap<common::data_types::TeebenchArgs, Result<Vec<u8>, ()>> =
+        let mut cmd_tasks: HashMap<common::data_types::TeebenchArgs, Result<Vec<u8>, _>> =
             HashMap::new();
         for cmd in chart_cmds {
             let mut tee_bench_dir = tee_bench_dir.clone();
@@ -180,7 +180,8 @@ async fn run_experiment(
                 }
                 tee_bench_dir.push(BIN_FOLDER);
                 let args_key = cmd.to_teebench_args();
-                info!("Running `{}`", cmd);
+                let cmd_string = format!("{cmd}");
+                info!("Running `{cmd_string}`");
                 let output = to_command(cmd)
                     .current_dir(tee_bench_dir)
                     .output()
@@ -188,7 +189,12 @@ async fn run_experiment(
                     .expect("Failed to run TeeBench");
                 if !output.status.success() {
                     error!("Command failed with {output:#?}");
-                    cmd_tasks.insert(args_key, Err(()));
+                    cmd_tasks.insert(
+                        args_key,
+                        Err(TeeBenchWebError::TeeBenchCrash(format!(
+                            "Command `{cmd_string}` failed with:\n{output:#?}"
+                        ))),
+                    );
                     break 'outer;
                 } else {
                     cmd_tasks.insert(args_key, Ok(output.stdout));
@@ -204,8 +210,9 @@ async fn run_experiment(
     for (conf, tasks) in all_tasks {
         let mut experiment_chart = ExperimentChart::new(conf, vec![], vec![]);
         for (args, task) in tasks {
-            let Ok(res) = task else {
-                return JobResult::Exp(Err(TeeBenchWebError::default()));
+            let res = match task {
+                Ok(res) => res,
+                Err(e) => return JobResult::Exp(Err(e)),
             };
             let human_readable = String::from_utf8(res.clone()).unwrap();
             info!("Task output:\n```\n{human_readable}\n```");
@@ -214,7 +221,7 @@ async fn run_experiment(
             // iter.next(); // First line is skipped anyway because a header is expected.
             let exp_result: HashMap<String, String> = match iter.next() {
                 Some(csv_parse_result) => csv_parse_result.expect("Error processing CSV!"),
-                None => return JobResult::Exp(Err(TeeBenchWebError::NoOutputData)),
+                None => return JobResult::Exp(Err(TeeBenchWebError::TeeBenchNoOutputData)),
             };
             experiment_chart.results.push((args, exp_result));
         }

@@ -73,19 +73,6 @@ pub fn PerfReport(PerfReportProps { commit: current }: &PerfReportProps) -> Html
             .charts
             .iter()
             .map(|exp_chart| {
-                // let r = match r {
-                //     JobResult::Exp(Ok(r)) => r,
-                //     JobResult::Exp(Err(_)) => {
-                //         return html! {
-                //             "Error while running experiment!"
-                //         }
-                //     }
-                //     JobResult::Compile(_) => {
-                //         return html! {
-                //             "Cannot show compile jobs as chart!"
-                //         }
-                //     }
-                // };
                 let exp_chart = exp_chart.clone();
                 let chart = html! {
                     <Chart exp_chart={exp_chart.clone()} />
@@ -95,9 +82,26 @@ pub fn PerfReport(PerfReportProps { commit: current }: &PerfReportProps) -> Html
                 }
             })
             .collect::<Vec<_>>();
+    } else if let Some(JobResult::Exp(Err(ref e))) = commit.reports {
+        findings = vec![];
+        charts = vec![html! {
+            <div class="alert alert-danger mx-2" role="alert">
+                <p>{"There was an error generating the performance report."}</p>
+                <p>{format!("Error:\n{e}")}</p>
+            </div>
+        }];
     } else {
         findings = vec![];
-        charts = vec![];
+        let msg = if commit.perf_report_running {
+            "Waiting for performance report generation..."
+        } else {
+            "To start generating a performance report switch to the Operator tab."
+        };
+        charts = vec![html! {
+            <div class="alert alert-info mx-2" role="alert">
+                <p>{msg}</p>
+            </div>
+        }];
     }
     html! {
         <div class="container-fluid">

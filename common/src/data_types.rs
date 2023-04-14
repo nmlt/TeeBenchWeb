@@ -21,7 +21,9 @@ pub enum TeeBenchWebError {
     #[error("Could not retrieve results!")]
     NoResults,
     #[error("TeeBench did not produce any output!")]
-    NoOutputData,
+    TeeBenchNoOutputData,
+    #[error("TeeBench crashed with: {0}")]
+    TeeBenchCrash(String),
     #[error("Unknown error!")]
     #[default]
     Unknown,
