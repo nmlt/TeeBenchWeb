@@ -245,7 +245,13 @@ async fn runner(
     // TODO Move to JobConfig method.
     let algs = match conf {
         JobConfig::Profiling(ref c) => c.algorithm.clone(),
-        JobConfig::PerfReport(ref c) => HashSet::from([Algorithm::Commit(c.id)]),
+        JobConfig::PerfReport(ref c) => {
+            if let Algorithm::Commit(_) = c.baseline {
+                HashSet::from([c.baseline, Algorithm::Commit(c.id)])
+            } else {
+                HashSet::from([Algorithm::Commit(c.id)])
+            }
+        }
         JobConfig::Compile(id) => HashSet::from([Algorithm::Commit(id)]),
     };
     let code_hashmap = {
