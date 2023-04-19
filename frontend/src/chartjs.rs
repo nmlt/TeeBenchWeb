@@ -76,15 +76,11 @@ pub fn predefined_throughput_exp(
         "title": {
             "display": true,
             "text": d,
-            "font": {
-                "size":60
-            }
         }
     });
     let scales = json!({
-        "x": {"ticks": {"font": {"size": 40}}},
-        "y": {"ticks": {"font": {"size": 40}},
-        "text": "Throughput [M rec/s]",
+        "y": {
+            "text": "Throughput [M rec/s]",
         }
     });
     (chart_type, labels, datasets, plugins, scales)
@@ -131,24 +127,11 @@ pub fn predefined_scalability_exp(
         "title": {
             "display": true,
             "text": title,
-            "font": {
-                "size": 60
-            }
         }
     });
     let scales = json!({
-        "x": {
-            "ticks": {
-                "font": {
-                    "size": 40
-                }
-            }
-        },
         "y": {
             "ticks": {
-                "font": {
-                    "size": 40
-                },
                 "min": 0
             },
             "text": "Throughput [M rec/s]",
@@ -249,24 +232,11 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                             "title": {
                                 "display": true,
                                 "text": heading,
-                                "font": {
-                                    "size": 60
-                                }
                             }
                         });
                         scales = json!({
-                            "x": {
-                                "ticks": {
-                                    "font": {
-                                        "size": 40
-                                    }
-                                }
-                            },
                             "y": {
                                 "ticks": {
-                                    "font": {
-                                        "size": 40
-                                    },
                                     "min": 0
                                 },
                                 "text": y_axis_text,
@@ -311,18 +281,13 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                             "title": {
                                 "display": true,
                                 "text": "EPC Paging v2.1",
-                                "font": {"size":40}
                             }
                         });
                         scales = json!({
                             "x": {
-                                "ticks": {"font": {"size":20}},
                                 "title" : {
                                     "display": true,
                                     "text": "Size of R [MB]",
-                                    "font": {
-                                        "size": 25
-                                    }
                                 }
                             },
                             "y": {
@@ -330,20 +295,15 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                 "type": "linear",
                                 "display": true,
                                 "position": "left",
-                                "ticks": {"font": {"size": 20}},
                                 "title" : {
                                     "display": true,
                                     "text": "Throughput [M rec/s]",
-                                    "font": {
-                                        "size": 25
-                                    }
                                 }
                             },
                             "y1": {
                                 "type": "linear",
                                 "display": true,
                                 "position": "right",
-                                "ticks": {"font": {"size": 20}},
                                 // grid line settings
                                 "grid": {
                                     "drawOnChartArea": false, // only want the grid lines for one axis to show up
@@ -351,9 +311,6 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                 "title" : {
                                     "display": true,
                                     "text": "EPC Misses",
-                                    "font": {
-                                        "size": 25
-                                    }
                                 }
                             }
                         });
@@ -379,15 +336,11 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                             "title": {
                                 "display": true,
                                 "text": "Throughput cache-fit",
-                                "font": {
-                                    "size":60
-                                }
                             }
                         });
                         scales = json!({
-                            "x": {"ticks": {"font": {"size": 40}}},
-                            "y": {"ticks": {"font": {"size": 40}},
-                            "text": "Throughput [M rec/s]",
+                            "y": {
+                                "text": "Throughput [M rec/s]",
                             }
                         });
                     }
