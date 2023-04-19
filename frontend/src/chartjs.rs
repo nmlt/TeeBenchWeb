@@ -41,10 +41,8 @@ pub struct ChartState(MyChart, bool);
 
 /// Returns: chart_type, labels: Json: Vec<&str>, datasets: Json<Vec<Obj<>>>, plugins: Json<Vec<Obj<>>>, scales: Json<Vec<Obj<>>>, options: Json<Vec<Obj<>>>
 pub fn predefined_throughput_exp(
-    alg_a: String,
-    alg_b: String,
-    data_a: Vec<f64>,
-    data_b: Vec<f64>,
+    alg_titles: Vec<String>,
+    alg_data: Vec<Vec<f64>>,
     d: Dataset,
 ) -> (
     &'static str,
@@ -55,19 +53,15 @@ pub fn predefined_throughput_exp(
 ) {
     let chart_type = "bar";
     let labels = json!(["native", "sgx"]);
-    let datasets = json!([
-        {
-            "label": alg_a,
-            "backgroundColor": "#de3d82",
-            "data": data_a
-        },
-        {
-            "label": alg_b,
-            "backgroundColor": "#72e06a",
-            "data": data_b
-
-        }
-    ]);
+    let mut dataset_prep = vec![];
+    for ((title, data), color) in alg_titles.iter().zip(alg_data).zip(COLORS) {
+        dataset_prep.push(json!({
+            "label": title,
+            "backgroundColor": color,
+            "data": data,
+        }));
+    }
+    let datasets = json!(dataset_prep);
     let d = match d {
         Dataset::CacheFit => "Throughput Cache Fit",
         Dataset::CacheExceed => "Throughput Cache Exceed",
@@ -87,10 +81,8 @@ pub fn predefined_throughput_exp(
 }
 
 pub fn predefined_scalability_exp(
-    alg_a: String,
-    alg_b: String,
-    data_a: Vec<f64>,
-    data_b: Vec<f64>,
+    alg_titles: Vec<String>,
+    alg_data: Vec<Vec<f64>>,
     d: Dataset,
 ) -> (
     &'static str,
@@ -101,24 +93,18 @@ pub fn predefined_scalability_exp(
 ) {
     let chart_type = "line";
     let labels = json!([1, 2, 3, 4, 5, 6, 7, 8]);
-    let datasets = json!([
-        {
-            "label": alg_a,
-            "data": data_a,
-            "backgroundColor": "#de3d82",
-            "borderColor": "#de3d82",
+    let mut dataset_prep = vec![];
+    for ((title, data), color) in alg_titles.iter().zip(alg_data).zip(COLORS) {
+        dataset_prep.push(json!({
+            "label": title,
+            "data": data,
+            "backgroundColor": color,
+            "borderColor": color,
             "yAxisID": "y",
             "borderWidth":5
-        },
-        {
-            "label": alg_b,
-            "data": data_b,
-            "backgroundColor": "#72e06a",
-            "borderColor": "#72e06a",
-            "yAxisID": "y",
-            "borderWidth":5
-        }
-    ]);
+        }))
+    }
+    let datasets = json!(dataset_prep);
     let title = match d {
         Dataset::CacheFit => "Scalability Cache Fit",
         Dataset::CacheExceed => "Scalability Cache Exceed",
@@ -349,24 +335,29 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                     }
                 },
                 JobConfig::PerfReport(pr_conf) => {
-                    let alg_a = commit_store
-                        .get_id(&pr_conf.id)
-                        .expect("Performance Report Config has a nonexistent commit id!")
-                        .title
-                        .clone();
-                    let alg_b;
-                    if let common::data_types::Algorithm::Commit(ref id) = pr_conf.baseline {
-                        alg_b = commit_store
-                            .get_id(id)
+                    let mut alg_titles = vec![];
+                    alg_titles.push(
+                        commit_store
+                            .get_id(&pr_conf.id)
                             .expect("Performance Report Config has a nonexistent commit id!")
                             .title
-                            .clone();
+                            .clone(),
+                    );
+                    if let common::data_types::Algorithm::Commit(ref id) = pr_conf.baseline {
+                        alg_titles.push(
+                            commit_store
+                                .get_id(id)
+                                .expect("Performance Report Config has a nonexistent commit id!")
+                                .title
+                                .clone(),
+                        );
                     } else {
-                        alg_b = pr_conf.baseline.to_string();
+                        alg_titles.push(pr_conf.baseline.to_string());
                     }
                     match pr_conf.exp_type {
                         ExperimentType::Throughput => {
-                            let data_a = {
+                            let mut alg_data = vec![];
+                            alg_data.push({
                                 let native = exp_chart
                                     .results
                                     .iter()
@@ -398,8 +389,8 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                     .parse()
                                     .unwrap();
                                 vec![native, sgx]
-                            };
-                            let data_b = {
+                            });
+                            alg_data.push({
                                 let native = exp_chart
                                     .results
                                     .iter()
@@ -431,18 +422,13 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                     .parse()
                                     .unwrap();
                                 vec![native, sgx]
-                            };
+                            });
                             (chart_type, labels, datasets, plugins, scales) =
-                                predefined_throughput_exp(
-                                    alg_a,
-                                    alg_b,
-                                    data_a,
-                                    data_b,
-                                    pr_conf.dataset,
-                                );
+                                predefined_throughput_exp(alg_titles, alg_data, pr_conf.dataset);
                         }
                         ExperimentType::Scalability => {
-                            let data_a = {
+                            let mut alg_data = vec![];
+                            alg_data.push({
                                 let mut res = vec![];
                                 for threads in 1..=8 {
                                     res.push(
@@ -464,8 +450,8 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                     );
                                 }
                                 res
-                            };
-                            let data_b = {
+                            });
+                            alg_data.push({
                                 let mut res = vec![];
                                 for threads in 1..=8 {
                                     res.push(
@@ -487,15 +473,9 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                     );
                                 }
                                 res
-                            };
+                            });
                             (chart_type, labels, datasets, plugins, scales) =
-                                predefined_scalability_exp(
-                                    alg_a,
-                                    alg_b,
-                                    data_a,
-                                    data_b,
-                                    pr_conf.dataset,
-                                );
+                                predefined_scalability_exp(alg_titles, alg_data, pr_conf.dataset);
                         }
                         ExperimentType::EpcPaging => {
                             todo!();
