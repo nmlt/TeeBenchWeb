@@ -29,11 +29,13 @@ pub enum TeeBenchWebError {
     Unknown,
 }
 
+pub type ExperimentChartResult = Vec<(TeebenchArgs, HashMap<String, String>)>;
+
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 // To make ProfilingConfiguration an enum depending on ExperimentType is a bad idea maybe, because then we'd have to match in every dispatch callback modifying the config. So instead we now use the JobConfig enum to accertain which kind of job created this report.
 pub struct ExperimentChart {
     pub config: JobConfig,
-    pub results: Vec<(TeebenchArgs, HashMap<String, String>)>,
+    pub results: ExperimentChartResult,
     pub findings: Vec<Finding>,
 }
 

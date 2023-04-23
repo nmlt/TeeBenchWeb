@@ -1,6 +1,6 @@
 use common::data_types::{
-    Algorithm, Dataset, ExperimentChart, ExperimentType, JobConfig, Measurement, Parameter,
-    Platform, TeebenchArgs,
+    Algorithm, Dataset, ExperimentChart, ExperimentChartResult, ExperimentType, JobConfig,
+    Measurement, Parameter, Platform, TeebenchArgs,
 };
 // use gloo_console::log;
 use common::commit::CommitState;
@@ -38,6 +38,23 @@ const COLORS: [&str; 15] = [
 
 #[derive(Clone, PartialEq, Default, Store)]
 pub struct ChartState(MyChart, bool);
+
+fn create_data_hashmap(
+    results: &ExperimentChartResult,
+    measurement: Measurement,
+) -> HashMap<(Algorithm, Platform, Dataset), Vec<String>> {
+    let mut data = HashMap::new();
+    for (args, result) in results {
+        let v = data
+            .entry((args.algorithm, args.app_name, args.dataset))
+            .or_insert(vec![]);
+        v.push(match measurement {
+            Measurement::EpcPaging => result["throughput"].clone(), // TODO Add EPC Paging.
+            Measurement::Throughput => result["throughput"].clone(),
+        });
+    }
+    data
+}
 
 /// Returns: chart_type, labels: Json: Vec<&str>, datasets: Json<Vec<Obj<>>>, plugins: Json<Vec<Obj<>>>, scales: Json<Vec<Obj<>>>, options: Json<Vec<Obj<>>>
 pub fn predefined_throughput_exp(
@@ -186,24 +203,17 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                         }
                         let steps: Vec<_> = conf.param_value_iter();
                         labels = json!(steps);
-                        let mut data = HashMap::new();
-                        exp_chart
+                        exp_chart // TODO Can this be moved to the top level of the function (do we need to do this always)?
                             .results
                             .sort_unstable_by(|(a, _), (b, _)| a.cmp(b));
-                        for (args, result) in exp_chart.results {
-                            let v = data
-                                .entry((args.algorithm, args.app_name, args.dataset))
-                                .or_insert(vec![]);
-                            v.push(match conf.measurement {
-                                Measurement::EpcPaging => result["throughput"].clone(), // TODO Add EPC Paging.
-                                Measurement::Throughput => result["throughput"].clone(),
-                            });
-                        }
+
+                        let data = create_data_hashmap(&exp_chart.results, conf.measurement);
                         let mut datasets_prep = vec![];
 
                         for (((alg, platform, _dataset), data_value), color) in
                             data.iter().zip(COLORS.iter().cycle())
                         {
+                            let alg = commit_store.get_title_by_algorithm(alg).unwrap();
                             datasets_prep.push(json!({
                                 "label": format!("{alg} on {platform}"),
                                 "data": data_value,
@@ -302,33 +312,25 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                         });
                     }
                     ExperimentType::Throughput => {
-                        // TODO Replace with the funciton call predefined_throughput_exp
-                        chart_type = "bar";
-                        labels = json!(["native", "sgx"]);
-                        datasets = json!([
-                            {
-                                "label": "v2.1",
-                                "backgroundColor": "#de3d82",
-                                "data": [164.11,33.51]
-                            },
-                            {
-                                "label": "v2.2",
-                                "backgroundColor": "#72e06a",
-                                "data": [180.11,39.51]
-
-                            }
-                        ]);
-                        plugins = json!({
-                            "title": {
-                                "display": true,
-                                "text": "Throughput cache-fit",
-                            }
-                        });
-                        scales = json!({
-                            "y": {
-                                "text": "Throughput [M rec/s]",
-                            }
-                        });
+                        // TODO TODO Do I have to do it the same way here as in Custom? Because I don't seem to need to do it that way in the PerfReport part. check that!
+                        let data = create_data_hashmap(&exp_chart.results, conf.measurement);
+                        let mut alg_titles = vec![];
+                        let mut alg_data = vec![];
+                        for ((alg, _platform, _dataset), value) in data {
+                            alg_titles.push(commit_store.get_title_by_algorithm(&alg).unwrap());
+                            alg_data.push(
+                                value
+                                    .iter()
+                                    .map(|v| str::parse::<f64>(v))
+                                    .collect::<Result<Vec<_>, _>>()
+                                    .unwrap(),
+                            );
+                        }
+                        (chart_type, labels, datasets, plugins, scales) = predefined_throughput_exp(
+                            alg_titles,
+                            alg_data,
+                            *conf.dataset.iter().next().unwrap(), // As this conf belongs to a `ExperimentChart` it can only have one dataset
+                        );
                     }
                     ExperimentType::Scalability => {
                         todo!();

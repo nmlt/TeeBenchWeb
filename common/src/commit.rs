@@ -83,17 +83,31 @@ impl CommitState {
     pub fn new(commits: Vec<Commit>) -> Self {
         Self(commits)
     }
+    // TODO Rename all of these get_ function to get_by_
     pub fn get_id(&self, id: &CommitIdType) -> Option<&Commit> {
         self.0.iter().find(|c| &c.id == id)
     }
     pub fn get_id_mut(&mut self, id: &CommitIdType) -> Option<&mut Commit> {
         self.0.iter_mut().find(|c| &c.id == id)
     }
-    pub fn get_title(&self, title: &str) -> Vec<&Commit> {
+    pub fn get_by_title(&self, title: &str) -> Vec<&Commit> {
         self.0.iter().filter(|c| c.title == title).collect()
     }
     pub fn get_latest(&self) -> Option<&Commit> {
         self.0.iter().max_by(|a, b| a.id.cmp(&b.id))
+    }
+    pub fn get_title(&self, id: &CommitIdType) -> Option<&str> {
+        self.0
+            .iter()
+            .find(|c| &c.id == id)
+            .map(|c| c.title.as_str())
+    }
+    pub fn get_title_by_algorithm(&self, alg: &Algorithm) -> Option<String> {
+        if let Algorithm::Commit(id) = alg {
+            self.get_title(id).map(|a| a.to_string())
+        } else {
+            Some(alg.to_string())
+        }
     }
     pub fn push_commit(&mut self, c: Commit) {
         self.0.push(c);
