@@ -646,6 +646,40 @@ impl ProfilingConfiguration {
     /// - If multiple Datasets were selected, each dataset goes to a separate chart.
     /// -
     pub fn to_teebench_cmd(&self) -> Vec<Vec<Commandline>> {
+        match self.experiment_type {
+            ExperimentType::EpcPaging => panic!(),
+            ExperimentType::Throughput => {
+                let mut res = vec![];
+                for ds in &self.dataset {
+                    let mut sub_exp = vec![];
+                    for alg in &self.algorithm {
+                        sub_exp.append(&mut crate::hardcoded::hardcoded_throughput_commands(
+                            *alg,
+                            &alg.to_cmd_arg(),
+                            &ds.to_cmd_arg(),
+                        ))
+                    }
+                    res.push(sub_exp);
+                }
+                return res;
+            }
+            ExperimentType::Scalability => {
+                let mut res = vec![];
+                for ds in &self.dataset {
+                    let mut sub_exp = vec![];
+                    for alg in &self.algorithm {
+                        sub_exp.append(&mut crate::hardcoded::hardcoded_scalability_commands(
+                            *alg,
+                            &alg.to_cmd_arg(),
+                            &ds.to_cmd_arg(),
+                        ))
+                    }
+                    res.push(sub_exp);
+                }
+                return res;
+            }
+            ExperimentType::Custom => (), // Everything following only applies to this case.
+        }
         let mut res = vec![];
         for platform in &self.platform {
             for alg in &self.algorithm {

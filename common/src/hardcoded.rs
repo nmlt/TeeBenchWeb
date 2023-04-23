@@ -4,26 +4,7 @@ use crate::{
     data_types::{Algorithm, JobConfig, PerfReportConfig, Platform, REPLACE_ALG},
 };
 
-/// Get the data out of the results vector of the `ExperimentChart`, depending on which experiment it is.
-///
-/// A function here, to be easily changed if we change the order of the experiments in `hardcoded_perf_report_commands`.
-// pub fn get_data_perf_report(baseline: bool, exp_type: ExperimentType, dataset: Dataset) -> Vec<f64> {
-//     match exp_type {
-//         ExperimentType::Throughput => {
-//             match dataset {
-//                 Dataset::CacheFit => {
-//                     if baseline {
-
-//                     }
-//                 }
-//             }
-//         }
-//         ExperimentType::Custom => {}
-//         ExperimentType::EpcPaging => {}
-//         ExperimentType::Scalability => {}
-//     }
-// }
-
+// TODO Hardcoded Vecs could become arrays.
 pub fn hardcoded_perf_report_configs(id: CommitIdType, baseline: Algorithm) -> Vec<JobConfig> {
     let (throughput_fit, throughput_exceed) = PerfReportConfig::for_throughput(id, baseline);
     let (scalability_fit, scalability_exceed) = PerfReportConfig::for_scalability(id, baseline);
@@ -33,6 +14,30 @@ pub fn hardcoded_perf_report_configs(id: CommitIdType, baseline: Algorithm) -> V
         JobConfig::PerfReport(scalability_fit),
         JobConfig::PerfReport(scalability_exceed),
     ]
+}
+
+pub fn hardcoded_throughput_commands(alg: Algorithm, alg_cmd_string: &str, dataset_cmd_string: &str) -> Vec<Commandline> {
+    #[rustfmt::skip]
+    let v = vec![
+        Commandline::with_args(Platform::Sgx   ,alg,&vec!["-a",alg_cmd_string,"-d",dataset_cmd_string,"-n","2","--csv"]),
+        Commandline::with_args(Platform::Native,alg,&vec!["-a",alg_cmd_string,"-d",dataset_cmd_string,"-n","2","--csv"]),
+    ];
+    v
+}
+
+pub fn hardcoded_scalability_commands(alg: Algorithm, alg_cmd_string: &str, dataset_cmd_string: &str) -> Vec<Commandline> {
+    #[rustfmt::skip]
+    let v = vec![
+        Commandline::with_args(Platform::Sgx,alg,&vec!["-a",alg_cmd_string,"-d",dataset_cmd_string,"-n","1","--csv"]),
+        Commandline::with_args(Platform::Sgx,alg,&vec!["-a",alg_cmd_string,"-d",dataset_cmd_string,"-n","2","--csv"]),
+        Commandline::with_args(Platform::Sgx,alg,&vec!["-a",alg_cmd_string,"-d",dataset_cmd_string,"-n","3","--csv"]),
+        Commandline::with_args(Platform::Sgx,alg,&vec!["-a",alg_cmd_string,"-d",dataset_cmd_string,"-n","4","--csv"]),
+        Commandline::with_args(Platform::Sgx,alg,&vec!["-a",alg_cmd_string,"-d",dataset_cmd_string,"-n","5","--csv"]),
+        Commandline::with_args(Platform::Sgx,alg,&vec!["-a",alg_cmd_string,"-d",dataset_cmd_string,"-n","6","--csv"]),
+        Commandline::with_args(Platform::Sgx,alg,&vec!["-a",alg_cmd_string,"-d",dataset_cmd_string,"-n","7","--csv"]),
+        Commandline::with_args(Platform::Sgx,alg,&vec!["-a",alg_cmd_string,"-d",dataset_cmd_string,"-n","8","--csv"]),
+    ];
+    v
 }
 
 pub fn hardcoded_perf_report_commands(

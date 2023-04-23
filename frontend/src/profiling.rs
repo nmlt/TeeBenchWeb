@@ -235,10 +235,11 @@ pub fn profiling() -> Html {
             })
         })
     };
-    let (store, dispatch) = use_store::<ProfilingConfiguration>();
-    dispatch.reduce_mut(|s| {
-        s.set_preconfigured_experiment();
-    });
+    let (store, _dispatch) = use_store::<ProfilingConfiguration>();
+    // dispatch.reduce_mut(|s| {
+    //     // Instead of changing the form, I think it's better to keep the previous Custom settings (would be even better if that also applied to algorithms)
+    //     s.set_preconfigured_experiment();
+    // });
     let disable_controls = store.experiment_type != ExperimentType::Custom;
     html! {
         <div class="container-fluid">
