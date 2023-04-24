@@ -266,6 +266,7 @@ async fn runner(
                 .iter()
                 .map(|ds| {
                     let mut clone = c.clone();
+                    clone.set_preconfigured_experiment();
                     clone.dataset = HashSet::from([*ds]);
                     JobConfig::Profiling(clone)
                 })

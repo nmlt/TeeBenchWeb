@@ -740,28 +740,33 @@ impl ProfilingConfiguration {
     pub fn set_preconfigured_experiment(&mut self) {
         match self.experiment_type {
             ExperimentType::Throughput => {
-                // self.parameter = Parameter::Threads;
+                self.parameter = Parameter::Threads;
                 self.measurement = Measurement::Throughput;
-                // self.min = 2;
-                // self.max = 2;
-                // self.step = 1;
-                // self.dataset = HashSet::from([Dataset::CacheExceed, Dataset::CacheFit]);
-                // self.platform = HashSet::from([Platform::Sgx]);
-                // self.sort_data = false;
+                self.min = "2".to_string();
+                self.max = "2".to_string();
+                self.step = "1".to_string();
+                self.dataset = HashSet::from([Dataset::CacheExceed, Dataset::CacheFit]);
+                self.platform = HashSet::from([Platform::Sgx, Platform::Native]);
+                self.sort_data = false;
             }
             ExperimentType::EpcPaging => {
                 self.measurement = Measurement::EpcPaging;
-                // self.platform = HashSet::from([Platform::Sgx]);
-                // self.sort_data = false;
+                self.min = "2".to_string();
+                self.max = "2".to_string();
+                self.step = "1".to_string();
+                self.dataset = HashSet::from([Dataset::CacheExceed]); // TODO Actually the dataset size should slowly increase.
+                self.platform = HashSet::from([Platform::Sgx]);
+                self.sort_data = false;
             }
             ExperimentType::Scalability => {
                 self.measurement = Measurement::Throughput;
                 self.parameter = Parameter::Threads;
-                // self.dataset = HashSet::from([Dataset::CacheExceed, Dataset::CacheFit]);
-                // self.platform = HashSet::from([Platform::Sgx]);
-                // self.min = 1;
-                // self.max = 8;
-                // self.step = 1;
+                self.min = "2".to_string();
+                self.max = "8".to_string();
+                self.step = "1".to_string();
+                self.dataset = HashSet::from([Dataset::CacheExceed, Dataset::CacheFit]);
+                self.platform = HashSet::from([Platform::Sgx]);
+                self.sort_data = false;
             }
             // ExperimentType::CpuCyclesTuple => {
             //     self.measurement = Measurement::Throughput;
