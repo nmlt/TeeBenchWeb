@@ -77,6 +77,17 @@ impl Commit {
             baseline,
         }
     }
+    pub fn get_title(&self) -> String {
+        format!("{}_v{}", self.title, self.version)
+    }
+    pub fn get_time_of_day(&self) -> String {
+        let format = time::format_description::parse("[hour]:[minute]").unwrap();
+        self.datetime.format(&format).unwrap()
+    }
+    pub fn get_date(&self) -> String {
+        let format = time::format_description::parse("[day].[month]").unwrap();
+        self.datetime.format(&format).unwrap()
+    }
 }
 
 // TODO Would it be a good idea to put another field in here that encodes an error to communicate with the server? Depending on its value the commit list could display a field to reload the list.
@@ -100,15 +111,12 @@ impl CommitState {
     pub fn get_latest(&self) -> Option<&Commit> {
         self.0.iter().max_by(|a, b| a.id.cmp(&b.id))
     }
-    pub fn get_title(&self, id: &CommitIdType) -> Option<&str> {
-        self.0
-            .iter()
-            .find(|c| &c.id == id)
-            .map(|c| c.title.as_str())
+    pub fn get_title(&self, id: &CommitIdType) -> Option<String> {
+        self.0.iter().find(|c| &c.id == id).map(|c| c.get_title())
     }
     pub fn get_title_by_algorithm(&self, alg: &Algorithm) -> Option<String> {
         if let Algorithm::Commit(id) = alg {
-            self.get_title(id).map(|a| a.to_string())
+            self.get_title(id)
         } else {
             Some(alg.to_string())
         }

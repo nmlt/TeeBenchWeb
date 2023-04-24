@@ -277,7 +277,8 @@ fn CommitsList() -> Html {
     let (_content_store, content_dispatch) = use_store::<ModalContent>();
     let (commit_store, commit_dispatch) = use_store::<CommitState>();
 
-    let list_items_html: Html = commit_store.0.iter().rev().map(|commit| {
+    let current_date = commit_store.get_latest().map(|c| c.get_date());
+    let list_items_html = commit_store.0.iter().rev().map(|commit| {
         let commit = commit.clone();
 
         let onclick = {
@@ -285,13 +286,13 @@ fn CommitsList() -> Html {
             let commit = commit.clone();
             content_dispatch.set_callback(move |_| {
                 let commit = commit.clone();
-                let html = hljs_highlight(commit.code);
+                let html = hljs_highlight(commit.code.clone());
                 let parsed = Html::from_html_unchecked(AttrValue::from(format!("<code class=\"hljs language-cpp\">{html}</code>")));
                 ModalContent {
                     content: html! {
                         <div class="modal-content">
                             <div class="modal-header">
-                                <h5 class="modal-title">{commit.title}</h5>
+                                <h5 class="modal-title">{commit.get_title()}</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
@@ -384,9 +385,11 @@ fn CommitsList() -> Html {
                 html! { <button class="btn btn-info" disabled={true}>{"Report"}</button> }
             }
         };
-        html! {
+        (commit.get_date(), html! {
             <li class="list-group-item">
-                <b>{format!("{}", commit.title.clone())}</b>
+                <b>{commit.get_title()}</b>
+                {" "}
+                <span class="fs-6 text-muted">{commit.get_time_of_day()}</span>
 
                 <div class="container d-flex flex-row justify-content-start">
                     <div class="p-2"><div class="btn btn-light">{commit.operator}</div></div>
@@ -401,12 +404,35 @@ fn CommitsList() -> Html {
                     </div>
                 </div>
             </li>
+        })
+    }).fold((current_date, vec![]), |acc, (d, h)| {
+        // Partition the list items according to the date they were uploaded. Relies on them being sorted by this date.
+        let curr_date = acc.0.unwrap();
+        // The String in v is the date.
+        let mut v: Vec<(String, Vec<Html>)> = acc.1;
+        if curr_date == d {
+            if let Some(ref mut bucket) = v.last_mut() {
+                bucket.1.push(h);
+            } else {
+                // Only happens for the first commit.
+                v.push((d, vec![h]));
+            }
+        } else {
+            v.push((d, vec![h]));
         }
-    }).collect();
+        (Some(curr_date), v)
+    }).1.into_iter().map(|v| {
+        html! {
+            <>
+            <b class="fs-5">{v.0}</b>
+            <ul class="list-group">
+                {for v.1}
+            </ul>
+            </>
+        }
+    });
     html! {
-        <ul class="list-group">
-            {list_items_html}
-        </ul>
+        {for list_items_html}
     }
 }
 

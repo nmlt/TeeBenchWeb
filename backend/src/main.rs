@@ -162,6 +162,7 @@ async fn main() {
         .init();
 
     let commits = Arc::new(Mutex::new(CommitState::new(vec![])));
+    // Test commit: Commit::new("server".to_string(), "added".to_string(), common::commit::Operator::Join, time::macros::datetime!(2022 - 02 - 18 12:00 +01), "auto a = 0;".to_string(), None, 7, common::data_types::Algorithm::Rho)
     let queue = Arc::new(Mutex::new(VecDeque::new()));
     let (queue_tx, queue_rx) = mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);
     let (profiling_tx, profiling_rx) = mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);
