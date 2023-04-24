@@ -33,6 +33,8 @@ pub type CommitIdType = usize;
 pub struct Commit {
     /// What the user entered as the commit message.
     pub title: String,
+    /// Version of the commit, eg. (v0.3).
+    pub version: String,
     /// Type of the operator.
     pub operator: Operator,
     /// Time this operator was uploaded.
@@ -54,6 +56,7 @@ pub struct Commit {
 impl Commit {
     pub fn new(
         title: String,
+        version: String,
         operator: Operator,
         datetime: OffsetDateTime,
         code: String,
@@ -63,6 +66,7 @@ impl Commit {
     ) -> Self {
         Commit {
             title,
+            version,
             operator,
             datetime,
             code,

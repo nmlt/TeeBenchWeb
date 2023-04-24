@@ -29,12 +29,27 @@ static mut COMMIT_ID_COUNTER: CommitIdType = 0;
 /// Holds the data from the upload form.
 // It's not useful for this to be an Option, because as soon as there is eg. an uploaded file, that Option becomes Some. But that doesn't mean that the title field has been filled in, so the commit might still have bogus in the title field, even though the code field is already ok.
 /// TODO Instead this struct could represent the form, with each available field being an option.
-#[derive(Debug, Clone, PartialEq, Default, Store)]
+#[derive(Debug, Clone, PartialEq, Store)]
 pub struct UploadCommitFormState {
+    // TODO Strings might not need Options around them, just put an empty string there? The web also doesn't differentiate between nothing inputed yet and empty string, I think.
     pub title: Option<String>,
+    // TODO If you feel fancy, you can add form validation for this field with the crate `lenient_semver`.
+    pub version: Option<String>,
     pub operator: Option<Operator>,
     pub code: Option<String>,
     pub baseline: Option<Algorithm>,
+}
+
+impl Default for UploadCommitFormState {
+    fn default() -> Self {
+        Self {
+            title: None,
+            version: None,
+            operator: Some(Operator::Join),
+            code: None,
+            baseline: Some(Algorithm::Rho),
+        }
+    }
 }
 
 impl UploadCommitFormState {
@@ -46,6 +61,7 @@ impl UploadCommitFormState {
             COMMIT_ID_COUNTER += 1;
             c = Commit::new(
                 self.title.clone().unwrap(),
+                self.version.clone().unwrap(),
                 self.operator.clone().unwrap(),
                 OffsetDateTime::now_utc(),
                 self.code.clone().unwrap(),
@@ -58,15 +74,13 @@ impl UploadCommitFormState {
     }
     pub fn verify(&self) -> bool {
         self.title.is_some()
+            && self.version.is_some()
             && self.operator.is_some()
             && self.code.is_some()
             && self.baseline.is_some()
     }
     pub fn reset(&mut self) {
-        self.title = None;
-        self.operator = None;
-        self.code = None;
-        self.baseline = None;
+        *self = Self::default();
     }
 }
 
@@ -83,7 +97,7 @@ fn UploadCommit() -> Html {
         },
         commit_store.clone(),
     );
-    let onchange = {
+    let onchange_file = {
         let dispatch = Dispatch::<UploadCommitFormState>::new();
         dispatch.reduce_mut_future_callback_with(|store, e: Event| {
             Box::pin(async move {
@@ -108,6 +122,13 @@ fn UploadCommit() -> Html {
         dispatch.reduce_mut_callback_with(|store, e: Event| {
             let input_elem = e.target_unchecked_into::<HtmlInputElement>();
             store.title = Some(input_elem.value());
+        })
+    };
+    let onchange_version = {
+        let dispatch = Dispatch::<UploadCommitFormState>::new();
+        dispatch.reduce_mut_callback_with(|store, e: Event| {
+            let input_elem = e.target_unchecked_into::<HtmlInputElement>();
+            store.version = Some(input_elem.value());
         })
     };
     let operators = Operator::VARIANTS;
@@ -158,7 +179,7 @@ fn UploadCommit() -> Html {
             };
         })
     };
-    let onclick = {
+    let onclick_submit = {
         let (upload_commit_state, upload_commit_dispatch) = use_store::<UploadCommitFormState>();
         let dispatch = Dispatch::<CommitState>::new();
         dispatch.reduce_mut_future_callback_with(move |commit_state, e: MouseEvent| {
@@ -221,7 +242,7 @@ fn UploadCommit() -> Html {
                     <div class="col-md">
                         <div>
                             <label for="uploadFormFile" class="form-label">{"Source code file"}</label>
-                            <input id="uploadFormFile" class="form-control" type="file" {onchange} />
+                            <input id="uploadFormFile" class="form-control" type="file" onchange={onchange_file} />
                         </div>
                     </div>
                     <div class="col-md">
@@ -231,13 +252,19 @@ fn UploadCommit() -> Html {
                         </div>
                     </div>
                     <div class="col-md">
+                        <div>
+                            <label for="versionFormInput" class="form-label">{"Version"}</label>
+                            <input id="versionFormInput" class="form-control" type="text" onchange={onchange_version} />
+                        </div>
+                    </div>
+                    <div class="col-md">
                         <InputSelect options={operators} onchange={operators_onchange} label={"Operator"} multiple={false} selected={selected_operator} disabled={false} />
                     </div>
                     <div class="col-md">
                         <InputSelect options={algs} onchange={algs_onchange} label={"Baseline"} multiple={false} selected={selected_baseline} disabled={false} />
                     </div>
                     <div class="col-auto">
-                        <input class="btn btn-primary" type="button" {onclick} disabled={upload_disabled} value={"Upload"} />
+                        <input class="btn btn-primary" type="button" onclick={onclick_submit} disabled={upload_disabled} value={"Upload"} />
                     </div>
                 </div>
             </div>
