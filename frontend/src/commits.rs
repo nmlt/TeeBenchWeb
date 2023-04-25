@@ -350,7 +350,7 @@ fn CommitsList() -> Html {
             if commit.reports.is_some() {
                html! {
                     <Link<Route> classes={classes!("btn", "btn-info")} to={Route::PerfReport { commit: commit.title.clone() }}>
-                        {"Report"}
+                        {"View Report"}
                     </Link<Route>>
                 }
             } else if let CompilationStatus::Successful(_) = commit.compilation {
@@ -380,7 +380,7 @@ fn CommitsList() -> Html {
                         }
                     }))
                 };
-                html! { <button class="btn btn-info" {onclick}>{"Report"}</button> }
+                html! { <button class="btn btn-info" {onclick}>{"Generate Report"}</button> }
             } else {
                 html! { <button class="btn btn-info" disabled={true}>{"Report"}</button> }
             }

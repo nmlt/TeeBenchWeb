@@ -83,7 +83,7 @@ async fn handle_socket(
                             if let Ok(request) = serde_json::from_slice(&b) {
                                 match request {
                                     ClientMessage::RequestClear => {
-                                        // Cancel current job and clear queue
+                                        // TODO Cancel current job and clear queue (This needs the _queue).
                                         warn!("Unimplemented clear queue request received.");
                                     }
                                     ClientMessage::Acknowledge => {
@@ -161,8 +161,9 @@ async fn main() {
         .with_max_level(tracing::Level::INFO)
         .init();
 
-    let commits = Arc::new(Mutex::new(CommitState::new(vec![])));
-    // Test commit: Commit::new("server".to_string(), "added".to_string(), common::commit::Operator::Join, time::macros::datetime!(2022 - 02 - 18 12:00 +01), "auto a = 0;".to_string(), None, 7, common::data_types::Algorithm::Rho)
+    let commits = Arc::new(Mutex::new(CommitState::new(vec![
+        common::hardcoded::predefined_commit(),
+    ])));
     let queue = Arc::new(Mutex::new(VecDeque::new()));
     let (queue_tx, queue_rx) = mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);
     let (profiling_tx, profiling_rx) = mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);
