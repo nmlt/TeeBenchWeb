@@ -34,10 +34,10 @@ pub fn JobResultView(JobResultViewProps { job }: &JobResultViewProps) -> Html {
                                 log!(format!("Could not get commit with id {id}. Maybe the render function was quicker than the REST request? (Ignore this message if the Algorithm/Operator labels look okay.)"));
                                 "Latest Operator (not yet loaded, check the connection)".to_string()
                             });
-                            html! { <span class="badge text-bg-primary m-1">{title}</span> }
+                            html! { <span class="badge text-bg-secondary m-1">{title}</span> }
                         }
                         a => html! {
-                            <span class="badge text-bg-primary m-1">{a.to_string()}</span>
+                            <span class="badge text-bg-secondary m-1">{a.to_string()}</span>
                         }
                     })
                     .collect()

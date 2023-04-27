@@ -51,6 +51,17 @@ impl ExperimentChart {
             findings,
         }
     }
+
+    pub fn get_result_values<T: FromStr>(&mut self, field: String, platform: Platform, dataset: Dataset)
+        -> Vec<T> where <T as FromStr>::Err: std::fmt::Debug {
+        return self
+            .results
+            .iter()
+            .filter(|t| (t.0.app_name == platform && t.0.dataset == dataset))
+            .map(|t| t.1.get(&field).unwrap())
+            .map(|t| t.parse::<T>().unwrap())
+            .collect::<Vec<T>>();
+    }
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]

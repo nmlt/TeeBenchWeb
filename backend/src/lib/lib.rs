@@ -12,14 +12,19 @@ use tracing::{error, info, instrument, warn};
 
 use common::commandline::Commandline;
 use common::commit::{CommitState, CompilationStatus};
-use common::data_types::{
-    Algorithm, ExperimentChart, Job, JobConfig, JobResult, JobStatus, Report, TeeBenchWebError,
-    REPLACE_ALG,
-};
+use common::data_types::{Algorithm, ExperimentChart, Job, JobConfig, JobResult, JobStatus, Report, TeeBenchWebError, REPLACE_ALG, ExperimentType, Measurement, FindingStyle, Parameter, Platform, Dataset};
 use common::hardcoded::{hardcoded_perf_report_commands, hardcoded_perf_report_configs};
 
 const BIN_FOLDER: &str = "bin";
 const REPLACE_FILE: &str = "Joins/TBW/OperatorJoin.cpp";
+
+// Machine-dependent variables
+const CPU_PHYSICAL_CORES: i32 = 8;
+// const CPU_LOGICAL_CORES: i32  = 16;
+// const L1_SIZE_KB: i32        = 256;
+// const L2_SIZE_KB: i32        = 2048;
+// const L3_SIZE_KB: i32        = 16384;
+// const EPC_SIZE_KB: i32       = 262144; // 256 MB
 
 type SwitchedInType = Arc<tokio::sync::Mutex<Option<Algorithm>>>;
 
@@ -143,6 +148,74 @@ async fn compile(
     Ok(output)
 }
 
+fn enrich_report_with_findings(jr: &mut Report) {
+    // 1. iterate over each experiment chart and enrich it with findings
+    for ex in &mut jr.charts {
+        match &ex.config {
+            JobConfig::Profiling(c) => {
+                match c.measurement {
+                    Measurement::Throughput=> {
+                        match c.parameter {
+                            Parameter::Threads => {
+                                let throughputs: _ =
+                                    ex.get_result_values::<f32>("throughput".to_string(), Platform::Sgx, Dataset::CacheFit);
+                                let threads =
+                                    ex.get_result_values::<i32>("threads".to_string(), Platform::Sgx, Dataset::CacheFit);
+                                let max_result = threads
+                                    .iter()
+                                    .zip(throughputs.iter())
+                                    .enumerate()
+                                    .max_by(|(_,a),(_,b)| a.1.partial_cmp(&b.1).unwrap())
+                                    .unwrap().1;
+                                let max_threads = threads.iter().max().unwrap();
+
+                                jr.findings.push(common::data_types::Finding {
+                                    title:"Max Throughput".to_string(),
+                                    message: format!("{:?} [M rec/s]", max_result.1),
+                                    style: FindingStyle::Good});
+
+                                if max_result.0 + 2 < CPU_PHYSICAL_CORES && max_threads != max_result.0 {
+                                    jr.findings.push(common::data_types::Finding {
+                                        title:"Very Poor Scalability".to_string(),
+                                        message: format!("Used only {:?}/{:?} logical cores", max_result.0, CPU_PHYSICAL_CORES),
+                                        style: FindingStyle::Bad});
+                                } else if max_result.0 < &CPU_PHYSICAL_CORES && max_threads != max_result.0  {
+                                    jr.findings.push(common::data_types::Finding {
+                                        title:"Poor Scalability".to_string(),
+                                        message: format!("Used only {:?}/{:?} logical cores", max_result.0, CPU_PHYSICAL_CORES),
+                                        style: FindingStyle::SoSo});
+                                } else {
+                                    jr.findings.push(common::data_types::Finding {
+                                        title:"Good Scalability".to_string(),
+                                        message: format!("Used {:?}/{:?} logical cores", max_result.0, CPU_PHYSICAL_CORES),
+                                        style: FindingStyle::Good});
+                                }
+                                // calculate scalability between pcores and lcores --> add finding if hyper-threading helps
+                                // is max throughput close to pcores? --> add finding if the algorithm scales at all
+                                // is throughput going down? --> add finding to check CPU context switches
+                            }
+                            Parameter::DataSkew => {}
+                            Parameter::JoinSelectivity => {}
+                        }
+                    },
+                    Measurement::EpcPaging => {}
+                }
+            },
+            JobConfig::PerfReport(c) => {
+                match c.exp_type {
+                    ExperimentType::EpcPaging => {},
+                    ExperimentType::Throughput => {},
+                    ExperimentType::Scalability => {},
+                    ExperimentType::Custom => {}
+                }
+            },
+            JobConfig::Compile(_) => {}
+        }
+    }
+    // 2. add top-level findings
+
+}
+
 async fn run_experiment(
     tee_bench_dir: PathBuf,
     configs: Vec<JobConfig>,
@@ -232,6 +305,9 @@ async fn run_experiment(
         }
         report.charts.push(experiment_chart);
     }
+
+    enrich_report_with_findings(&mut report);
+
     JobResult::Exp(Ok(report))
 }
 
