@@ -1,4 +1,7 @@
+mod caching;
+
 use anyhow::{bail, Context, Result};
+use rusqlite::Connection;
 use std::collections::VecDeque;
 use std::collections::{HashMap, HashSet};
 use std::env::var;
@@ -15,6 +18,8 @@ use common::commit::{CommitState, CompilationStatus};
 use common::data_types::{Algorithm, ExperimentChart, Job, JobConfig, JobResult, JobStatus, Report, TeeBenchWebError, REPLACE_ALG, ExperimentType, Measurement, FindingStyle, Parameter, Platform, Dataset, ExperimentChartResult};
 use common::data_types::Dataset::CacheFit;
 use common::hardcoded::{hardcoded_perf_report_commands, hardcoded_perf_report_configs};
+
+use caching::{search_for_exp, setup_sqlite};
 
 const BIN_FOLDER: &str = "bin";
 const REPLACE_FILE: &str = "Joins/TBW/OperatorJoin.cpp";
@@ -272,7 +277,17 @@ fn enrich_report_with_findings(jr: &mut Report) {
         }
     }
     // 2. add top-level findings
+}
 
+fn parse_output(out: Vec<u8>) -> Result<HashMap<String, String>> {
+    let mut rdr = csv::Reader::from_reader(&*out);
+    let mut iter = rdr.deserialize();
+    // iter.next(); // First line is skipped anyway because a header is expected.
+    let exp_result: HashMap<String, String> = match iter.next() {
+        Some(csv_parse_result) => csv_parse_result.context("Error processing CSV!")?,
+        None => bail!(TeeBenchWebError::TeeBenchNoOutputData),
+    };
+    Ok(exp_result)
 }
 
 async fn run_experiment(
@@ -281,6 +296,7 @@ async fn run_experiment(
     cmds: Vec<Vec<Commandline>>,
     code_hashmap: HashMap<Algorithm, String>,
     currently_switched_in: SwitchedInType,
+    conn: Arc<Mutex<Connection>>,
 ) -> JobResult {
     let mut all_tasks = vec![];
     let mut errors = false;
@@ -288,8 +304,10 @@ async fn run_experiment(
         if errors {
             break;
         }
-        let mut cmd_tasks: HashMap<common::data_types::TeebenchArgs, Result<Vec<u8>, _>> =
-            HashMap::new();
+        let mut cmd_tasks: HashMap<
+            common::data_types::TeebenchArgs,
+            Result<HashMap<String, String>, _>,
+        > = HashMap::new();
         for cmd in chart_cmds {
             let mut tee_bench_dir = tee_bench_dir.clone();
             let cmd_moved = cmd.clone();
@@ -316,6 +334,10 @@ async fn run_experiment(
                 }
                 tee_bench_dir.push(BIN_FOLDER);
                 let args_key = cmd.to_teebench_args();
+                if let Ok(r) = search_for_exp(conn.clone(), &args_key) {
+                    cmd_tasks.insert(args_key, Ok(r));
+                    continue;
+                }
                 let cmd_string = format!("{cmd}");
                 info!("Running `{cmd_string}`");
                 let output = to_command(cmd)
@@ -334,7 +356,11 @@ async fn run_experiment(
                     errors = true;
                     break;
                 } else {
-                    cmd_tasks.insert(args_key, Ok(output.stdout));
+                    let human_readable = String::from_utf8(output.stdout.clone()).unwrap();
+                    info!("Task output:\n```\n{human_readable}\n```");
+                    let data = parse_output(output.stdout).unwrap();
+                    // TODO Maybe change `JobResult`'s Result to an anyhow::Result, then I wouldn't have to unwrap here. Maybe I don't even need `TeebenchWebError`...
+                    cmd_tasks.insert(args_key, Ok(data));
                 }
             }
         }
@@ -351,16 +377,7 @@ async fn run_experiment(
                 Ok(res) => res,
                 Err(e) => return JobResult::Exp(Err(e)),
             };
-            let human_readable = String::from_utf8(res.clone()).unwrap();
-            info!("Task output:\n```\n{human_readable}\n```");
-            let mut rdr = csv::Reader::from_reader(&*res);
-            let mut iter = rdr.deserialize();
-            // iter.next(); // First line is skipped anyway because a header is expected.
-            let exp_result: HashMap<String, String> = match iter.next() {
-                Some(csv_parse_result) => csv_parse_result.expect("Error processing CSV!"),
-                None => return JobResult::Exp(Err(TeeBenchWebError::TeeBenchNoOutputData)),
-            };
-            experiment_chart.results.push((args, exp_result));
+            experiment_chart.results.push((args, res));
         }
         report.charts.push(experiment_chart);
     }
@@ -374,6 +391,7 @@ async fn runner(
     conf: JobConfig,
     commits: Arc<Mutex<CommitState>>,
     currently_switched_in: SwitchedInType,
+    conn: Arc<Mutex<Connection>>,
 ) -> JobResult {
     let tee_bench_dir =
         PathBuf::from(var("TEEBENCHWEB_RUN_DIR").expect("TEEBENCHWEB_RUN_DIR not set"));
@@ -412,6 +430,7 @@ async fn runner(
                 cmds,
                 code_hashmap,
                 currently_switched_in,
+                conn,
             )
             .await
         }
@@ -433,6 +452,7 @@ async fn runner(
                 cmds,
                 code_hashmap,
                 currently_switched_in,
+                conn,
             )
             .await;
             {
@@ -480,6 +500,7 @@ async fn work_on_queue(
     queue_tx: mpsc::Sender<Job>,
     commits: Arc<Mutex<CommitState>>,
     currently_switched_in: SwitchedInType,
+    conn: Arc<Mutex<Connection>>,
 ) {
     fn peek_queue(queue: Arc<Mutex<VecDeque<Job>>>) -> Option<Job> {
         let guard = queue.lock().unwrap();
@@ -493,6 +514,7 @@ async fn work_on_queue(
             current_job.config.clone(),
             commits.clone(),
             currently_switched_in.clone(),
+            conn.clone(),
         )
         .await;
         let result_type = if result.is_ok() {
@@ -556,6 +578,9 @@ pub async fn profiling_task(
     let rx = Arc::new(tokio::sync::Mutex::new(rx));
     // TODO Make this just a &mut, Arc should not be needed except if the compiler requires it, but it is never concurrently accessed.
     let currently_switched_in = Arc::new(tokio::sync::Mutex::new(None));
+    let conn = setup_sqlite().unwrap();
+    // Connection uses RefCell internally, so the Mutex is required.
+    let conn = Arc::new(Mutex::new(conn));
     loop {
         receive_confs(queue.clone(), rx.clone()).await;
         let (work_finished_tx, mut work_finished_rx) = oneshot::channel();
@@ -565,6 +590,7 @@ pub async fn profiling_task(
             queue_tx.clone(),
             commits.clone(),
             currently_switched_in.clone(),
+            conn.clone(),
         ));
         loop {
             // Following the advice in the tokio::oneshot documentation to make the rx &mut.
