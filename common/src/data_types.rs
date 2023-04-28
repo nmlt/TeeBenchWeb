@@ -29,7 +29,9 @@ pub enum TeeBenchWebError {
     Unknown,
 }
 
-pub type ExperimentChartResult = Vec<(TeebenchArgs, HashMap<String, String>)>;
+pub type SingleRunResult = HashMap<String, String>;
+
+pub type ExperimentChartResult = Vec<(TeebenchArgs, SingleRunResult)>;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 // To make ProfilingConfiguration an enum depending on ExperimentType is a bad idea maybe, because then we'd have to match in every dispatch callback modifying the config. So instead we now use the JobConfig enum to accertain which kind of job created this report.
@@ -42,7 +44,7 @@ pub struct ExperimentChart {
 impl ExperimentChart {
     pub fn new(
         config: JobConfig,
-        results: Vec<(TeebenchArgs, HashMap<String, String>)>,
+        results: ExperimentChartResult,
         findings: Vec<Finding>,
     ) -> Self {
         Self {
@@ -52,16 +54,27 @@ impl ExperimentChart {
         }
     }
 
-    pub fn get_result_values<T: FromStr>(&mut self, field: String, platform: Platform, dataset: Dataset)
+    pub fn get_result_values<T: FromStr>(&mut self, field: String, platform: Platform, dataset: Dataset, algorithm: Algorithm)
         -> Vec<T> where <T as FromStr>::Err: std::fmt::Debug {
         return self
             .results
             .iter()
-            .filter(|t| (t.0.app_name == platform && t.0.dataset == dataset))
+            .filter(|t| (t.0.app_name == platform && t.0.dataset == dataset && t.0.algorithm == algorithm))
             .map(|t| t.1.get(&field).unwrap())
             .map(|t| t.parse::<T>().unwrap())
             .collect::<Vec<T>>();
     }
+
+    pub fn get_results(&mut self, platform: Platform, dataset: Dataset, algorithm: Algorithm)
+                                         -> ExperimentChartResult {
+        return self
+            .results
+            .iter()
+            .filter(|t| (t.0.app_name == platform && t.0.dataset == dataset && t.0.algorithm == algorithm))
+            .cloned()
+            .collect();
+    }
+
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
