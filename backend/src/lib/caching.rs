@@ -8,10 +8,11 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 use common::data_types::TeebenchArgs;
+const SQLITE_DIR_VAR_NAME: &str = "TEEBENCHWEB_SQLITE_DIR";
 
 pub fn setup_sqlite() -> Result<Connection> {
     let sqlite_dir =
-        PathBuf::from(var("TEEBENCHWEB_SQLITE_DIR").expect("TEEBENCHWEB_SQLITE_DIR not set"));
+        PathBuf::from(var(SQLITE_DIR_VAR_NAME).unwrap_or_else(|_| panic!("{SQLITE_DIR_VAR_NAME} not set")));
     let migrations = Migrations::new(vec![M::up(indoc!(
         r#"
             CREATE TABLE teebenchargs(
@@ -94,9 +95,9 @@ pub fn insert_experiment(
     data: HashMap<String, String>,
 ) -> Result<()> {
     let conn = conn.lock().unwrap();
-    conn.execute("INSERT INTO teebenchargs (app_name, dataset, algorithm, threads, selectivity, data_skew, seal_chunk_size, r_tuples, s_tuples, r_path, s_path, r_size, s_size, seal, sort_r, sort_s) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)", (&args.app_name.to_string(), &args.dataset.to_string(), &format!("{:#?}", args.algorithm), &args.threads, &args.selectivity, &args.data_skew, &args.seal_chunk_size, &args.r_tuples, &args.s_tuples, &args.r_path, &args.s_path, &args.r_size, &args.s_size, &args.seal, &args.sort_r, &args.sort_s))?;
+    conn.execute(indoc!("INSERT INTO teebenchargs (app_name, dataset, algorithm, threads, selectivity, data_skew, seal_chunk_size, r_tuples, s_tuples, r_path, s_path, r_size, s_size, seal, sort_r, sort_s) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)"), (&args.app_name.to_string(), &args.dataset.to_string(), &format!("{:#?}", args.algorithm), &args.threads, &args.selectivity, &args.data_skew, &args.seal_chunk_size, &args.r_tuples, &args.s_tuples, &args.r_path, &args.s_path, &args.r_size, &args.s_size, &args.seal, &args.sort_r, &args.sort_s))?;
     let id = conn.last_insert_rowid();
-    conn.execute("INSERT INTO output (teebenchargs_id, algorithm, threads, relR, relS, matches, phase1Cycles, phase2Cycles, cyclesPerTuple, phase1Time, phase2Time, totalTime, throughput, phase1L3CacheMisses, phase1L3HitRatio, phase1L2CacheMisses, phase1L2HitRatio, phase1IPC, phase1IR, phase1EWB, phase1VoluntaryCS, phase1InvoluntaryCS, phase1UserCpuTime, phase1SystemCpuTime, phase2L3CacheMisses, phase2L3HitRatio, phase2L2CacheMisses, phase2L2HitRatio, phase2IPC, phase2IR, phase2EWB, phase2VoluntaryCS, phase2InvoluntaryCS, phase2UserCpuTime, phase2SystemCpuTime, totalL3CacheMisses, totalL3HitRatio, totalL2CacheMisses, totalL2HitRatio, totalIPC, totalIR, totalEWB, totalVoluntaryCS, totalInvoluntaryCS, totalUserCpuTime, totalSystemCpuTime) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28, ?29, ?30, ?31, ?32, ?33, ?34, ?35, ?36, ?37, ?38, ?39, ?40, ?41, ?42, ?43, ?44, ?45, ?46)", params![
+    conn.execute(indoc!("INSERT INTO output (teebenchargs_id, algorithm, threads, relR, relS, matches, phase1Cycles, phase2Cycles, cyclesPerTuple, phase1Time, phase2Time, totalTime, throughput, phase1L3CacheMisses, phase1L3HitRatio, phase1L2CacheMisses, phase1L2HitRatio, phase1IPC, phase1IR, phase1EWB, phase1VoluntaryCS, phase1InvoluntaryCS, phase1UserCpuTime, phase1SystemCpuTime, phase2L3CacheMisses, phase2L3HitRatio, phase2L2CacheMisses, phase2L2HitRatio, phase2IPC, phase2IR, phase2EWB, phase2VoluntaryCS, phase2InvoluntaryCS, phase2UserCpuTime, phase2SystemCpuTime, totalL3CacheMisses, totalL3HitRatio, totalL2CacheMisses, totalL2HitRatio, totalIPC, totalIR, totalEWB, totalVoluntaryCS, totalInvoluntaryCS, totalUserCpuTime, totalSystemCpuTime) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28, ?29, ?30, ?31, ?32, ?33, ?34, ?35, ?36, ?37, ?38, ?39, ?40, ?41, ?42, ?43, ?44, ?45, ?46)"), params![
         id,
         data["algorithm"],
         data["threads"],
@@ -151,9 +152,9 @@ pub fn search_for_exp(
     args: &TeebenchArgs,
 ) -> Result<HashMap<String, String>> {
     let conn = conn.lock().unwrap();
-    let id = conn.query_row("SELECT id FROM teebenchargs WHERE app_name=(?1) AND dataset=(?2) AND algorithm=(?3) AND threads=(?4) AND selectivity=(?5) AND data_skew=(?6) AND seal_chunk_size=(?7) AND r_tuples=(?8) AND s_tuples=(?9) AND r_path=(?10) AND s_path=(?11) AND r_size=(?12) AND s_size=(?13) AND seal=(?14) AND sort_r=(?15) AND sort_s=(?16)", (&args.app_name.to_string(), &args.dataset.to_string(), &format!("{:#?}", args.algorithm), &args.threads, &args.selectivity, &args.data_skew, &args.seal_chunk_size, &args.r_tuples, &args.s_tuples, &args.r_path, &args.s_path, &args.r_size, &args.s_size, &args.seal, &args.sort_r, &args.sort_s), |r| r.get::<usize, usize>(0))?;
+    let id = conn.query_row(indoc!("SELECT id FROM teebenchargs WHERE app_name=(?1) AND dataset=(?2) AND algorithm=(?3) AND threads=(?4) AND selectivity=(?5) AND data_skew=(?6) AND seal_chunk_size=(?7) AND r_tuples=(?8) AND s_tuples=(?9) AND r_path=(?10) AND s_path=(?11) AND r_size=(?12) AND s_size=(?13) AND seal=(?14) AND sort_r=(?15) AND sort_s=(?16)"), (&args.app_name.to_string(), &args.dataset.to_string(), &format!("{:#?}", args.algorithm), &args.threads, &args.selectivity, &args.data_skew, &args.seal_chunk_size, &args.r_tuples, &args.s_tuples, &args.r_path, &args.s_path, &args.r_size, &args.s_size, &args.seal, &args.sort_r, &args.sort_s), |r| r.get::<usize, usize>(0))?;
     let mut map: HashMap<String, String> = HashMap::new();
-    conn.query_row("SELECT algorithm, threads, relR, relS, matches, phase1Cycles, phase2Cycles, cyclesPerTuple, phase1Time, phase2Time, totalTime, throughput, phase1L3CacheMisses, phase1L3HitRatio, phase1L2CacheMisses, phase1L2HitRatio, phase1IPC, phase1IR, phase1EWB, phase1VoluntaryCS, phase1InvoluntaryCS, phase1UserCpuTime, phase1SystemCpuTime, phase2L3CacheMisses, phase2L3HitRatio, phase2L2CacheMisses, phase2L2HitRatio, phase2IPC, phase2IR, phase2EWB, phase2VoluntaryCS, phase2InvoluntaryCS, phase2UserCpuTime, phase2SystemCpuTime, totalL3CacheMisses, totalL3HitRatio, totalL2CacheMisses, totalL2HitRatio, totalIPC, totalIR, totalEWB, totalVoluntaryCS, totalInvoluntaryCS, totalUserCpuTime, totalSystemCpuTime FROM output WHERE teebenchargs_id=(?1)", [id], |r| {
+    conn.query_row(indoc!("SELECT algorithm, threads, relR, relS, matches, phase1Cycles, phase2Cycles, cyclesPerTuple, phase1Time, phase2Time, totalTime, throughput, phase1L3CacheMisses, phase1L3HitRatio, phase1L2CacheMisses, phase1L2HitRatio, phase1IPC, phase1IR, phase1EWB, phase1VoluntaryCS, phase1InvoluntaryCS, phase1UserCpuTime, phase1SystemCpuTime, phase2L3CacheMisses, phase2L3HitRatio, phase2L2CacheMisses, phase2L2HitRatio, phase2IPC, phase2IR, phase2EWB, phase2VoluntaryCS, phase2InvoluntaryCS, phase2UserCpuTime, phase2SystemCpuTime, totalL3CacheMisses, totalL3HitRatio, totalL2CacheMisses, totalL2HitRatio, totalIPC, totalIR, totalEWB, totalVoluntaryCS, totalInvoluntaryCS, totalUserCpuTime, totalSystemCpuTime FROM output WHERE teebenchargs_id=(?1)"), [id], |r| {
         map.insert("algorithm".to_owned(), r.get::<usize, String>(0)?);
         map.insert("threads".to_owned(), r.get::<usize, String>(1)?);
         map.insert("relR".to_owned(), r.get::<usize, String>(2)?);
