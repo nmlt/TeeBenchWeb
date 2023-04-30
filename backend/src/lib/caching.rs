@@ -11,8 +11,9 @@ use common::data_types::TeebenchArgs;
 const SQLITE_DIR_VAR_NAME: &str = "TEEBENCHWEB_SQLITE_DIR";
 
 pub fn setup_sqlite() -> Result<Connection> {
-    let sqlite_dir =
-        PathBuf::from(var(SQLITE_DIR_VAR_NAME).unwrap_or_else(|_| panic!("{SQLITE_DIR_VAR_NAME} not set")));
+    let sqlite_dir = PathBuf::from(
+        var(SQLITE_DIR_VAR_NAME).unwrap_or_else(|_| panic!("{SQLITE_DIR_VAR_NAME} not set")),
+    );
     let migrations = Migrations::new(vec![M::up(indoc!(
         r#"
             CREATE TABLE teebenchargs(
@@ -207,10 +208,57 @@ pub fn search_for_exp(
 
 #[cfg(test)]
 mod tests {
-    // use super::*;
+    use super::*;
+    use serial_test::serial;
 
-    // #[test]
-    // fn it_works() {
-    //     // TODO
-    // }
+    fn setup_environment() -> std::path::PathBuf {
+        let mut temp_dir = std::env::temp_dir();
+        temp_dir.push("TeebenchWeb");
+        std::fs::create_dir_all(&temp_dir).expect("Failed to create temp_dir!");
+        temp_dir.push("cache.sqlite");
+        std::fs::OpenOptions::new()
+            .create(true)
+            .write(true)
+            .open(&temp_dir)
+            .expect("Failed to touch 'cache.sqlite'!");
+        std::env::set_var(SQLITE_DIR_VAR_NAME, format!("{temp_dir:?}"));
+        temp_dir
+    }
+
+    fn cleanup_environment(path: PathBuf) -> Result<()> {
+        std::fs::remove_file(&path)?;
+        std::env::set_var(SQLITE_DIR_VAR_NAME, "");
+        Ok(())
+    }
+
+    fn test_setup_sqlite(path: &PathBuf) -> Result<()> {
+        let conn = setup_sqlite()?;
+        assert_eq!(path.to_str(), conn.path());
+        let app_name = "Sgx";
+        conn.execute(
+            "INSERT INTO teebenchargs (app_name) VALUES (?1)",
+            [app_name],
+        )?;
+        let id = conn.query_row("SELECT id, app_name FROM teebenchargs", [], |r| {
+            let id = r.get::<usize, usize>(0)?;
+            let queried_app_name = r.get::<usize, String>(1)?;
+            assert_eq!(app_name, queried_app_name);
+            Ok(id)
+        })?;
+        assert_eq!(id, conn.last_insert_rowid() as usize);
+        conn.close().map_err(|(_c, e)| e)?;
+        Ok(())
+    }
+
+    #[test]
+    #[serial]
+    fn test_setup_sqlite_wrapper() -> Result<()> {
+        let path = setup_environment();
+        match test_setup_sqlite(&path) {
+            Ok(_) => (),
+            Err(e) => println!("{e:?}"),
+        }
+        cleanup_environment(path)?;
+        Ok(())
+    }
 }
