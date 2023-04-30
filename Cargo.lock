@@ -153,6 +153,7 @@ dependencies = [
  "common",
  "csv",
  "indoc",
+ "lazy_static",
  "once_cell",
  "rand",
  "rusqlite",

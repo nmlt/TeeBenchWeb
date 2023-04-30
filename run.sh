@@ -28,6 +28,10 @@ EOF
         cp ../target/debug/fake_teebench ../fake_teebench/app
         export TEEBENCHWEB_RUN_DIR=$(get_abs_filename "../fake_teebench")
     fi
+    if [[ -z "${TEEBENCHWEB_SQLITE_FILE}" ]]; then
+        echo "TEEBENCHWEB_SQLITE_FILE not set!"
+        return -1
+    fi
     cargo run
 )
 

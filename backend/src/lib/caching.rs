@@ -8,85 +8,86 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 use common::data_types::TeebenchArgs;
-const SQLITE_DIR_VAR_NAME: &str = "TEEBENCHWEB_SQLITE_DIR";
+const SQLITE_FILE_VAR_NAME: &str = "TEEBENCHWEB_SQLITE_FILE";
+
+lazy_static::lazy_static! {
+    static ref MIGRATIONS: Migrations<'static> = Migrations::new(vec![M::up(indoc!(r#"
+        CREATE TABLE teebenchargs(
+            id INTEGER PRIMARY KEY,
+            app_name TEXT NOT NULL,
+            dataset TEXT NOT NULL,
+            algorithm TEXT NOT NULL,
+            threads INTEGER NOT NULL,
+            selectivity INTEGER NOT NULL,
+            data_skew TEXT NOT NULL,
+            seal_chunk_size INTEGER NOT NULL,
+            r_tuples INTEGER NOT NULL,
+            s_tuples INTEGER NOT NULL,
+            r_path TEXT,
+            s_path TEXT,
+            r_size INTEGER,
+            s_size INTEGER,
+            seal INTEGER NOT NULL,
+            sort_r INTEGER NOT NULL,
+            sort_s INTEGER NOT NULL
+        );
+        CREATE TABLE output(
+            teebenchargs_id INTEGER PRIMARY KEY,
+            algorithm TEXT NOT NULL,
+            threads INTEGER NOT NULL,
+            relR INTEGER NOT NULL,
+            relS INTEGER NOT NULL,
+            matches INTEGER NOT NULL,
+            phase1Cycles INTEGER NOT NULL,
+            phase2Cycles INTEGER NOT NULL,
+            cyclesPerTuple INTEGER NOT NULL,
+            phase1Time INTEGER NOT NULL,
+            phase2Time INTEGER NOT NULL,
+            totalTime INTEGER NOT NULL,
+            throughput REAL NOT NULL,
+            phase1L3CacheMisses INTEGER NOT NULL,
+            phase1L3HitRatio REAL NOT NULL,
+            phase1L2CacheMisses INTEGER NOT NULL,
+            phase1L2HitRatio REAL NOT NULL,
+            phase1IPC REAL NOT NULL,
+            phase1IR INTEGER NOT NULL,
+            phase1EWB INTEGER NOT NULL,
+            phase1VoluntaryCS INTEGER NOT NULL,
+            phase1InvoluntaryCS INTEGER NOT NULL,
+            phase1UserCpuTime INTEGER NOT NULL,
+            phase1SystemCpuTime INTEGER NOT NULL,
+            phase2L3CacheMisses INTEGER NOT NULL,
+            phase2L3HitRatio REAL NOT NULL,
+            phase2L2CacheMisses INTEGER NOT NULL,
+            phase2L2HitRatio REAL NOT NULL,
+            phase2IPC REAL NOT NULL,
+            phase2IR INTEGER NOT NULL,
+            phase2EWB INTEGER NOT NULL,
+            phase2VoluntaryCS INTEGER NOT NULL,
+            phase2InvoluntaryCS INTEGER NOT NULL,
+            phase2UserCpuTime INTEGER NOT NULL,
+            phase2SystemCpuTime INTEGER NOT NULL,
+            totalL3CacheMisses INTEGER NOT NULL,
+            totalL3HitRatio REAL NOT NULL,
+            totalL2CacheMisses INTEGER NOT NULL,
+            totalL2HitRatio REAL NOT NULL,
+            totalIPC REAL NOT NULL,
+            totalIR INTEGER NOT NULL,
+            totalEWB INTEGER NOT NULL,
+            totalVoluntaryCS INTEGER NOT NULL,
+            totalInvoluntaryCS INTEGER NOT NULL,
+            totalUserCpuTime INTEGER NOT NULL,
+            totalSystemCpuTime INTEGER NOT NULL
+        );
+    "#))]);
+}
 
 pub fn setup_sqlite() -> Result<Connection> {
     let sqlite_dir = PathBuf::from(
-        var(SQLITE_DIR_VAR_NAME).unwrap_or_else(|_| panic!("{SQLITE_DIR_VAR_NAME} not set")),
+        var(SQLITE_FILE_VAR_NAME).unwrap_or_else(|_| panic!("{SQLITE_FILE_VAR_NAME} not set")),
     );
-    let migrations = Migrations::new(vec![M::up(indoc!(
-        r#"
-            CREATE TABLE teebenchargs(
-                id INTEGER PRIMARY KEY,
-                app_name TEXT NOT NULL,
-                dataset TEXT NOT NULL,
-                algorithm TEXT NOT NULL,
-                threads INTEGER NOT NULL,
-                selectivity INTEGER NOT NULL,
-                data_skew TEXT NOT NULL,
-                seal_chunk_size INTEGER NOT NULL,
-                r_tuples INTEGER NOT NULL,
-                s_tuples INTEGER NOT NULL,
-                r_path TEXT,
-                s_path TEXT,
-                r_size INTEGER,
-                s_size INTEGER,
-                seal INTEGER NOT NULL,
-                sort_r INTEGER NOT NULL,
-                sort_s INTEGER NOT NULL,
-            );
-            CREATE TABLE output(
-                teebenchargs_id INTEGER FOREIGN KEY,
-                algorithm TEXT NOT NULL,
-                threads INTEGER NOT NULL,
-                relR INTEGER NOT NULL,
-                relS INTEGER NOT NULL,
-                matches INTEGER NOT NULL,
-                phase1Cycles INTEGER NOT NULL,
-                phase2Cycles INTEGER NOT NULL,
-                cyclesPerTuple INTEGER NOT NULL,
-                phase1Time INTEGER NOT NULL,
-                phase2Time INTEGER NOT NULL,
-                totalTime INTEGER NOT NULL,
-                throughput REAL NOT NULL,
-                phase1L3CacheMisses INTEGER NOT NULL,
-                phase1L3HitRatio REAL NOT NULL,
-                phase1L2CacheMisses INTEGER NOT NULL,
-                phase1L2HitRatio REAL NOT NULL,
-                phase1IPC REAL NOT NULL,
-                phase1IR INTEGER NOT NULL,
-                phase1EWB INTEGER NOT NULL,
-                phase1VoluntaryCS INTEGER NOT NULL,
-                phase1InvoluntaryCS INTEGER NOT NULL,
-                phase1UserCpuTime INTEGER NOT NULL,
-                phase1SystemCpuTime INTEGER NOT NULL,
-                phase2L3CacheMisses INTEGER NOT NULL,
-                phase2L3HitRatio REAL NOT NULL,
-                phase2L2CacheMisses INTEGER NOT NULL,
-                phase2L2HitRatio REAL NOT NULL,
-                phase2IPC REAL NOT NULL,
-                phase2IR INTEGER NOT NULL,
-                phase2EWB INTEGER NOT NULL,
-                phase2VoluntaryCS INTEGER NOT NULL,
-                phase2InvoluntaryCS INTEGER NOT NULL,
-                phase2UserCpuTime INTEGER NOT NULL,
-                phase2SystemCpuTime INTEGER NOT NULL,
-                totalL3CacheMisses INTEGER NOT NULL,
-                totalL3HitRatio REAL NOT NULL,
-                totalL2CacheMisses INTEGER NOT NULL,
-                totalL2HitRatio REAL NOT NULL,
-                totalIPC REAL NOT NULL,
-                totalIR INTEGER NOT NULL,
-                totalEWB INTEGER NOT NULL,
-                totalVoluntaryCS INTEGER NOT NULL,
-                totalInvoluntaryCS INTEGER NOT NULL,
-                totalUserCpuTime INTEGER NOT NULL,
-                totalSystemCpuTime INTEGER NOT NULL
-            );
-        "#
-    ))]);
     let mut conn = Connection::open(sqlite_dir)?;
-    migrations.to_latest(&mut conn)?;
+    MIGRATIONS.to_latest(&mut conn)?;
     Ok(conn)
 }
 
@@ -210,6 +211,7 @@ pub fn search_for_exp(
 mod tests {
     use super::*;
     use serial_test::serial;
+    use anyhow::bail;
 
     fn setup_environment() -> std::path::PathBuf {
         let mut temp_dir = std::env::temp_dir();
@@ -221,13 +223,13 @@ mod tests {
             .write(true)
             .open(&temp_dir)
             .expect("Failed to touch 'cache.sqlite'!");
-        std::env::set_var(SQLITE_DIR_VAR_NAME, format!("{temp_dir:?}"));
+        std::env::set_var(SQLITE_FILE_VAR_NAME, format!("{temp_dir:?}"));
         temp_dir
     }
 
     fn cleanup_environment(path: PathBuf) -> Result<()> {
         std::fs::remove_file(&path)?;
-        std::env::set_var(SQLITE_DIR_VAR_NAME, "");
+        std::env::set_var(SQLITE_FILE_VAR_NAME, "");
         Ok(())
     }
 
@@ -255,10 +257,14 @@ mod tests {
     fn test_setup_sqlite_wrapper() -> Result<()> {
         let path = setup_environment();
         match test_setup_sqlite(&path) {
-            Ok(_) => (),
-            Err(e) => println!("{e:?}"),
+            Ok(_) => {
+                cleanup_environment(path)?;
+                Ok(())
+            }
+            Err(e) => {
+                cleanup_environment(path)?;
+                bail!(e);
+            }
         }
-        cleanup_environment(path)?;
-        Ok(())
     }
 }
