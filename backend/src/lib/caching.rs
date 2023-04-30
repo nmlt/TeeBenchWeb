@@ -210,8 +210,8 @@ pub fn search_for_exp(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serial_test::serial;
     use anyhow::bail;
+    use serial_test::serial;
 
     fn setup_environment() -> std::path::PathBuf {
         let mut temp_dir = std::env::temp_dir();

@@ -42,11 +42,7 @@ pub struct ExperimentChart {
 }
 
 impl ExperimentChart {
-    pub fn new(
-        config: JobConfig,
-        results: ExperimentChartResult,
-        findings: Vec<Finding>,
-    ) -> Self {
+    pub fn new(config: JobConfig, results: ExperimentChartResult, findings: Vec<Finding>) -> Self {
         Self {
             config,
             results,
@@ -54,27 +50,42 @@ impl ExperimentChart {
         }
     }
 
-    pub fn get_result_values<T: FromStr>(&mut self, field: String, platform: Platform, dataset: Dataset, algorithm: Algorithm)
-        -> Vec<T> where <T as FromStr>::Err: std::fmt::Debug {
+    pub fn get_result_values<T: FromStr>(
+        &mut self,
+        field: String,
+        platform: Platform,
+        dataset: Dataset,
+        algorithm: Algorithm,
+    ) -> Vec<T>
+    where
+        <T as FromStr>::Err: std::fmt::Debug,
+    {
         return self
             .results
             .iter()
-            .filter(|t| (t.0.app_name == platform && t.0.dataset == dataset && t.0.algorithm == algorithm))
+            .filter(|t| {
+                t.0.app_name == platform && t.0.dataset == dataset && t.0.algorithm == algorithm
+            })
             .map(|t| t.1.get(&field).unwrap())
             .map(|t| t.parse::<T>().unwrap())
             .collect::<Vec<T>>();
     }
 
-    pub fn get_results(&mut self, platform: Platform, dataset: Dataset, algorithm: Algorithm)
-                                         -> ExperimentChartResult {
+    pub fn get_results(
+        &mut self,
+        platform: Platform,
+        dataset: Dataset,
+        algorithm: Algorithm,
+    ) -> ExperimentChartResult {
         return self
             .results
             .iter()
-            .filter(|t| (t.0.app_name == platform && t.0.dataset == dataset && t.0.algorithm == algorithm))
+            .filter(|t| {
+                t.0.app_name == platform && t.0.dataset == dataset && t.0.algorithm == algorithm
+            })
             .cloned()
             .collect();
     }
-
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]

@@ -15,8 +15,11 @@ use tracing::{error, info, instrument, warn};
 
 use common::commandline::Commandline;
 use common::commit::{CommitState, CompilationStatus};
-use common::data_types::{Algorithm, ExperimentChart, Job, JobConfig, JobResult, JobStatus, Report, TeeBenchWebError, REPLACE_ALG, ExperimentType, Measurement, FindingStyle, Parameter, Platform, Dataset, ExperimentChartResult};
-use common::data_types::Dataset::CacheFit;
+use common::data_types::{
+    Algorithm, Dataset, ExperimentChart, ExperimentChartResult, ExperimentType, FindingStyle, Job,
+    JobConfig, JobResult, JobStatus, Measurement, Parameter, Platform, Report, TeeBenchWebError,
+    REPLACE_ALG,
+};
 use common::hardcoded::{hardcoded_perf_report_commands, hardcoded_perf_report_configs};
 
 use caching::{search_for_exp, setup_sqlite};
@@ -55,6 +58,7 @@ fn display_command_output(o: &std::process::Output, cmd: String) -> String {
 // - Commands that return nonzero exit status don't return an Err. The returned result is whether it could even start the command. Makes my code more complicated.
 // - Nicer way to get the actual string representing the command for logging.
 // - Nicer way to get the interleaved output of stdin and stderr (not the function `display_command_output`!). Might be a problem when compiling SGX: CXX <= File is printed to stdout, compiler errors to stderr.
+#[instrument(skip(code_hashmap))]
 async fn compile(
     alg: &Algorithm,
     tee_bench_dir: &PathBuf,
@@ -154,46 +158,90 @@ async fn compile(
     Ok(output)
 }
 
+#[instrument]
 fn enrich_report_with_findings(jr: &mut Report) {
     // 1. iterate over each experiment chart and enrich it with findings
     for ex in &mut jr.charts {
         match &ex.config {
             JobConfig::Profiling(c) => {
                 match c.measurement {
-                    Measurement::Throughput=> {
+                    Measurement::Throughput => {
                         match c.parameter {
                             Parameter::Threads => {
-                                let max_threads = ex.results.iter()
-                                    .map(|(_,a)| a.get("threads").unwrap().parse::<u8>().unwrap())
+                                let max_threads = ex
+                                    .results
+                                    .iter()
+                                    .map(|(_, a)| a.get("threads").unwrap().parse::<u8>().unwrap())
                                     .max()
                                     .unwrap();
 
-                                let max_result =
-                                    ex.results.iter()
-                                        .filter(|t| (t.0.app_name == Platform::Sgx && t.0.dataset == Dataset::CacheFit))
-                                        .max_by(|(_, a), (_, b)| a.get("throughput").unwrap().parse::<f32>().unwrap().partial_cmp(&b.get("throughput").unwrap().parse::<f32>().unwrap()).unwrap())
-                                        .unwrap();
+                                let max_result = ex
+                                    .results
+                                    .iter()
+                                    .filter(|t| {
+                                        t.0.app_name == Platform::Sgx
+                                            && t.0.dataset == Dataset::CacheFit
+                                    })
+                                    .max_by(|(_, a), (_, b)| {
+                                        a.get("throughput")
+                                            .unwrap()
+                                            .parse::<f32>()
+                                            .unwrap()
+                                            .partial_cmp(
+                                                &b.get("throughput")
+                                                    .unwrap()
+                                                    .parse::<f32>()
+                                                    .unwrap(),
+                                            )
+                                            .unwrap()
+                                    })
+                                    .unwrap();
 
                                 jr.findings.push(common::data_types::Finding {
-                                    title:"Max Throughput".to_string(),
-                                    message: format!("{:?} [M rec/s]", max_result.1.get("throughput").unwrap().parse::<f32>().unwrap()),
-                                    style: FindingStyle::Good});
+                                    title: "Max Throughput".to_string(),
+                                    message: format!(
+                                        "{:?} [M rec/s]",
+                                        max_result
+                                            .1
+                                            .get("throughput")
+                                            .unwrap()
+                                            .parse::<f32>()
+                                            .unwrap()
+                                    ),
+                                    style: FindingStyle::Good,
+                                });
 
-                                if max_result.0.threads + 2 < CPU_PHYSICAL_CORES && max_threads != max_result.0.threads {
+                                if max_result.0.threads + 2 < CPU_PHYSICAL_CORES
+                                    && max_threads != max_result.0.threads
+                                {
                                     jr.findings.push(common::data_types::Finding {
-                                        title:"Very Poor Scalability".to_string(),
-                                        message: format!("Used only {:?}/{:?} physical cores", max_result.0.threads, CPU_PHYSICAL_CORES),
-                                        style: FindingStyle::Bad});
-                                } else if max_result.0.threads + 1 < CPU_PHYSICAL_CORES && max_threads != max_result.0.threads  {
+                                        title: "Very Poor Scalability".to_string(),
+                                        message: format!(
+                                            "Used only {:?}/{:?} physical cores",
+                                            max_result.0.threads, CPU_PHYSICAL_CORES
+                                        ),
+                                        style: FindingStyle::Bad,
+                                    });
+                                } else if max_result.0.threads + 1 < CPU_PHYSICAL_CORES
+                                    && max_threads != max_result.0.threads
+                                {
                                     jr.findings.push(common::data_types::Finding {
-                                        title:"Poor Scalability".to_string(),
-                                        message: format!("Used only {:?}/{:?} physical cores", max_result.0.threads, CPU_PHYSICAL_CORES),
-                                        style: FindingStyle::SoSo});
+                                        title: "Poor Scalability".to_string(),
+                                        message: format!(
+                                            "Used only {:?}/{:?} physical cores",
+                                            max_result.0.threads, CPU_PHYSICAL_CORES
+                                        ),
+                                        style: FindingStyle::SoSo,
+                                    });
                                 } else {
                                     jr.findings.push(common::data_types::Finding {
-                                        title:"Good Scalability".to_string(),
-                                        message: format!("Best for {:?} threads", max_result.0.threads),
-                                        style: FindingStyle::Good});
+                                        title: "Good Scalability".to_string(),
+                                        message: format!(
+                                            "Best for {:?} threads",
+                                            max_result.0.threads
+                                        ),
+                                        style: FindingStyle::Good,
+                                    });
                                 }
 
                                 let mut ht_improved_algorithms: Vec<String> = Vec::<String>::new();
@@ -204,32 +252,51 @@ fn enrich_report_with_findings(jr: &mut Report) {
                                     let ht_results: ExperimentChartResult = ex
                                         .results
                                         .iter()
-                                        .filter(|t| (t.0.app_name == Platform::Sgx && t.0.dataset == Dataset::CacheFit && t.0.algorithm == *a))
-                                        .filter(|(_,r)| r.get("threads").unwrap().parse::<u8>().unwrap() > CPU_PHYSICAL_CORES)
+                                        .filter(|t| {
+                                            t.0.app_name == Platform::Sgx
+                                                && t.0.dataset == Dataset::CacheFit
+                                                && t.0.algorithm == *a
+                                        })
+                                        .filter(|(_, r)| {
+                                            r.get("threads").unwrap().parse::<u8>().unwrap()
+                                                > CPU_PHYSICAL_CORES
+                                        })
                                         .map(|a| a.clone())
                                         .collect::<ExperimentChartResult>();
 
                                     let non_ht_results: ExperimentChartResult = ex
                                         .results
                                         .iter()
-                                        .filter(|t| (t.0.app_name == Platform::Sgx && t.0.dataset == Dataset::CacheFit && t.0.algorithm == *a))
-                                        .filter(|(_,r)| r.get("threads").unwrap().parse::<u8>().unwrap() <= CPU_PHYSICAL_CORES)
+                                        .filter(|t| {
+                                            t.0.app_name == Platform::Sgx
+                                                && t.0.dataset == Dataset::CacheFit
+                                                && t.0.algorithm == *a
+                                        })
+                                        .filter(|(_, r)| {
+                                            r.get("threads").unwrap().parse::<u8>().unwrap()
+                                                <= CPU_PHYSICAL_CORES
+                                        })
                                         .map(|a| a.clone())
                                         .collect::<ExperimentChartResult>();
 
-
                                     let ht_max_throughput = ht_results
                                         .iter()
-                                        .map(|(_,a)| a.get("throughput"))
-                                        .map(|a| match a {Some(x) => x.parse::<f32>().unwrap(), None => 0 as f32})
-                                        .max_by(|a,b| a.partial_cmp(b).unwrap())
+                                        .map(|(_, a)| a.get("throughput"))
+                                        .map(|a| match a {
+                                            Some(x) => x.parse::<f32>().unwrap(),
+                                            None => 0 as f32,
+                                        })
+                                        .max_by(|a, b| a.partial_cmp(b).unwrap())
                                         .unwrap();
 
                                     let non_ht_max_throughput = non_ht_results
                                         .iter()
-                                        .map(|(_,a)| a.get("throughput"))
-                                        .map(|a| match a {Some(x) => x.parse::<f32>().unwrap(), None => 0 as f32})
-                                        .max_by(|a,b| a.partial_cmp(b).unwrap())
+                                        .map(|(_, a)| a.get("throughput"))
+                                        .map(|a| match a {
+                                            Some(x) => x.parse::<f32>().unwrap(),
+                                            None => 0 as f32,
+                                        })
+                                        .max_by(|a, b| a.partial_cmp(b).unwrap())
                                         .unwrap();
 
                                     let ht_improvement = ht_max_throughput / non_ht_max_throughput;
@@ -243,15 +310,20 @@ fn enrich_report_with_findings(jr: &mut Report) {
                                 }
                                 if ht_improved_algorithms.len() > 0 {
                                     jr.findings.push(common::data_types::Finding {
-                                        title:"Hyper Threading".to_string(),
-                                        message: format!("Improved: {:?} by up to {:?}%", ht_improved_algorithms,
-                                                         (ht_max_improvement*100 as f32-100 as f32)),
-                                        style: FindingStyle::Good});
+                                        title: "Hyper Threading".to_string(),
+                                        message: format!(
+                                            "Improved: {:?} by up to {:?}%",
+                                            ht_improved_algorithms,
+                                            (ht_max_improvement * 100 as f32 - 100 as f32)
+                                        ),
+                                        style: FindingStyle::Good,
+                                    });
                                 } else {
                                     jr.findings.push(common::data_types::Finding {
-                                        title:"Hyper Threading".to_string(),
+                                        title: "Hyper Threading".to_string(),
                                         message: format!("No algorithm benefits from HT"),
-                                        style: FindingStyle::Bad});
+                                        style: FindingStyle::Bad,
+                                    });
                                 }
 
                                 // calculate the diff and evaluate
@@ -261,17 +333,15 @@ fn enrich_report_with_findings(jr: &mut Report) {
                             Parameter::DataSkew => {}
                             Parameter::JoinSelectivity => {}
                         }
-                    },
+                    }
                     Measurement::EpcPaging => {}
                 }
-            },
-            JobConfig::PerfReport(c) => {
-                match c.exp_type {
-                    ExperimentType::EpcPaging => {},
-                    ExperimentType::Throughput => {},
-                    ExperimentType::Scalability => {},
-                    ExperimentType::Custom => {}
-                }
+            }
+            JobConfig::PerfReport(c) => match c.exp_type {
+                ExperimentType::EpcPaging => {}
+                ExperimentType::Throughput => {}
+                ExperimentType::Scalability => {}
+                ExperimentType::Custom => {}
             },
             JobConfig::Compile(_) => {}
         }
@@ -279,6 +349,7 @@ fn enrich_report_with_findings(jr: &mut Report) {
     // 2. add top-level findings
 }
 
+#[instrument(skip(out))]
 fn parse_output(out: Vec<u8>) -> Result<HashMap<String, String>> {
     let mut rdr = csv::Reader::from_reader(&*out);
     let mut iter = rdr.deserialize();
@@ -290,6 +361,7 @@ fn parse_output(out: Vec<u8>) -> Result<HashMap<String, String>> {
     Ok(exp_result)
 }
 
+#[instrument(skip(tee_bench_dir, configs, cmds, code_hashmap, conn))]
 async fn run_experiment(
     tee_bench_dir: PathBuf,
     configs: Vec<JobConfig>,
@@ -387,6 +459,7 @@ async fn run_experiment(
     JobResult::Exp(Ok(report))
 }
 
+#[instrument(skip(conf, commits, conn))]
 async fn runner(
     conf: JobConfig,
     commits: Arc<Mutex<CommitState>>,
@@ -493,7 +566,7 @@ async fn runner(
     }
 }
 
-#[instrument(skip(queue, oneshot_tx, queue_tx, commits))]
+#[instrument(skip(queue, oneshot_tx, queue_tx, commits, conn))]
 async fn work_on_queue(
     queue: Arc<Mutex<VecDeque<Job>>>,
     oneshot_tx: oneshot::Sender<()>,
@@ -539,6 +612,7 @@ async fn work_on_queue(
     oneshot_tx.send(()).unwrap();
 }
 
+#[instrument(skip(queue, rx))]
 /// Receives the new job and notifies websocket about the new job
 // TODO that's weird... The websocket received the job, so why can't it react to the new job without a notification from here? So that it can select! what to do?
 ///
