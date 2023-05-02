@@ -287,7 +287,7 @@ fn enrich_report_with_findings(jr: &mut Report) {
                                             None => 0 as f32,
                                         })
                                         .max_by(|a, b| a.partial_cmp(b).unwrap())
-                                        .unwrap();
+                                        .unwrap_or_default();
 
                                     let non_ht_max_throughput = non_ht_results
                                         .iter()
@@ -297,9 +297,10 @@ fn enrich_report_with_findings(jr: &mut Report) {
                                             None => 0 as f32,
                                         })
                                         .max_by(|a, b| a.partial_cmp(b).unwrap())
-                                        .unwrap();
+                                        .unwrap_or_default();
 
                                     let ht_improvement = ht_max_throughput / non_ht_max_throughput;
+                                    let ht_improvement = if ht_improvement.is_infinite() { 0 as f32 } else { ht_improvement };
 
                                     if ht_improvement > 1 as f32 {
                                         ht_improved_algorithms.push(a.to_string());
