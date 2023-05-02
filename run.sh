@@ -32,7 +32,8 @@ EOF
         echo "TEEBENCHWEB_SQLITE_FILE not set!"
         return -1
     fi
-    cargo run
+    cargo build --bin backend
+    sudo -E ./../target/debug/backend
 )
 
 build_frontend () (
