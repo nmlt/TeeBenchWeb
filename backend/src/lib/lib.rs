@@ -196,56 +196,56 @@ fn enrich_report_with_findings(jr: &mut Report) {
                                                     .unwrap(),
                                             )
                                             .unwrap()
-                                    })
-                                    .unwrap();
-
-                                jr.findings.push(common::data_types::Finding {
-                                    title: "Max Throughput".to_string(),
-                                    message: format!(
-                                        "{:?} [M rec/s]",
-                                        max_result
-                                            .1
-                                            .get("throughput")
-                                            .unwrap()
-                                            .parse::<f32>()
-                                            .unwrap()
-                                    ),
-                                    style: FindingStyle::Good,
-                                });
-
-                                if max_result.0.threads + 2 < CPU_PHYSICAL_CORES
-                                    && max_threads != max_result.0.threads
-                                {
-                                    jr.findings.push(common::data_types::Finding {
-                                        title: "Very Poor Scalability".to_string(),
-                                        message: format!(
-                                            "Used only {:?}/{:?} physical cores",
-                                            max_result.0.threads, CPU_PHYSICAL_CORES
-                                        ),
-                                        style: FindingStyle::Bad,
                                     });
-                                } else if max_result.0.threads + 1 < CPU_PHYSICAL_CORES
-                                    && max_threads != max_result.0.threads
-                                {
+
+                                if let Some(max_result) = max_result {
                                     jr.findings.push(common::data_types::Finding {
-                                        title: "Poor Scalability".to_string(),
+                                        title: "Max Throughput".to_string(),
                                         message: format!(
-                                            "Used only {:?}/{:?} physical cores",
-                                            max_result.0.threads, CPU_PHYSICAL_CORES
-                                        ),
-                                        style: FindingStyle::SoSo,
-                                    });
-                                } else {
-                                    jr.findings.push(common::data_types::Finding {
-                                        title: "Good Scalability".to_string(),
-                                        message: format!(
-                                            "Best for {:?} threads",
-                                            max_result.0.threads
+                                            "{:?} [M rec/s]",
+                                            max_result
+                                                .1
+                                                .get("throughput")
+                                                .unwrap()
+                                                .parse::<f32>()
+                                                .unwrap()
                                         ),
                                         style: FindingStyle::Good,
                                     });
-                                }
 
+                                    if max_result.0.threads + 2 < CPU_PHYSICAL_CORES
+                                        && max_threads != max_result.0.threads
+                                    {
+                                        jr.findings.push(common::data_types::Finding {
+                                            title: "Very Poor Scalability".to_string(),
+                                            message: format!(
+                                                "Used only {:?}/{:?} physical cores",
+                                                max_result.0.threads, CPU_PHYSICAL_CORES
+                                            ),
+                                            style: FindingStyle::Bad,
+                                        });
+                                    } else if max_result.0.threads + 1 < CPU_PHYSICAL_CORES
+                                        && max_threads != max_result.0.threads
+                                    {
+                                        jr.findings.push(common::data_types::Finding {
+                                            title: "Poor Scalability".to_string(),
+                                            message: format!(
+                                                "Used only {:?}/{:?} physical cores",
+                                                max_result.0.threads, CPU_PHYSICAL_CORES
+                                            ),
+                                            style: FindingStyle::SoSo,
+                                        });
+                                    } else {
+                                        jr.findings.push(common::data_types::Finding {
+                                            title: "Good Scalability".to_string(),
+                                            message: format!(
+                                                "Best for {:?} threads",
+                                                max_result.0.threads
+                                            ),
+                                            style: FindingStyle::Good,
+                                        });
+                                    }
+                                }
                                 let mut ht_improved_algorithms: Vec<String> = Vec::<String>::new();
                                 let mut ht_max_improvement: f32 = 1 as f32;
 
