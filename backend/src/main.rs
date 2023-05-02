@@ -14,7 +14,7 @@ use std::collections::VecDeque;
 use std::sync::Arc;
 use std::sync::Mutex;
 use tokio::sync::mpsc;
-use tracing::{error, info, instrument, warn};
+use tracing::{debug, error, info, instrument, warn};
 
 use backend_lib::profiling_task;
 use common::commit::{Commit, CommitState};
@@ -33,7 +33,7 @@ async fn upload_commit(State(app_state): State<AppState>, Json(payload): Json<Co
 #[instrument(skip(app_state))]
 async fn get_commits(State(app_state): State<AppState>) -> Json<Value> {
     let guard = app_state.commits.lock().unwrap();
-    info!("Get commits {:#?}", guard);
+    debug!("Get commits {:#?}", guard);
     Json(json!(*guard.0))
 }
 

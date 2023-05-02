@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use std::env::var;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
+use tracing::debug;
 
 use common::data_types::TeebenchArgs;
 const SQLITE_FILE_VAR_NAME: &str = "TEEBENCHWEB_SQLITE_FILE";
@@ -45,39 +46,39 @@ lazy_static::lazy_static! {
             phase2Time INTEGER NOT NULL,
             totalTime INTEGER NOT NULL,
             throughput REAL NOT NULL,
-            phase1L3CacheMisses INTEGER NOT NULL,
-            phase1L3HitRatio REAL NOT NULL,
-            phase1L2CacheMisses INTEGER NOT NULL,
-            phase1L2HitRatio REAL NOT NULL,
-            phase1IPC REAL NOT NULL,
-            phase1IR INTEGER NOT NULL,
-            phase1EWB INTEGER NOT NULL,
-            phase1VoluntaryCS INTEGER NOT NULL,
-            phase1InvoluntaryCS INTEGER NOT NULL,
-            phase1UserCpuTime INTEGER NOT NULL,
-            phase1SystemCpuTime INTEGER NOT NULL,
-            phase2L3CacheMisses INTEGER NOT NULL,
-            phase2L3HitRatio REAL NOT NULL,
-            phase2L2CacheMisses INTEGER NOT NULL,
-            phase2L2HitRatio REAL NOT NULL,
-            phase2IPC REAL NOT NULL,
-            phase2IR INTEGER NOT NULL,
-            phase2EWB INTEGER NOT NULL,
-            phase2VoluntaryCS INTEGER NOT NULL,
-            phase2InvoluntaryCS INTEGER NOT NULL,
-            phase2UserCpuTime INTEGER NOT NULL,
-            phase2SystemCpuTime INTEGER NOT NULL,
-            totalL3CacheMisses INTEGER NOT NULL,
-            totalL3HitRatio REAL NOT NULL,
-            totalL2CacheMisses INTEGER NOT NULL,
-            totalL2HitRatio REAL NOT NULL,
-            totalIPC REAL NOT NULL,
-            totalIR INTEGER NOT NULL,
-            totalEWB INTEGER NOT NULL,
-            totalVoluntaryCS INTEGER NOT NULL,
-            totalInvoluntaryCS INTEGER NOT NULL,
-            totalUserCpuTime INTEGER NOT NULL,
-            totalSystemCpuTime INTEGER NOT NULL
+            phase1L3CacheMisses INTEGER,
+            phase1L3HitRatio REAL,
+            phase1L2CacheMisses INTEGER,
+            phase1L2HitRatio REAL,
+            phase1IPC REAL,
+            phase1IR INTEGER,
+            phase1EWB INTEGER,
+            phase1VoluntaryCS INTEGER,
+            phase1InvoluntaryCS INTEGER,
+            phase1UserCpuTime INTEGER,
+            phase1SystemCpuTime INTEGER,
+            phase2L3CacheMisses INTEGER,
+            phase2L3HitRatio REAL,
+            phase2L2CacheMisses INTEGER,
+            phase2L2HitRatio REAL,
+            phase2IPC REAL,
+            phase2IR INTEGER,
+            phase2EWB INTEGER,
+            phase2VoluntaryCS INTEGER,
+            phase2InvoluntaryCS INTEGER,
+            phase2UserCpuTime INTEGER,
+            phase2SystemCpuTime INTEGER,
+            totalL3CacheMisses INTEGER,
+            totalL3HitRatio REAL,
+            totalL2CacheMisses INTEGER,
+            totalL2HitRatio REAL,
+            totalIPC REAL,
+            totalIR INTEGER,
+            totalEWB INTEGER,
+            totalVoluntaryCS INTEGER,
+            totalInvoluntaryCS INTEGER,
+            totalUserCpuTime INTEGER,
+            totalSystemCpuTime INTEGER
         );
     "#))]);
 }
@@ -113,40 +114,48 @@ pub fn insert_experiment(
         data["phase2Time"],
         data["totalTime"],
         data["throughput"],
-        data["phase1L3CacheMisses"],
-        data["phase1L3HitRatio"],
-        data["phase1L2CacheMisses"],
-        data["phase1L2HitRatio"],
-        data["phase1IPC"],
-        data["phase1IR"],
-        data["phase1EWB"],
-        data["phase1VoluntaryCS"],
-        data["phase1InvoluntaryCS"],
-        data["phase1UserCpuTime"],
-        data["phase1SystemCpuTime"],
-        data["phase2L3CacheMisses"],
-        data["phase2L3HitRatio"],
-        data["phase2L2CacheMisses"],
-        data["phase2L2HitRatio"],
-        data["phase2IPC"],
-        data["phase2IR"],
-        data["phase2EWB"],
-        data["phase2VoluntaryCS"],
-        data["phase2InvoluntaryCS"],
-        data["phase2UserCpuTime"],
-        data["phase2SystemCpuTime"],
-        data["totalL3CacheMisses"],
-        data["totalL3HitRatio"],
-        data["totalL2CacheMisses"],
-        data["totalL2HitRatio"],
-        data["totalIPC"],
-        data["totalIR"],
-        data["totalEWB"],
-        data["totalVoluntaryCS"],
-        data["totalInvoluntaryCS"],
-        data["totalUserCpuTime"],
-        data["totalSystemCpuTime"],])?;
+        data.get("phase1L3CacheMisses"),
+        data.get("phase1L3HitRatio"),
+        data.get("phase1L2CacheMisses"),
+        data.get("phase1L2HitRatio"),
+        data.get("phase1IPC"),
+        data.get("phase1IR"),
+        data.get("phase1EWB"),
+        data.get("phase1VoluntaryCS"),
+        data.get("phase1InvoluntaryCS"),
+        data.get("phase1UserCpuTime"),
+        data.get("phase1SystemCpuTime"),
+        data.get("phase2L3CacheMisses"),
+        data.get("phase2L3HitRatio"),
+        data.get("phase2L2CacheMisses"),
+        data.get("phase2L2HitRatio"),
+        data.get("phase2IPC"),
+        data.get("phase2IR"),
+        data.get("phase2EWB"),
+        data.get("phase2VoluntaryCS"),
+        data.get("phase2InvoluntaryCS"),
+        data.get("phase2UserCpuTime"),
+        data.get("phase2SystemCpuTime"),
+        data.get("totalL3CacheMisses"),
+        data.get("totalL3HitRatio"),
+        data.get("totalL2CacheMisses"),
+        data.get("totalL2HitRatio"),
+        data.get("totalIPC"),
+        data.get("totalIR"),
+        data.get("totalEWB"),
+        data.get("totalVoluntaryCS"),
+        data.get("totalInvoluntaryCS"),
+        data.get("totalUserCpuTime"),
+        data.get("totalSystemCpuTime"),
+    ])?;
     Ok(())
+}
+
+fn query_none<T>(val: &Option<T>, name: &str, idx: usize) -> String {
+    match val {
+        Some(_) => format!("{name}=?{idx}"),
+        None => format!("{name} IS NULL"),
+    }
 }
 
 pub fn search_for_exp(
@@ -154,54 +163,172 @@ pub fn search_for_exp(
     args: &TeebenchArgs,
 ) -> Result<HashMap<String, String>> {
     let conn = conn.lock().unwrap();
-    let id = conn.query_row(indoc!("SELECT id FROM teebenchargs WHERE app_name=(?1) AND dataset=(?2) AND algorithm=(?3) AND threads=(?4) AND selectivity=(?5) AND data_skew=(?6) AND seal_chunk_size=(?7) AND r_tuples=(?8) AND s_tuples=(?9) AND r_path=(?10) AND s_path=(?11) AND r_size=(?12) AND s_size=(?13) AND seal=(?14) AND sort_r=(?15) AND sort_s=(?16)"), (&args.app_name.to_string(), &args.dataset.to_string(), &format!("{:#?}", args.algorithm), &args.threads, &args.selectivity, &args.data_skew, &args.seal_chunk_size, &args.r_tuples, &args.s_tuples, &args.r_path, &args.s_path, &args.r_size, &args.s_size, &args.seal, &args.sort_r, &args.sort_s), |r| r.get::<usize, usize>(0))?;
+    debug!("Searching cache for {args:?}...");
+    let arg_params = params![
+        &args.app_name.to_string(),
+        &args.dataset.to_string(),
+        &format!("{:#?}", args.algorithm),
+        &args.threads,
+        &args.selectivity,
+        &args.data_skew,
+        &args.seal_chunk_size,
+        &args.r_tuples,
+        &args.s_tuples,
+        &args.r_path,
+        &args.s_path,
+        &args.r_size,
+        &args.s_size,
+        &args.seal,
+        &args.sort_r,
+        &args.sort_s
+    ];
+    let id = conn.query_row(&format!("SELECT id FROM teebenchargs WHERE app_name=?1 AND dataset=?2 AND algorithm=?3 AND threads=?4 AND selectivity=?5 AND data_skew=?6 AND seal_chunk_size=?7 AND r_tuples=?8 AND s_tuples=?9 AND {} AND {} AND {} AND {} AND seal=?14 AND sort_r=?15 AND sort_s=?16", query_none(&args.r_path, "r_path", 10), query_none(&args.s_path, "s_path", 11), query_none(&args.r_size, "r_size", 12), query_none(&args.s_size, "s_size", 13)), arg_params, |r| r.get::<usize, usize>(0))?;
     let mut map: HashMap<String, String> = HashMap::new();
     conn.query_row(indoc!("SELECT algorithm, threads, relR, relS, matches, phase1Cycles, phase2Cycles, cyclesPerTuple, phase1Time, phase2Time, totalTime, throughput, phase1L3CacheMisses, phase1L3HitRatio, phase1L2CacheMisses, phase1L2HitRatio, phase1IPC, phase1IR, phase1EWB, phase1VoluntaryCS, phase1InvoluntaryCS, phase1UserCpuTime, phase1SystemCpuTime, phase2L3CacheMisses, phase2L3HitRatio, phase2L2CacheMisses, phase2L2HitRatio, phase2IPC, phase2IR, phase2EWB, phase2VoluntaryCS, phase2InvoluntaryCS, phase2UserCpuTime, phase2SystemCpuTime, totalL3CacheMisses, totalL3HitRatio, totalL2CacheMisses, totalL2HitRatio, totalIPC, totalIR, totalEWB, totalVoluntaryCS, totalInvoluntaryCS, totalUserCpuTime, totalSystemCpuTime FROM output WHERE teebenchargs_id=(?1)"), [id], |r| {
         map.insert("algorithm".to_owned(), r.get::<usize, String>(0)?);
-        map.insert("threads".to_owned(), r.get::<usize, String>(1)?);
-        map.insert("relR".to_owned(), r.get::<usize, String>(2)?);
-        map.insert("relS".to_owned(), r.get::<usize, String>(3)?);
-        map.insert("matches".to_owned(), r.get::<usize, String>(4)?);
-        map.insert("phase1Cycles".to_owned(), r.get::<usize, String>(5)?);
-        map.insert("phase2Cycles".to_owned(), r.get::<usize, String>(6)?);
-        map.insert("cyclesPerTuple".to_owned(), r.get::<usize, String>(7)?);
-        map.insert("phase1Time".to_owned(), r.get::<usize, String>(8)?);
-        map.insert("phase2Time".to_owned(), r.get::<usize, String>(9)?);
-        map.insert("totalTime".to_owned(), r.get::<usize, String>(10)?);
-        map.insert("throughput".to_owned(), r.get::<usize, String>(11)?);
-        map.insert("phase1L3CacheMisses".to_owned(), r.get::<usize, String>(12)?);
-        map.insert("phase1L3HitRatio".to_owned(), r.get::<usize, String>(13)?);
-        map.insert("phase1L2CacheMisses".to_owned(), r.get::<usize, String>(14)?);
-        map.insert("phase1L2HitRatio".to_owned(), r.get::<usize, String>(15)?);
-        map.insert("phase1IPC".to_owned(), r.get::<usize, String>(16)?);
-        map.insert("phase1IR".to_owned(), r.get::<usize, String>(17)?);
-        map.insert("phase1EWB".to_owned(), r.get::<usize, String>(18)?);
-        map.insert("phase1VoluntaryCS".to_owned(), r.get::<usize, String>(19)?);
-        map.insert("phase1InvoluntaryCS".to_owned(), r.get::<usize, String>(20)?);
-        map.insert("phase1UserCpuTime".to_owned(), r.get::<usize, String>(21)?);
-        map.insert("phase1SystemCpuTime".to_owned(), r.get::<usize, String>(22)?);
-        map.insert("phase2L3CacheMisses".to_owned(), r.get::<usize, String>(23)?);
-        map.insert("phase2L3HitRatio".to_owned(), r.get::<usize, String>(24)?);
-        map.insert("phase2L2CacheMisses".to_owned(), r.get::<usize, String>(25)?);
-        map.insert("phase2L2HitRatio".to_owned(), r.get::<usize, String>(26)?);
-        map.insert("phase2IPC".to_owned(), r.get::<usize, String>(27)?);
-        map.insert("phase2IR".to_owned(), r.get::<usize, String>(28)?);
-        map.insert("phase2EWB".to_owned(), r.get::<usize, String>(29)?);
-        map.insert("phase2VoluntaryCS".to_owned(), r.get::<usize, String>(30)?);
-        map.insert("phase2InvoluntaryCS".to_owned(), r.get::<usize, String>(31)?);
-        map.insert("phase2UserCpuTime".to_owned(), r.get::<usize, String>(32)?);
-        map.insert("phase2SystemCpuTime".to_owned(), r.get::<usize, String>(33)?);
-        map.insert("totalL3CacheMisses".to_owned(), r.get::<usize, String>(34)?);
-        map.insert("totalL3HitRatio".to_owned(), r.get::<usize, String>(35)?);
-        map.insert("totalL2CacheMisses".to_owned(), r.get::<usize, String>(36)?);
-        map.insert("totalL2HitRatio".to_owned(), r.get::<usize, String>(37)?);
-        map.insert("totalIPC".to_owned(), r.get::<usize, String>(38)?);
-        map.insert("totalIR".to_owned(), r.get::<usize, String>(39)?);
-        map.insert("totalEWB".to_owned(), r.get::<usize, String>(40)?);
-        map.insert("totalVoluntaryCS".to_owned(), r.get::<usize, String>(41)?);
-        map.insert("totalInvoluntaryCS".to_owned(), r.get::<usize, String>(42)?);
-        map.insert("totalUserCpuTime".to_owned(), r.get::<usize, String>(43)?);
-        map.insert("totalSystemCpuTime".to_owned(), r.get::<usize, String>(44)?);
+        map.insert("threads".to_owned(), r.get::<usize, usize>(1).map(|v| v.to_string())?);
+        map.insert("relR".to_owned(), r.get::<usize, usize>(2).map(|v| v.to_string())?);
+        map.insert("relS".to_owned(), r.get::<usize, usize>(3).map(|v| v.to_string())?);
+        map.insert("matches".to_owned(), r.get::<usize, usize>(4).map(|v| v.to_string())?);
+        map.insert("phase1Cycles".to_owned(), r.get::<usize, usize>(5).map(|v| v.to_string())?);
+        map.insert("phase2Cycles".to_owned(), r.get::<usize, usize>(6).map(|v| v.to_string())?);
+        map.insert("cyclesPerTuple".to_owned(), r.get::<usize, usize>(7).map(|v| v.to_string())?);
+        map.insert("phase1Time".to_owned(), r.get::<usize, usize>(8).map(|v| v.to_string())?);
+        map.insert("phase2Time".to_owned(), r.get::<usize, usize>(9).map(|v| v.to_string())?);
+        map.insert("totalTime".to_owned(), r.get::<usize, usize>(10).map(|v| v.to_string())?);
+        map.insert("throughput".to_owned(), r.get::<usize, f64>(11).map(|v| v.to_string())?);
+        if let Some(val) = r.get::<usize, Option<usize>>(12)? {
+            let val = val.to_string();
+            map.insert("phase1L3CacheMisses".to_owned(), val);
+        }
+        if let Some(val) = r.get::<usize, Option<f64>>(13)? {
+            let val = val.to_string();
+            map.insert("phase1L3HitRatio".to_owned(), val);
+        }
+        if let Some(val) = r.get::<usize, Option<usize>>(14)? {
+            let val = val.to_string();
+            map.insert("phase1L2CacheMisses".to_owned(), val);
+        }
+        if let Some(val) = r.get::<usize, Option<f64>>(15)? {
+            let val = val.to_string();
+            map.insert("phase1L2HitRatio".to_owned(), val);
+        }
+        if let Some(val) = r.get::<usize, Option<f64>>(16)? {
+            let val = val.to_string();
+            map.insert("phase1IPC".to_owned(), val);
+        }
+        if let Some(val) = r.get::<usize, Option<usize>>(17)? {
+            let val = val.to_string();
+            map.insert("phase1IR".to_owned(), val);
+        }
+        if let Some(val) = r.get::<usize, Option<usize>>(18)? {
+            let val = val.to_string();
+            map.insert("phase1EWB".to_owned(), val);
+        }
+        if let Some(val) = r.get::<usize, Option<usize>>(19)? {
+            let val = val.to_string();
+            map.insert("phase1VoluntaryCS".to_owned(), val);
+        }
+        if let Some(val) = r.get::<usize, Option<usize>>(20)? {
+            let val = val.to_string();
+            map.insert("phase1InvoluntaryCS".to_owned(), val);
+        }
+        if let Some(val) = r.get::<usize, Option<usize>>(21)? {
+            let val = val.to_string();
+            map.insert("phase1UserCpuTime".to_owned(), val);
+        }
+        if let Some(val) = r.get::<usize, Option<usize>>(22)? {
+            let val = val.to_string();
+            map.insert("phase1SystemCpuTime".to_owned(), val);
+        }
+        if let Some(val) = r.get::<usize, Option<usize>>(23)? {
+            let val = val.to_string();
+            map.insert("phase2L3CacheMisses".to_owned(), val);
+        }
+        if let Some(val) = r.get::<usize, Option<f64>>(24)? {
+            let val = val.to_string();
+            map.insert("phase2L3HitRatio".to_owned(), val);
+        }
+        if let Some(val) = r.get::<usize, Option<usize>>(25)? {
+            let val = val.to_string();
+            map.insert("phase2L2CacheMisses".to_owned(), val);
+        }
+        if let Some(val) = r.get::<usize, Option<f64>>(26)? {
+            let val = val.to_string();
+            map.insert("phase2L2HitRatio".to_owned(), val);
+        }
+        if let Some(val) = r.get::<usize, Option<f64>>(27)? {
+            let val = val.to_string();
+            map.insert("phase2IPC".to_owned(), val);
+        }
+        if let Some(val) = r.get::<usize, Option<usize>>(28)? {
+            let val = val.to_string();
+            map.insert("phase2IR".to_owned(), val);
+        }
+        if let Some(val) = r.get::<usize, Option<usize>>(29)? {
+            let val = val.to_string();
+            map.insert("phase2EWB".to_owned(), val);
+        }
+        if let Some(val) = r.get::<usize, Option<usize>>(30)? {
+            let val = val.to_string();
+            map.insert("phase2VoluntaryCS".to_owned(), val);
+        }
+        if let Some(val) = r.get::<usize, Option<usize>>(31)? {
+            let val = val.to_string();
+            map.insert("phase2InvoluntaryCS".to_owned(), val);
+        }
+        if let Some(val) = r.get::<usize, Option<usize>>(32)? {
+            let val = val.to_string();
+            map.insert("phase2UserCpuTime".to_owned(), val);
+        }
+        if let Some(val) = r.get::<usize, Option<usize>>(33)? {
+            let val = val.to_string();
+            map.insert("phase2SystemCpuTime".to_owned(), val);
+        }
+        if let Some(val) = r.get::<usize, Option<usize>>(34)? {
+            let val = val.to_string();
+            map.insert("totalL3CacheMisses".to_owned(), val);
+        }
+        if let Some(val) = r.get::<usize, Option<f64>>(35)? {
+            let val = val.to_string();
+            map.insert("totalL3HitRatio".to_owned(), val);
+        }
+        if let Some(val) = r.get::<usize, Option<usize>>(36)? {
+            let val = val.to_string();
+            map.insert("totalL2CacheMisses".to_owned(), val);
+        }
+        if let Some(val) = r.get::<usize, Option<f64>>(37)? {
+            let val = val.to_string();
+            map.insert("totalL2HitRatio".to_owned(), val);
+        }
+        if let Some(val) = r.get::<usize, Option<f64>>(38)? {
+            let val = val.to_string();
+            map.insert("totalIPC".to_owned(), val);
+        }
+        if let Some(val) = r.get::<usize, Option<usize>>(39)? {
+            let val = val.to_string();
+            map.insert("totalIR".to_owned(), val);
+        }
+        if let Some(val) = r.get::<usize, Option<usize>>(40)? {
+            let val = val.to_string();
+            map.insert("totalEWB".to_owned(), val);
+        }
+        if let Some(val) = r.get::<usize, Option<usize>>(41)? {
+            let val = val.to_string();
+            map.insert("totalVoluntaryCS".to_owned(), val);
+        }
+        if let Some(val) = r.get::<usize, Option<usize>>(42)? {
+            let val = val.to_string();
+            map.insert("totalInvoluntaryCS".to_owned(), val);
+        }
+        if let Some(val) = r.get::<usize, Option<usize>>(43)? {
+            let val = val.to_string();
+            map.insert("totalUserCpuTime".to_owned(), val);
+        }
+        if let Some(val) = r.get::<usize, Option<usize>>(44)? {
+            let val = val.to_string();
+            map.insert("totalSystemCpuTime".to_owned(), val);
+        }
         Ok(())
     })?;
     Ok(map)

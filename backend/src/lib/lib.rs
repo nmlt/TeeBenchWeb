@@ -11,7 +11,7 @@ use std::sync::Mutex;
 use time::Duration;
 use tokio::process::Command as TokioCommand;
 use tokio::sync::{mpsc, oneshot};
-use tracing::{error, info, instrument, warn};
+use tracing::{debug, error, info, instrument, warn};
 
 use common::commandline::Commandline;
 use common::commit::{CommitState, CompilationStatus};
@@ -23,6 +23,8 @@ use common::data_types::{
 use common::hardcoded::{hardcoded_perf_report_commands, hardcoded_perf_report_configs};
 
 use caching::{search_for_exp, setup_sqlite};
+
+use crate::caching::insert_experiment;
 
 const BIN_FOLDER: &str = "bin";
 const REPLACE_FILE: &str = "Joins/TBW/OperatorJoin.cpp";
@@ -300,7 +302,11 @@ fn enrich_report_with_findings(jr: &mut Report) {
                                         .unwrap_or_default();
 
                                     let ht_improvement = ht_max_throughput / non_ht_max_throughput;
-                                    let ht_improvement = if ht_improvement.is_infinite() { 0 as f32 } else { ht_improvement };
+                                    let ht_improvement = if ht_improvement.is_infinite() {
+                                        0 as f32
+                                    } else {
+                                        ht_improvement
+                                    };
 
                                     if ht_improvement > 1 as f32 {
                                         ht_improved_algorithms.push(a.to_string());
@@ -394,6 +400,19 @@ async fn run_experiment(
                 let cmd = cmd_moved.clone();
                 let code_hashmap = code_hashmap_moved.clone();
                 // This assumes that the Makefile of TeeBench has a different app name ("sgx" or "native"). See `common::data_types::Platform::to_app_name()`.
+                let args_key = cmd.to_teebench_args();
+                let cmd_string = format!("{cmd}");
+                match search_for_exp(conn.clone(), &args_key) {
+                    Ok(r) => {
+                        info!("Found a matching experiment in the cache for `{cmd_string}`");
+                        cmd_tasks.insert(args_key, Ok(r));
+                        continue;
+                    }
+                    Err(e) => match e.downcast_ref::<rusqlite::Error>() {
+                        Some(rusqlite::Error::QueryReturnedNoRows) => (),
+                        _ => error!("Searching the cache failed with: {e}"),
+                    },
+                }
                 if cmd.algorithm.is_commit()
                     && (switched_in.is_none()
                         || (switched_in.is_some() && switched_in.unwrap() != cmd.algorithm))
@@ -406,12 +425,6 @@ async fn run_experiment(
                     switched_in.replace(cmd.algorithm);
                 }
                 tee_bench_dir.push(BIN_FOLDER);
-                let args_key = cmd.to_teebench_args();
-                if let Ok(r) = search_for_exp(conn.clone(), &args_key) {
-                    cmd_tasks.insert(args_key, Ok(r));
-                    continue;
-                }
-                let cmd_string = format!("{cmd}");
                 info!("Running `{cmd_string}`");
                 let output = to_command(cmd)
                     .current_dir(tee_bench_dir)
@@ -430,9 +443,10 @@ async fn run_experiment(
                     break;
                 } else {
                     let human_readable = String::from_utf8(output.stdout.clone()).unwrap();
-                    info!("Task output:\n```\n{human_readable}\n```");
+                    debug!("Task output:\n```\n{human_readable}\n```");
                     let data = parse_output(output.stdout).unwrap();
                     // TODO Maybe change `JobResult`'s Result to an anyhow::Result, then I wouldn't have to unwrap here. Maybe I don't even need `TeebenchWebError`...
+                    insert_experiment(conn.clone(), args_key.clone(), data.clone()).unwrap();
                     cmd_tasks.insert(args_key, Ok(data));
                 }
             }
@@ -460,7 +474,7 @@ async fn run_experiment(
     JobResult::Exp(Ok(report))
 }
 
-#[instrument(skip(conf, commits, conn))]
+#[instrument(skip(conf, commits, currently_switched_in, conn))]
 async fn runner(
     conf: JobConfig,
     commits: Arc<Mutex<CommitState>>,
@@ -567,7 +581,7 @@ async fn runner(
     }
 }
 
-#[instrument(skip(queue, oneshot_tx, queue_tx, commits, conn))]
+#[instrument(skip(queue, oneshot_tx, queue_tx, commits, currently_switched_in, conn))]
 async fn work_on_queue(
     queue: Arc<Mutex<VecDeque<Job>>>,
     oneshot_tx: oneshot::Sender<()>,
