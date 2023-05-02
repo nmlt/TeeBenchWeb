@@ -99,7 +99,7 @@ async fn compile(
         .with_context(|| format!("Failed to create $TEE_BENCH_DIR/{BIN_FOLDER}!"))?;
     app_path.push("app");
     bin_path.push("native");
-    info!("Copying from {app_path:?} to {bin_path:?}");
+    debug!("Copying from {app_path:?} to {bin_path:?}");
     tokio::fs::copy(&app_path, &bin_path)
         .await
         .context("Failed to copy native binary over!")?;
@@ -131,7 +131,7 @@ async fn compile(
         bail!("Failed to compile SGX version:\n{output}");
     }
     bin_path.push("sgx");
-    info!("Copying from {app_path:?} to {bin_path:?}");
+    debug!("Copying from {app_path:?} to {bin_path:?}");
     tokio::fs::copy(&app_path, &bin_path)
         .await
         .context("Failed to copy sgx binary over!")?;
@@ -139,7 +139,7 @@ async fn compile(
     bin_path.push(enclave_name);
     app_path.pop();
     app_path.push(enclave_name);
-    info!("Copying from {app_path:?} to {bin_path:?}");
+    debug!("Copying from {app_path:?} to {bin_path:?}");
     tokio::fs::copy(&app_path, &bin_path)
         .await
         .with_context(|| format!("Failed to copy {enclave_name} over!"))?;
@@ -368,7 +368,15 @@ fn parse_output(out: Vec<u8>) -> Result<HashMap<String, String>> {
     Ok(exp_result)
 }
 
-#[instrument(skip(tee_bench_dir, configs, cmds, code_hashmap, conn))]
+// Showing `currently_switched_in` with tracing seems to be wrong. It is always shown as empty, but the code doesn't run like it is.
+#[instrument(skip(
+    tee_bench_dir,
+    configs,
+    cmds,
+    code_hashmap,
+    currently_switched_in,
+    conn
+))]
 async fn run_experiment(
     tee_bench_dir: PathBuf,
     configs: Vec<JobConfig>,
@@ -404,7 +412,7 @@ async fn run_experiment(
                 let cmd_string = format!("{cmd}");
                 match search_for_exp(conn.clone(), &args_key) {
                     Ok(r) => {
-                        info!("Found a matching experiment in the cache for `{cmd_string}`");
+                        info!("Found cached result for `{cmd_string}`");
                         cmd_tasks.insert(args_key, Ok(r));
                         continue;
                     }
@@ -606,7 +614,7 @@ async fn work_on_queue(
         )
         .await;
         let result_type = if result.is_ok() {
-            "Sucess".to_string()
+            "Success".to_string()
         } else {
             format!("Failure: {result:?}")
         };
