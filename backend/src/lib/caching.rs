@@ -8,8 +8,8 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tracing::debug;
 
+use crate::config::SQLITE_FILE_VAR_NAME;
 use common::data_types::TeebenchArgs;
-const SQLITE_FILE_VAR_NAME: &str = "TEEBENCHWEB_SQLITE_FILE";
 
 lazy_static::lazy_static! {
     static ref MIGRATIONS: Migrations<'static> = Migrations::new(vec![M::up(indoc!(r#"
