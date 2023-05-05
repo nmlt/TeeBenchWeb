@@ -9,7 +9,7 @@ use structopt::StructOpt;
 pub struct Commandline {
     pub app: Platform,
     pub algorithm: Algorithm,
-    pub args: Vec<String>, // TODO Make this a HashSet
+    pub args: Vec<String>, // Not a HashSet because order is important and flags could be passed multiple times.
 }
 
 impl Commandline {

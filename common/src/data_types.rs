@@ -34,7 +34,7 @@ pub type SingleRunResult = HashMap<String, String>;
 pub type ExperimentChartResult = Vec<(TeebenchArgs, SingleRunResult)>;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
-// To make ProfilingConfiguration an enum depending on ExperimentType is a bad idea maybe, because then we'd have to match in every dispatch callback modifying the config. So instead we now use the JobConfig enum to accertain which kind of job created this report.
+// TODO To make ProfilingConfiguration an enum depending on ExperimentType is a bad idea maybe, because then we'd have to match in every dispatch callback modifying the config. So instead we now use the JobConfig enum to accertain which kind of job created this report. That is actually not a problem, because I want to switch the yew form to another struct (that would also be local to the frontend). Only after sending the form off it would become a ProfilingConfiguration.
 pub struct ExperimentChart {
     pub config: JobConfig,
     pub results: ExperimentChartResult,
@@ -163,9 +163,19 @@ impl Default for Job {
     }
 }
 
+impl Job {
+    pub fn new(config: JobConfig, submitted: OffsetDateTime) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            config,
+            submitted,
+            ..Default::default()
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ClientMessage {
-    //RequestQueue, // TODO Instead do a get to /api/queue.
     RequestClear,
     // Frontend received message
     Acknowledge, // TODO Can I trust that transmission succeeds?
@@ -424,6 +434,7 @@ impl Platform {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct PerfReportConfig {
     pub id: CommitIdType,
+    /// In this struct, exp_type cannot be `::Custom`.
     pub exp_type: ExperimentType,
     pub dataset: Dataset,
     pub baseline: Algorithm,
@@ -467,7 +478,6 @@ impl PerfReportConfig {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum JobConfig {
     Profiling(ProfilingConfiguration),
-    // TODO Problem with this: This includes several charts. So several `Report`s (that's actually also the problem with some ProfilingConfigs). And I said in the past that one `Report` represents just one chart. Should actually easily be solvable by returning several Reports from a run?
     /// Config for the Performance Report.
     ///
     /// Holds the title of the commit it is for and the selected baseline algorithm/commit.
@@ -484,7 +494,7 @@ pub enum JobConfig {
     ///     - Baseline's EPC Paging with increasing dataset size: Page misses as bars and throughput as line.
     /// I need to access the Commit state anyway when evaluating this (to get the title of the baseline, if its a commit), so no need to save baseline, etc in here.
     PerfReport(PerfReportConfig),
-    /// Compile the commit with id 0.
+    /// Compile the commit with id `.0`.
     Compile(CommitIdType),
 }
 
@@ -536,15 +546,15 @@ pub type StepType = String;
 ///     - `dataset` and `platform` might be sometimes relevant: `ExperimentType::Throughput` allows one dataset to be choosen.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Store)]
 pub struct ProfilingConfiguration {
-    pub algorithm: HashSet<Algorithm>, // TODO Rename to plural.
+    pub algorithms: HashSet<Algorithm>,
     pub experiment_type: ExperimentType,
     pub parameter: Parameter,
     pub measurement: Measurement,
     pub min: StepType,
     pub max: StepType,
     pub step: StepType,
-    pub dataset: HashSet<Dataset>,   // TODO Rename to plural.
-    pub platform: HashSet<Platform>, // TODO Rename to plural.
+    pub datasets: HashSet<Dataset>,  
+    pub platforms: HashSet<Platform>,
     pub sort_data: bool,
 }
 
@@ -574,15 +584,15 @@ impl ProfilingConfiguration {
             platform.insert(pl);
         }
         Self {
-            algorithm: alg,
+            algorithms: alg,
             experiment_type,
             parameter,
             measurement,
             min,
             max,
             step,
-            dataset,
-            platform,
+            datasets: dataset,
+            platforms: platform,
             sort_data,
         }
     }
@@ -595,15 +605,15 @@ impl Default for ProfilingConfiguration {
         // corrected here to an existent id - or there might not even be one.
         //let algorithm = Algorithm::iter().collect();
         Self {
-            algorithm: HashSet::from([Algorithm::Rho]),
+            algorithms: HashSet::from([Algorithm::Rho]),
             experiment_type: ExperimentType::default(),
             parameter: Parameter::default(),
             measurement: Measurement::default(),
             min: 2.to_string(),
             max: 8.to_string(),
             step: 1.to_string(),
-            dataset: HashSet::from([Dataset::CacheExceed, Dataset::CacheFit]),
-            platform: HashSet::from([Platform::default()]),
+            datasets: HashSet::from([Dataset::CacheExceed, Dataset::CacheFit]),
+            platforms: HashSet::from([Platform::default()]),
             sort_data: false,
         }
     }
@@ -626,15 +636,15 @@ impl std::fmt::Display for ProfilingConfiguration {
                 Platform: {:?}
                 Pre-sort data: {}
         ",
-            self.algorithm,
+            self.algorithms,
             self.experiment_type,
             self.parameter,
             self.min,
             self.max,
             self.step,
             self.measurement,
-            self.dataset,
-            self.platform,
+            self.datasets,
+            self.platforms,
             self.sort_data
         )
     }
@@ -685,9 +695,9 @@ impl ProfilingConfiguration {
             ExperimentType::EpcPaging => panic!(),
             ExperimentType::Throughput => {
                 let mut res = vec![];
-                for ds in &self.dataset {
+                for ds in &self.datasets {
                     let mut sub_exp = vec![];
-                    for alg in &self.algorithm {
+                    for alg in &self.algorithms {
                         sub_exp.append(&mut crate::hardcoded::hardcoded_throughput_commands(
                             *alg,
                             &alg.to_cmd_arg(),
@@ -700,9 +710,9 @@ impl ProfilingConfiguration {
             }
             ExperimentType::Scalability => {
                 let mut res = vec![];
-                for ds in &self.dataset {
+                for ds in &self.datasets {
                     let mut sub_exp = vec![];
-                    for alg in &self.algorithm {
+                    for alg in &self.algorithms {
                         sub_exp.append(&mut crate::hardcoded::hardcoded_scalability_commands(
                             *alg,
                             &alg.to_cmd_arg(),
@@ -716,8 +726,8 @@ impl ProfilingConfiguration {
             ExperimentType::Custom => (), // Everything following only applies to this case.
         }
         let mut res = vec![];
-        for platform in &self.platform {
-            for alg in &self.algorithm {
+        for platform in &self.platforms {
+            for alg in &self.algorithms {
                 let mut cmd = Commandline::new(*platform, *alg);
                 cmd.add_args("-a", alg.to_cmd_arg());
                 res.push(cmd);
@@ -729,7 +739,7 @@ impl ProfilingConfiguration {
                 cmd.add_args("--sort-r", "--sort-s");
             }
         }
-        let mut dataset_iter = self.dataset.iter();
+        let mut dataset_iter = self.datasets.iter();
         let ds = dataset_iter.next().unwrap(); // There is always at least one dataset in a ProfilingConfiguration.
         for cmd in &mut res {
             cmd.add_args("-d", ds.to_cmd_arg());
@@ -780,8 +790,8 @@ impl ProfilingConfiguration {
                 self.min = "2".to_string();
                 self.max = "2".to_string();
                 self.step = "1".to_string();
-                self.dataset = HashSet::from([Dataset::CacheExceed, Dataset::CacheFit]);
-                self.platform = HashSet::from([Platform::Sgx, Platform::Native]);
+                self.datasets = HashSet::from([Dataset::CacheExceed, Dataset::CacheFit]);
+                self.platforms = HashSet::from([Platform::Sgx, Platform::Native]);
                 self.sort_data = false;
             }
             ExperimentType::EpcPaging => {
@@ -789,8 +799,8 @@ impl ProfilingConfiguration {
                 self.min = "2".to_string();
                 self.max = "2".to_string();
                 self.step = "1".to_string();
-                self.dataset = HashSet::from([Dataset::CacheExceed]); // TODO Actually the dataset size should slowly increase.
-                self.platform = HashSet::from([Platform::Sgx]);
+                self.datasets = HashSet::from([Dataset::CacheExceed]); // TODO Actually the dataset size should slowly increase.
+                self.platforms = HashSet::from([Platform::Sgx]);
                 self.sort_data = false;
             }
             ExperimentType::Scalability => {
@@ -799,8 +809,8 @@ impl ProfilingConfiguration {
                 self.min = "2".to_string();
                 self.max = "8".to_string();
                 self.step = "1".to_string();
-                self.dataset = HashSet::from([Dataset::CacheExceed, Dataset::CacheFit]);
-                self.platform = HashSet::from([Platform::Sgx]);
+                self.datasets = HashSet::from([Dataset::CacheExceed, Dataset::CacheFit]);
+                self.platforms = HashSet::from([Platform::Sgx]);
                 self.sort_data = false;
             }
             // ExperimentType::CpuCyclesTuple => {

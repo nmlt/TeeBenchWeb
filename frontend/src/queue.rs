@@ -29,7 +29,7 @@ fn QueueItem(QueueItemProps { config, running }: &QueueItemProps) -> Html {
         }
     };
     let algs: Vec<_> = config
-        .algorithm
+        .algorithms
         .iter()
         .map(|a| a.to_string())
         .map(|a| html! { <span class="badge text-bg-primary m-1">{a}</span> })

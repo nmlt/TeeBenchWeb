@@ -115,11 +115,11 @@ pub fn Websocket() -> Html {
                             }
                             JobConfig::PerfReport(pr_conf) => {
                                 commit_dispatch.reduce_mut(|commit_store| {
-                                    let commit = commit_store.get_id_mut(&pr_conf.id);
+                                    let commit = commit_store.get_by_id_mut(&pr_conf.id);
                                     if let Some(mut commit) = commit {
                                         if let JobStatus::Done { result, .. } = finished_job.status
                                         {
-                                            commit.reports = Some(result);
+                                            commit.report = Some(result);
                                             commit.perf_report_running = false;
                                         } else {
                                             log!("Error: Got an unfinished job in the websocket.");
@@ -129,7 +129,7 @@ pub fn Websocket() -> Html {
                             }
                             JobConfig::Compile(ref id) => {
                                 commit_dispatch.reduce_mut(|commit_store| {
-                                    let commit = commit_store.get_id_mut(id);
+                                    let commit = commit_store.get_by_id_mut(id);
                                     if let Some(mut commit) = commit {
                                         if let JobStatus::Done { result, .. } = finished_job.status {
                                             if let JobResult::Compile(r) = result {
