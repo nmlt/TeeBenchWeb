@@ -101,7 +101,7 @@ pub fn enrich_report_with_findings(jr: &mut Report) {
                                 let mut ht_improved_algorithms: Vec<String> = Vec::<String>::new();
                                 let mut ht_max_improvement: f32 = 1 as f32;
 
-                                for a in c.algorithm.iter() {
+                                for a in c.algorithms.iter() {
                                     // find max throughput
                                     let ht_results: ExperimentChartResult = ex
                                         .results
