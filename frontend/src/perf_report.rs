@@ -52,14 +52,14 @@ pub fn PerfReport(PerfReportProps { commit: current }: &PerfReportProps) -> Html
             }
         },
     };
-    let Some(commit) = commit_store.get_by_id(&current) else {
+    let Some(commit) = commit_store.get_id(&current) else {
         return html! {
             <h1>{format!("Error getting commit with title {current:?}!")}</h1>
         }
     };
     let findings;
     let charts;
-    if let Some(JobResult::Exp(Ok(ref report))) = commit.report {
+    if let Some(JobResult::Exp(Ok(ref report))) = commit.reports {
         findings = report
             .findings
             .iter()
@@ -82,7 +82,7 @@ pub fn PerfReport(PerfReportProps { commit: current }: &PerfReportProps) -> Html
                 }
             })
             .collect::<Vec<_>>();
-    } else if let Some(JobResult::Exp(Err(ref e))) = commit.report {
+    } else if let Some(JobResult::Exp(Err(ref e))) = commit.reports {
         findings = vec![];
         charts = vec![html! {
             <div class="alert alert-danger mx-2" role="alert">

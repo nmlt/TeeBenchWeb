@@ -10,7 +10,7 @@ use std::env::var;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::Mutex;
-use time::Instant;
+use time::Duration;
 use tokio::process::Command as TokioCommand;
 use tokio::sync::{mpsc, oneshot};
 use tracing::{debug, error, info, instrument, warn};
@@ -100,7 +100,7 @@ async fn compile(
         .context("Failed to copy native binary over!")?;
     bin_path.pop();
     let cmd_out = TokioCommand::new("./native")
-        .args(&["-a", REPLACE_ALG])
+        .args(&["-a", REPLACE_ALG]) // TODO Check this and sgx version for output in csv. That's what has to work!
         .current_dir(&bin_path)
         .output()
         .await
@@ -291,7 +291,7 @@ async fn runner(
     );
     // TODO Move to JobConfig method.
     let algs = match conf {
-        JobConfig::Profiling(ref c) => c.algorithms.clone(),
+        JobConfig::Profiling(ref c) => c.algorithm.clone(),
         JobConfig::PerfReport(ref c) => {
             if let Algorithm::Commit(_) = c.baseline {
                 HashSet::from([c.baseline, Algorithm::Commit(c.id)])
@@ -309,12 +309,12 @@ async fn runner(
         JobConfig::Profiling(ref c) => {
             let cmds = c.to_teebench_cmd();
             let configs = c
-                .datasets
+                .dataset
                 .iter()
                 .map(|ds| {
                     let mut clone = c.clone();
                     clone.set_preconfigured_experiment();
-                    clone.datasets = HashSet::from([*ds]);
+                    clone.dataset = HashSet::from([*ds]);
                     JobConfig::Profiling(clone)
                 })
                 .collect();
@@ -331,7 +331,7 @@ async fn runner(
         JobConfig::PerfReport(ref pr_conf) => {
             let baseline = || {
                 let mut guard = commits.lock().unwrap();
-                if let Some(mut c) = guard.get_by_id_mut(&pr_conf.id) {
+                if let Some(mut c) = guard.get_id_mut(&pr_conf.id) {
                     c.perf_report_running = true;
                     return c.baseline;
                 }
@@ -351,8 +351,8 @@ async fn runner(
             .await;
             {
                 let mut guard = commits.lock().unwrap();
-                if let Some(mut c) = guard.get_by_id_mut(&pr_conf.id) {
-                    c.report = Some(results.clone());
+                if let Some(mut c) = guard.get_id_mut(&pr_conf.id) {
+                    c.reports = Some(results.clone());
                     c.perf_report_running = false;
                 }
             }
@@ -361,7 +361,7 @@ async fn runner(
         JobConfig::Compile(ref id) => {
             {
                 let mut guard = commits.lock().unwrap();
-                if let Some(mut c) = guard.get_by_id_mut(id) {
+                if let Some(mut c) = guard.get_id_mut(id) {
                     c.compilation = CompilationStatus::Compiling;
                 }
             }
@@ -372,7 +372,7 @@ async fn runner(
             );
             {
                 let mut guard = commits.lock().unwrap();
-                if let Some(mut c) = guard.get_by_id_mut(id) {
+                if let Some(mut c) = guard.get_id_mut(id) {
                     c.compilation = match result {
                         JobResult::Compile(Ok(ref msg)) => {
                             CompilationStatus::Successful(msg.clone())
@@ -404,7 +404,6 @@ async fn work_on_queue(
     // Probably by making the above function a closure, which would also be more idiomatic.
     while let Some(current_job) = peek_queue(queue.clone()) {
         info!("Working on {current_job:#?}...");
-        let now = Instant::now();
         let result = runner(
             current_job.config.clone(),
             commits.clone(),
@@ -412,7 +411,6 @@ async fn work_on_queue(
             conn.clone(),
         )
         .await;
-        let runtime = now.elapsed();
         let result_type = if result.is_ok() {
             "Success".to_string()
         } else {
@@ -421,7 +419,7 @@ async fn work_on_queue(
         info!("Process completed: {result_type}.");
         let finished_job = Job {
             status: JobStatus::Done {
-                runtime,
+                runtime: Duration::new(5, 0), // TODO Get actual runtime from teebench output.
                 result,
             },
             ..current_job

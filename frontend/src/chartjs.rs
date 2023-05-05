@@ -197,7 +197,7 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                 heading.push_str("Join Selectivity");
                             }
                         }
-                        match conf.datasets.iter().next().unwrap() {
+                        match conf.dataset.iter().next().unwrap() {
                             Dataset::CacheExceed => heading.push_str(" with dataset Cache Exceed"),
                             Dataset::CacheFit => heading.push_str(" with dataset Cache Fit"),
                         }
@@ -329,7 +329,7 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                         (chart_type, labels, datasets, plugins, scales) = predefined_throughput_exp(
                             alg_titles,
                             alg_data,
-                            *conf.datasets.iter().next().unwrap(), // As this conf belongs to a `ExperimentChart` it can only have one dataset
+                            *conf.dataset.iter().next().unwrap(), // As this conf belongs to a `ExperimentChart` it can only have one dataset
                         );
                     }
                     ExperimentType::Scalability => {
@@ -340,7 +340,7 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                     let mut alg_titles = vec![];
                     alg_titles.push(
                         commit_store
-                            .get_by_id(&pr_conf.id)
+                            .get_id(&pr_conf.id)
                             .expect("Performance Report Config has a nonexistent commit id!")
                             .title
                             .clone(),
@@ -348,7 +348,7 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                     if let common::data_types::Algorithm::Commit(ref id) = pr_conf.baseline {
                         alg_titles.push(
                             commit_store
-                                .get_by_id(id)
+                                .get_id(id)
                                 .expect("Performance Report Config has a nonexistent commit id!")
                                 .title
                                 .clone(),

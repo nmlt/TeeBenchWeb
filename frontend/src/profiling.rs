@@ -89,7 +89,7 @@ pub fn profiling() -> Html {
                     }
                 }
             }
-            store.algorithms = selected;
+            store.algorithm = selected;
         })
     };
     let exps = SelectDataOption::options_vec(&exps);
@@ -179,9 +179,9 @@ pub fn profiling() -> Html {
             let bool_val = input_check.checked();
             let ds = Dataset::from_str(&value).unwrap();
             if bool_val {
-                s.datasets.insert(ds);
+                s.dataset.insert(ds);
             } else {
-                s.datasets.remove(&ds);
+                s.dataset.remove(&ds);
             }
         })
     };
@@ -197,9 +197,9 @@ pub fn profiling() -> Html {
             let bool_val = input_check.checked();
             let pl = Platform::from_str(&value).unwrap();
             if bool_val {
-                s.platforms.insert(pl);
+                s.platform.insert(pl);
             } else {
-                s.platforms.remove(&pl);
+                s.platform.remove(&pl);
             }
         })
     };
@@ -255,7 +255,7 @@ pub fn profiling() -> Html {
                                 <div class="col-md">
                                     <div class="row g-3">
                                         <div class="col-md">
-                                            <InputSelect options={algs} onchange={algs_onchange} label={"Algorithm (select multiple)"} multiple={true} selected={store.algorithms.iter().map(|a| a.to_string()).collect::<Vec<_>>()} disabled={false} />
+                                            <InputSelect options={algs} onchange={algs_onchange} label={"Algorithm (select multiple)"} multiple={true} selected={store.algorithm.iter().map(|a| a.to_string()).collect::<Vec<_>>()} disabled={false} />
                                         </div>
                                         <div class="col-md">
                                             <InputSelect options={exps} onchange={exps_onchange} label={"Experiment"} multiple={false} selected={vec![store.experiment_type.to_string()]} disabled={false} />
@@ -274,10 +274,10 @@ pub fn profiling() -> Html {
                                     </div>
                                     <div class="row g-3">
                                         <div class="col-md">
-                                            <InputCheckboxes title={"Dataset"} data={datasets} onchange={datasets_onchange} selected={store.datasets.iter().map(|ds| ds.to_string()).collect::<Vec<_>>()} disabled={disable_controls} />
+                                            <InputCheckboxes title={"Dataset"} data={datasets} onchange={datasets_onchange} selected={store.dataset.iter().map(|ds| ds.to_string()).collect::<Vec<_>>()} disabled={disable_controls} />
                                         </div>
                                         <div class="col-md">
-                                            <InputCheckboxes title={"Platform"} data={platforms} onchange={platforms_onchange} selected={store.platforms.iter().map(|pl| pl.to_string()).collect::<Vec<_>>()} disabled={disable_controls} />
+                                            <InputCheckboxes title={"Platform"} data={platforms} onchange={platforms_onchange} selected={store.platform.iter().map(|pl| pl.to_string()).collect::<Vec<_>>()} disabled={disable_controls} />
                                         </div>
                                         <div class="col-md">
                                             <fieldset class="row mb-3 col-md">

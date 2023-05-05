@@ -17,7 +17,7 @@ use crate::modal::ModalContent;
 use crate::navigation::Navigation;
 
 use common::commit::{Commit, CommitIdType, CommitState, CompilationStatus, Operator};
-use common::data_types::{Algorithm, Job, JobConfig, PerfReportConfig, VariantNames};
+use common::data_types::{Algorithm, Job, JobConfig, JobStatus, PerfReportConfig, VariantNames};
 
 use yew_router::components::Link;
 
@@ -27,6 +27,8 @@ use crate::Route;
 static mut COMMIT_ID_COUNTER: CommitIdType = 0;
 
 /// Holds the data from the upload form.
+// It's not useful for this to be an Option, because as soon as there is eg. an uploaded file, that Option becomes Some. But that doesn't mean that the title field has been filled in, so the commit might still have bogus in the title field, even though the code field is already ok.
+/// TODO Instead this struct could represent the form, with each available field being an option.
 #[derive(Debug, Clone, PartialEq, Store)]
 pub struct UploadCommitFormState {
     // TODO Strings might not need Options around them, just put an empty string there? The web also doesn't differentiate between nothing inputed yet and empty string, I think.
@@ -202,7 +204,11 @@ fn UploadCommit() -> Html {
                 upload_commit_dispatch.reduce_mut(|s| s.reset());
 
                 // Send compile job
-                let compile_job = Job::new(JobConfig::Compile(id), OffsetDateTime::now_utc());
+                let compile_job = Job {
+                    config: JobConfig::Compile(id),
+                    submitted: OffsetDateTime::now_utc(),
+                    status: JobStatus::default(),
+                };
                 let _resp = Request::get("/api/job")
                     .method(Method::POST)
                     .json(&compile_job)
@@ -341,7 +347,7 @@ fn CommitsList() -> Html {
             }
         } else {
             // TODO Either store in the commit that the perfReport generation has finished or do something else, not this!
-            if commit.report.is_some() {
+            if commit.reports.is_some() {
                html! {
                     <Link<Route> classes={classes!("btn", "btn-info")} to={Route::PerfReport { commit: commit.title.clone() }}>
                         {"View Report"}
@@ -354,7 +360,11 @@ fn CommitsList() -> Html {
                     let baseline = commit.baseline;
                     commit_dispatch.reduce_mut_future_callback(move |s| Box::pin(async move {
                         let (fit, _exceed) = PerfReportConfig::for_throughput(id, baseline);
-                        let perf_report_job = Job::new(JobConfig::PerfReport(fit), OffsetDateTime::now_utc());
+                        let perf_report_job = Job {
+                            config: JobConfig::PerfReport(fit),
+                            submitted: OffsetDateTime::now_utc(),
+                            status: JobStatus::default(),
+                        };
                         let _resp = Request::get("/api/job")
                             .method(Method::POST)
                             .json(&perf_report_job)

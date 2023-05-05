@@ -26,11 +26,11 @@ pub fn JobResultView(JobResultViewProps { job }: &JobResultViewProps) -> Html {
         JobStatus::Waiting => html! { <span>{"Error!"}</span> },
         JobStatus::Done { runtime, result } => {
             let algs: Vec<_> = if let JobConfig::Profiling(c) = &job.config {
-                c.algorithms
+                c.algorithm
                     .iter()
                     .map(|a| match a {
                         Algorithm::Commit(id) => {
-                            let title = commit_store.get_by_id(id).map(|c| c.title.clone()).unwrap_or_else(|| {
+                            let title = commit_store.get_id(id).map(|c| c.title.clone()).unwrap_or_else(|| {
                                 log!(format!("Could not get commit with id {id}. Maybe the render function was quicker than the REST request? (Ignore this message if the Algorithm/Operator labels look okay.)"));
                                 "Latest Operator (not yet loaded, check the connection)".to_string()
                             });

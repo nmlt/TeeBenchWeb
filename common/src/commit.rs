@@ -42,7 +42,7 @@ pub struct Commit {
     /// C or C++ code.
     pub code: String,
     /// Holds the finished Performance Report experiments.
-    pub report: Option<JobResult>,
+    pub reports: Option<JobResult>, // TODO Rename to report
     /// Client-side-set ID of this commit, just gets incremented with each commit.
     pub id: CommitIdType,
     /// Compilation status
@@ -70,7 +70,7 @@ impl Commit {
             operator,
             datetime,
             code,
-            report: reports,
+            reports,
             id,
             compilation: CompilationStatus::Uncompiled,
             perf_report_running: false,
@@ -98,10 +98,11 @@ impl CommitState {
     pub fn new(commits: Vec<Commit>) -> Self {
         Self(commits)
     }
-    pub fn get_by_id(&self, id: &CommitIdType) -> Option<&Commit> {
+    // TODO Rename all of these get_ function to get_by_
+    pub fn get_id(&self, id: &CommitIdType) -> Option<&Commit> {
         self.0.iter().find(|c| &c.id == id)
     }
-    pub fn get_by_id_mut(&mut self, id: &CommitIdType) -> Option<&mut Commit> {
+    pub fn get_id_mut(&mut self, id: &CommitIdType) -> Option<&mut Commit> {
         self.0.iter_mut().find(|c| &c.id == id)
     }
     pub fn get_by_title(&self, title: &str) -> Vec<&Commit> {
@@ -132,8 +133,8 @@ impl CommitState {
         for a in algorithms {
             if let Algorithm::Commit(id) = a {
                 let c = self
-                    .get_by_id(id)
-                    .expect("Frontend might have sent a nonexistent commit id!");
+                    .get_id(id)
+                    .expect("TODO Frontend might have sent a nonexistent commit id!");
                 map.insert(*a, c.code.clone());
             }
         }
