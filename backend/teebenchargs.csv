@@ -1,0 +1,15 @@
+id,app_name,dataset,algorithm,threads,selectivity,data_skew,seal_chunk_size,r_tuples,s_tuples,r_path,s_path,r_size,s_size,seal,sort_r,sort_s
+1,SGX,"Cache Fit",Rho,2,100,0,0,2097152,2097152,,,,,0,0,0
+2,SGX,"Cache Fit",Rho,3,100,0,0,2097152,2097152,,,,,0,0,0
+3,SGX,"Cache Fit",Rho,4,100,0,0,2097152,2097152,,,,,0,0,0
+4,SGX,"Cache Fit",Rho,5,100,0,0,2097152,2097152,,,,,0,0,0
+5,SGX,"Cache Fit",Rho,6,100,0,0,2097152,2097152,,,,,0,0,0
+6,SGX,"Cache Fit",Rho,7,100,0,0,2097152,2097152,,,,,0,0,0
+7,SGX,"Cache Fit",Rho,8,100,0,0,2097152,2097152,,,,,0,0,0
+8,SGX,"Cache Exceed",Rho,2,100,0,0,2097152,2097152,,,,,0,0,0
+9,SGX,"Cache Exceed",Rho,3,100,0,0,2097152,2097152,,,,,0,0,0
+10,SGX,"Cache Exceed",Rho,4,100,0,0,2097152,2097152,,,,,0,0,0
+11,SGX,"Cache Exceed",Rho,5,100,0,0,2097152,2097152,,,,,0,0,0
+12,SGX,"Cache Exceed",Rho,6,100,0,0,2097152,2097152,,,,,0,0,0
+13,SGX,"Cache Exceed",Rho,7,100,0,0,2097152,2097152,,,,,0,0,0
+14,SGX,"Cache Exceed",Rho,8,100,0,0,2097152,2097152,,,,,0,0,0

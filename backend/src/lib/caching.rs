@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{bail, Result};
 use indoc::indoc;
 use rusqlite::{params, Connection};
 use rusqlite_migration::{Migrations, M};
@@ -8,79 +8,158 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tracing::debug;
 
-use crate::config::SQLITE_FILE_VAR_NAME;
+use crate::config::{
+    EMPTY_CACHE_VAR_NAME, OUTPUT_CSV_PATH, SQLITE_FILE_VAR_NAME, TEEBENCHARGS_CSV_PATH,
+};
 use common::data_types::TeebenchArgs;
 
+/// When SQLite imports csv, empty cells are set to "", because csv does not support NULL.
+fn set_to_null_if_equals_empty_string(table: &str, column: &str) -> String {
+    format!(
+        r#"
+        UPDATE {table}
+            SET {column} = NULL
+            WHERE {column} = "";
+    "#
+    )
+}
+
 lazy_static::lazy_static! {
-    static ref MIGRATIONS: Migrations<'static> = Migrations::new(vec![M::up(indoc!(r#"
-        CREATE TABLE teebenchargs(
-            id INTEGER PRIMARY KEY,
-            app_name TEXT NOT NULL,
-            dataset TEXT NOT NULL,
-            algorithm TEXT NOT NULL,
-            threads INTEGER NOT NULL,
-            selectivity INTEGER NOT NULL,
-            data_skew TEXT NOT NULL,
-            seal_chunk_size INTEGER NOT NULL,
-            r_tuples INTEGER NOT NULL,
-            s_tuples INTEGER NOT NULL,
-            r_path TEXT,
-            s_path TEXT,
-            r_size INTEGER,
-            s_size INTEGER,
-            seal INTEGER NOT NULL,
-            sort_r INTEGER NOT NULL,
-            sort_s INTEGER NOT NULL
-        );
-        CREATE TABLE output(
-            teebenchargs_id INTEGER PRIMARY KEY,
-            algorithm TEXT NOT NULL,
-            threads INTEGER NOT NULL,
-            relR INTEGER NOT NULL,
-            relS INTEGER NOT NULL,
-            matches INTEGER NOT NULL,
-            phase1Cycles INTEGER NOT NULL,
-            phase2Cycles INTEGER NOT NULL,
-            cyclesPerTuple INTEGER NOT NULL,
-            phase1Time INTEGER NOT NULL,
-            phase2Time INTEGER NOT NULL,
-            totalTime INTEGER NOT NULL,
-            throughput REAL NOT NULL,
-            phase1L3CacheMisses INTEGER,
-            phase1L3HitRatio REAL,
-            phase1L2CacheMisses INTEGER,
-            phase1L2HitRatio REAL,
-            phase1IPC REAL,
-            phase1IR INTEGER,
-            phase1EWB INTEGER,
-            phase1VoluntaryCS INTEGER,
-            phase1InvoluntaryCS INTEGER,
-            phase1UserCpuTime INTEGER,
-            phase1SystemCpuTime INTEGER,
-            phase2L3CacheMisses INTEGER,
-            phase2L3HitRatio REAL,
-            phase2L2CacheMisses INTEGER,
-            phase2L2HitRatio REAL,
-            phase2IPC REAL,
-            phase2IR INTEGER,
-            phase2EWB INTEGER,
-            phase2VoluntaryCS INTEGER,
-            phase2InvoluntaryCS INTEGER,
-            phase2UserCpuTime INTEGER,
-            phase2SystemCpuTime INTEGER,
-            totalL3CacheMisses INTEGER,
-            totalL3HitRatio REAL,
-            totalL2CacheMisses INTEGER,
-            totalL2HitRatio REAL,
-            totalIPC REAL,
-            totalIR INTEGER,
-            totalEWB INTEGER,
-            totalVoluntaryCS INTEGER,
-            totalInvoluntaryCS INTEGER,
-            totalUserCpuTime INTEGER,
-            totalSystemCpuTime INTEGER
-        );
-    "#))]);
+    // TODO To make the TB csv output easier to change: Load a config file with the csv column names (and types?) as another static and then use it in `MIGRATIONS` to create the table.
+    static ref MIGRATIONS: Migrations<'static> = {
+        let v1 = r#"
+            CREATE TABLE teebenchargs(
+                id INTEGER PRIMARY KEY,
+                app_name TEXT NOT NULL,
+                dataset TEXT NOT NULL,
+                algorithm TEXT NOT NULL,
+                threads INTEGER NOT NULL,
+                selectivity INTEGER NOT NULL,
+                data_skew TEXT NOT NULL,
+                seal_chunk_size INTEGER NOT NULL,
+                r_tuples INTEGER NOT NULL,
+                s_tuples INTEGER NOT NULL,
+                r_path TEXT,
+                s_path TEXT,
+                r_size INTEGER,
+                s_size INTEGER,
+                seal INTEGER NOT NULL,
+                sort_r INTEGER NOT NULL,
+                sort_s INTEGER NOT NULL
+            );
+            CREATE TABLE output(
+                teebenchargs_id INTEGER PRIMARY KEY,
+                algorithm TEXT NOT NULL,
+                threads INTEGER NOT NULL,
+                relR INTEGER NOT NULL,
+                relS INTEGER NOT NULL,
+                matches INTEGER NOT NULL,
+                phase1Cycles INTEGER NOT NULL,
+                phase2Cycles INTEGER NOT NULL,
+                cyclesPerTuple INTEGER NOT NULL,
+                phase1Time INTEGER NOT NULL,
+                phase2Time INTEGER NOT NULL,
+                totalTime INTEGER NOT NULL,
+                throughput REAL NOT NULL,
+                phase1L3CacheMisses INTEGER,
+                phase1L3HitRatio REAL,
+                phase1L2CacheMisses INTEGER,
+                phase1L2HitRatio REAL,
+                phase1IPC REAL,
+                phase1IR INTEGER,
+                phase1EWB INTEGER,
+                phase1VoluntaryCS INTEGER,
+                phase1InvoluntaryCS INTEGER,
+                phase1UserCpuTime INTEGER,
+                phase1SystemCpuTime INTEGER,
+                phase2L3CacheMisses INTEGER,
+                phase2L3HitRatio REAL,
+                phase2L2CacheMisses INTEGER,
+                phase2L2HitRatio REAL,
+                phase2IPC REAL,
+                phase2IR INTEGER,
+                phase2EWB INTEGER,
+                phase2VoluntaryCS INTEGER,
+                phase2InvoluntaryCS INTEGER,
+                phase2UserCpuTime INTEGER,
+                phase2SystemCpuTime INTEGER,
+                totalL3CacheMisses INTEGER,
+                totalL3HitRatio REAL,
+                totalL2CacheMisses INTEGER,
+                totalL2HitRatio REAL,
+                totalIPC REAL,
+                totalIR INTEGER,
+                totalEWB INTEGER,
+                totalVoluntaryCS INTEGER,
+                totalInvoluntaryCS INTEGER,
+                totalUserCpuTime INTEGER,
+                totalSystemCpuTime INTEGER
+            );
+        "#;
+        let optionals_args = ["r_size", "s_size", "r_path", "s_path"];
+        let optionals_args = optionals_args.map(|s| set_to_null_if_equals_empty_string("teebenchargs", s)).join("");
+        let optionals_output = [
+            "phase1L3CacheMisses",
+            "phase1L3HitRatio",
+            "phase1L2CacheMisses",
+            "phase1L2HitRatio",
+            "phase1IPC",
+            "phase1IR",
+            "phase1EWB",
+            "phase1VoluntaryCS",
+            "phase1InvoluntaryCS",
+            "phase1UserCpuTime",
+            "phase1SystemCpuTime",
+            "phase2L3CacheMisses",
+            "phase2L3HitRatio",
+            "phase2L2CacheMisses",
+            "phase2L2HitRatio",
+            "phase2IPC",
+            "phase2IR",
+            "phase2EWB",
+            "phase2VoluntaryCS",
+            "phase2InvoluntaryCS",
+            "phase2UserCpuTime",
+            "phase2SystemCpuTime",
+            "totalL3CacheMisses",
+            "totalL3HitRatio",
+            "totalL2CacheMisses",
+            "totalL2HitRatio",
+            "totalIPC",
+            "totalIR",
+            "totalEWB",
+            "totalVoluntaryCS",
+            "totalInvoluntaryCS",
+            "totalUserCpuTime",
+            "totalSystemCpuTime",
+        ];
+        let optionals_output = optionals_output.map(|s| set_to_null_if_equals_empty_string("output", s)).join("");
+        fn string_to_static_str(s: String) -> &'static str {
+            Box::leak(s.into_boxed_str())
+        }
+        let v2 = format!(r#"
+            CREATE VIRTUAL TABLE teebenchargs_csv
+                USING csv(filename={}, header=YES);
+            CREATE VIRTUAL TABLE output_csv
+                USING csv(filename={}, header=YES);
+            INSERT INTO teebenchargs SELECT * FROM teebenchargs_csv;
+            INSERT INTO output SELECT * FROM output_csv;
+            {}
+            {}
+            DROP TABLE teebenchargs_csv;
+            DROP TABLE output_csv;
+        "#, TEEBENCHARGS_CSV_PATH, OUTPUT_CSV_PATH, optionals_args, optionals_output);
+        // Leaking `v2` is discouraged but the only way to continue using the migrations library.
+        let v2 = string_to_static_str(v2);
+        let v2_down = r#"
+            DROP TABLE teebenchargs;
+            DROP TABLE output;
+        "#;
+        Migrations::new(vec![
+            M::up(v1),
+            M::up(v2).down(v2_down),
+        ])
+    };
 }
 
 pub fn setup_sqlite() -> Result<Connection> {
@@ -88,7 +167,14 @@ pub fn setup_sqlite() -> Result<Connection> {
         var(SQLITE_FILE_VAR_NAME).unwrap_or_else(|_| panic!("{SQLITE_FILE_VAR_NAME} not set")),
     );
     let mut conn = Connection::open(sqlite_dir)?;
-    MIGRATIONS.to_latest(&mut conn)?;
+    let do_not_load_csv = var(EMPTY_CACHE_VAR_NAME).is_ok();
+    if do_not_load_csv {
+        MIGRATIONS.to_version(&mut conn, 1)?;
+    } else {
+        rusqlite::vtab::csvtab::load_module(&conn)?;
+        MIGRATIONS.to_latest(&mut conn)?;
+    }
+
     Ok(conn)
 }
 
@@ -171,7 +257,7 @@ fn query_none<T>(val: &Option<T>, name: &str, idx: usize) -> String {
 pub fn search_for_exp(
     conn: Arc<Mutex<Connection>>,
     args: &TeebenchArgs,
-) -> Result<HashMap<String, String>> {
+) -> Result<Option<HashMap<String, String>>> {
     let conn = conn.lock().unwrap();
     debug!("Searching cache for {args:?}...");
     let arg_params = params![
@@ -223,7 +309,7 @@ pub fn search_for_exp(
         |r| r.get::<usize, usize>(0),
     )?;
     let mut map: HashMap<String, String> = HashMap::new();
-    conn.query_row(
+    let res = conn.query_row(
         indoc!(
             "
             SELECT 
@@ -457,8 +543,13 @@ pub fn search_for_exp(
             }
             Ok(())
         },
-    )?;
-    Ok(map)
+    );
+    match res {
+        Ok(()) => (),
+        Err(rusqlite::Error::QueryReturnedNoRows) => return Ok(None),
+        Err(e) => bail!(e),
+    };
+    Ok(Some(map))
 }
 
 #[cfg(test)]

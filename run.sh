@@ -9,9 +9,14 @@ get_abs_filename() {
     echo "$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
 }
 
+cleanup_cache_db() {
+    # This only works as long as we didn't change the directory since starting the backend executable
+    rm -f "${TEEBENCHWEB_SQLITE_FILE}"
+    kill -term $$
+}
 
 run_backend () (
-    trap - INT # Enables Ctrl+C in here
+    trap "cleanup_cache_db" INT # Runs cleanup_cache_db on Ctrl+C
     if [[ -z "${TEEBENCHWEB_RUN_DIR}" ]]; then
         cargo build --bin fake_teebench
         mkdir -p ../fake_teebench/Joins/TBW

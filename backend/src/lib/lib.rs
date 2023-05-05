@@ -210,15 +210,13 @@ async fn run_experiment(
                 let args_key = cmd.to_teebench_args();
                 let cmd_string = format!("{cmd}");
                 match search_for_exp(conn.clone(), &args_key) {
-                    Ok(r) => {
+                    Ok(Some(r)) => {
                         info!("Found cached result for `{cmd_string}`");
                         cmd_tasks.insert(args_key, Ok(r));
                         continue;
                     }
-                    Err(e) => match e.downcast_ref::<rusqlite::Error>() {
-                        Some(rusqlite::Error::QueryReturnedNoRows) => (),
-                        _ => error!("Searching the cache failed with: {e}"),
-                    },
+                    Ok(None) => (),
+                    Err(e) => error!("Searching the cache failed with: {e}"),
                 }
                 if cmd.algorithm.is_commit()
                     && (switched_in.is_none()
