@@ -68,7 +68,7 @@ async fn handle_socket(
 ) {
     loop {
         let mut guard = unqueued_notifier.lock().await;
-        info!("Looping back to select socket or queue_state channel receiver");
+        debug!("Looping back to select socket or queue_state channel receiver");
         // TODO Check if data loss could happen due to cancelation.
         tokio::select! {
             Some(msg) = socket.recv() => {

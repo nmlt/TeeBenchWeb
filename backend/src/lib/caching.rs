@@ -307,9 +307,17 @@ pub fn search_for_exp(
         ),
         arg_params,
         |r| r.get::<usize, usize>(0),
-    )?;
+    );
+    let id = match id {
+        Ok(id) => id,
+        Err(rusqlite::Error::QueryReturnedNoRows) => {
+            debug!("Command not found in `teebenchargs`.");
+            return Ok(None);
+        }
+        Err(e) => bail!(e),
+    };
     let mut map: HashMap<String, String> = HashMap::new();
-    let res = conn.query_row(
+    conn.query_row(
         indoc!(
             "
             SELECT 
@@ -543,12 +551,7 @@ pub fn search_for_exp(
             }
             Ok(())
         },
-    );
-    match res {
-        Ok(()) => (),
-        Err(rusqlite::Error::QueryReturnedNoRows) => return Ok(None),
-        Err(e) => bail!(e),
-    };
+    )?;
     Ok(Some(map))
 }
 
