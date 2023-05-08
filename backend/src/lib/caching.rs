@@ -35,7 +35,7 @@ lazy_static::lazy_static! {
                 algorithm TEXT NOT NULL,
                 threads INTEGER NOT NULL,
                 selectivity INTEGER NOT NULL,
-                data_skew TEXT NOT NULL,
+                data_skew REAL NOT NULL,
                 seal_chunk_size INTEGER NOT NULL,
                 r_tuples INTEGER NOT NULL,
                 s_tuples INTEGER NOT NULL,
