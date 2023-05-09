@@ -112,7 +112,7 @@ pub fn PerfReport(PerfReportProps { commit: current }: &PerfReportProps) -> Html
                 <div class="col d-flex flex-column h-sm-100">
                     <main class="row">
                         <div class="col pt-4">
-                            <h2>{format!("Performance Report for {}", commit.title)}</h2>
+                            <h2>{format!("Performance Report for {}", commit.get_title())}</h2>
                             <div class="row">
                                 // Top row
                                 {for findings}
