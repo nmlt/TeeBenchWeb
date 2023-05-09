@@ -13,6 +13,7 @@ use std::fmt::Display;
 
 use crate::commit::CommitIdType;
 
+// TODO Remove this error type. Let's just use anyhow::Result.
 /// Error type for Experiments.
 #[derive(Error, Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub enum TeeBenchWebError {

@@ -156,19 +156,15 @@ async fn compile(
 }
 
 #[instrument(skip(out))]
-fn parse_output(out: Vec<u8>) -> Option<HashMap<String, String>> {
+fn parse_output(out: Vec<u8>) -> Result<HashMap<String, String>> {
     let mut rdr = csv::Reader::from_reader(&*out);
     let mut iter = rdr.deserialize();
     // iter.next(); // First line is skipped anyway because a header is expected.
-    let exp_result: Option<HashMap<String, String>> = match iter.next() {
-        Some(csv_parse_result) => Some(csv_parse_result.context("Error processing CSV!").ok()?),
-        None => {
-            warn!("{}", TeeBenchWebError::TeeBenchNoOutputData);
-            None
-
-        },
+    let exp_result: HashMap<String, String> = match iter.next() {
+        Some(csv_parse_result) => csv_parse_result.context("Error processing CSV!")?,
+        None => bail!("Task produced no CSV output!"),
     };
-    exp_result
+    Ok(exp_result)
 }
 
 // Showing `currently_switched_in` with tracing seems to be wrong. It is always shown as empty, but the code doesn't run like it is.
@@ -254,16 +250,14 @@ async fn run_experiment(
                     let human_readable = String::from_utf8(output.stdout.clone()).unwrap();
                     debug!("Task output:\n```\n{human_readable}\n```");
                     let data = parse_output(output.stdout);
-                    // TODO Maybe change `JobResult`'s Result to an anyhow::Result, then I wouldn't have to unwrap here. Maybe I don't even need `TeebenchWebError`...
                     match data {
-                        Some(results) => {
-                            insert_experiment(conn.clone(), args_key.clone(), results.clone()).unwrap();
+                        Ok(results) => {
+                            insert_experiment(conn.clone(), args_key.clone(), results.clone())
+                                .unwrap();
                             cmd_tasks.insert(args_key, Ok(results));
                         }
-                        None => warn!("Task aborted due to empty results")
+                        Err(e) => warn!("Task aborted: {e}"),
                     }
-
-
                 }
             }
         }
