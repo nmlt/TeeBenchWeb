@@ -552,7 +552,7 @@ pub struct ProfilingConfiguration {
     pub min: StepType,
     pub max: StepType,
     pub step: StepType,
-    pub datasets: HashSet<Dataset>,  
+    pub datasets: HashSet<Dataset>,
     pub platforms: HashSet<Platform>,
     pub sort_data: bool,
 }

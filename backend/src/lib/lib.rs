@@ -431,10 +431,7 @@ async fn work_on_queue(
         };
         info!("Process completed: {result_type}.");
         let finished_job = Job {
-            status: JobStatus::Done {
-                runtime,
-                result,
-            },
+            status: JobStatus::Done { runtime, result },
             ..current_job
         };
         {

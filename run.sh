@@ -15,7 +15,7 @@ cleanup_cache_db() {
     kill -term $$
 }
 
-run_backend () (
+run_backend() (
     trap "cleanup_cache_db" INT # Runs cleanup_cache_db on Ctrl+C
     if [[ -z "${TEEBENCHWEB_RUN_DIR}" ]]; then
         cargo build --bin fake_teebench
@@ -39,9 +39,10 @@ EOF
     fi
     cargo build --bin backend
     sudo -E ./../target/debug/backend
+    cleanup_cache_db
 )
 
-build_frontend () (
+build_frontend() (
     trap - INT # Enables Ctrl+C in here
     trunk build
 )
