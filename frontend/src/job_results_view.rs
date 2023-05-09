@@ -7,7 +7,7 @@ use yewdux::prelude::*;
 use common::data_types::{Algorithm, Job, JobConfig, JobResult, JobStatus, Report};
 
 use crate::chartjs::Chart;
-use crate::components::finding::FindingCardColumn;
+use crate::components::{finding::FindingCardColumn, tag::Tag};
 use crate::modal::ModalContent;
 use crate::queue::Queue;
 use common::commit::CommitState;
@@ -34,10 +34,10 @@ pub fn JobResultView(JobResultViewProps { job }: &JobResultViewProps) -> Html {
                                 log!(format!("Could not get commit with id {id}. Maybe the render function was quicker than the REST request? (Ignore this message if the Algorithm/Operator labels look okay.)"));
                                 "Latest Operator (not yet loaded, check the connection)".to_string()
                             });
-                            html! { <span class="badge text-bg-secondary m-1">{title}</span> }
+                            html! { <Tag text={title} /> }
                         }
                         a => html! {
-                            <span class="badge text-bg-secondary m-1">{a.to_string()}</span>
+                            <Tag text={a.to_string()} />
                         }
                     })
                     .collect()
@@ -69,6 +69,7 @@ pub fn JobResultView(JobResultViewProps { job }: &JobResultViewProps) -> Html {
                                 <FindingCardColumn finding={f} />
                             }
                         });
+                        // TODO Make destroying part of the modal.rs file, don't do it here.
                         let destroy_onclick = content_dispatch.set_callback(|_| {
                             ModalContent {
                                 content: html! {
@@ -114,7 +115,7 @@ pub fn JobResultView(JobResultViewProps { job }: &JobResultViewProps) -> Html {
                 <li class="list-group-item" title={format!("{}", job.config)}>
                     {"Submitted at: "}<span class="fw-bold">{format!("{} ", job.submitted.format(time_format).unwrap())}</span>
                     {for algs}
-                    <span>{format!(" took {runtime} ")}</span>
+                    <span>{format!(" took {runtime:.1} ")}</span>
                     {result}
                 </li>
             }

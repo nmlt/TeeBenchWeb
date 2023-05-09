@@ -12,6 +12,7 @@ use std::str::FromStr;
 use crate::chartjs::hljs_highlight;
 use crate::components::collapse::Collapse;
 use crate::components::select::{InputSelect, SelectDataOption};
+use crate::components::tag::Tag;
 use crate::modal::Modal;
 use crate::modal::ModalContent;
 use crate::navigation::Navigation;
@@ -275,7 +276,7 @@ fn CommitsList() -> Html {
     let list_items_html = commit_store.0.iter().rev().map(|commit| {
         let commit = commit.clone();
 
-        let onclick = {
+        let onclick_code = {
             let content_dispatch = content_dispatch.clone();
             let commit = commit.clone();
             content_dispatch.set_callback(move |_| {
@@ -375,6 +376,12 @@ fn CommitsList() -> Html {
                 html! { <button class="btn btn-info" disabled={true}>{"Report"}</button> }
             }
         };
+        let baseline = {
+            match commit.baseline {
+                Algorithm::Commit(id) => commit_store.get_title(&id).unwrap(),
+                alg => alg.to_string(),
+            }
+        };
         (commit.get_date(), html! {
             <li class="list-group-item">
                 <b>{commit.get_title()}</b>
@@ -384,13 +391,17 @@ fn CommitsList() -> Html {
                 <div class="container d-flex flex-row justify-content-start">
                     <div class="p-2"><div class="btn btn-light">{commit.operator}</div></div>
                     <div class="p-2">
-                        <button class="btn btn-secondary" {onclick} data-bs-toggle="modal" data-bs-target="#mainModal">{"Code"}</button>
+                        <button class="btn btn-secondary" onclick={onclick_code} data-bs-toggle="modal" data-bs-target="#mainModal">{"Code"}</button>
                     </div>
                     <div class="p-2">
                         {compile_status_view}
                     </div>
                     <div class="p-2">
                         {report_button}
+                    </div>
+                    <div class="p-2">
+                        {"Baseline: "}
+                        <Tag text={baseline} />
                     </div>
                 </div>
             </li>

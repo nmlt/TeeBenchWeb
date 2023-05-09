@@ -5,6 +5,8 @@ use yew::platform::spawn_local;
 use yew::prelude::*;
 use yewdux::prelude::*;
 
+use crate::components::tag::Tag;
+
 use common::data_types::{Job, JobConfig, ProfilingConfiguration};
 
 #[derive(Debug, PartialEq, Properties)]
@@ -32,7 +34,7 @@ fn QueueItem(QueueItemProps { config, running }: &QueueItemProps) -> Html {
         .algorithms
         .iter()
         .map(|a| a.to_string())
-        .map(|a| html! { <span class="badge text-bg-primary m-1">{a}</span> })
+        .map(|a| html! { <Tag text={a} /> })
         .collect();
     html! {
         <li class="list-group-item" title={format!("{config}")}>

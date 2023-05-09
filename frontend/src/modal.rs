@@ -11,7 +11,7 @@ pub fn Modal() -> Html {
     let (content_store, _dispatch) = use_store::<ModalContent>();
     html! {
         <div class="modal fade" id="mainModal" tabindex="-1" aria-labelledby="mainModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-scrollable modal-xl modal-fullscreen-xxl-down">
+            <div class="modal-dialog modal-dialog-scrollable modal-xl modal-fullscreen">
                 {content_store.content.clone()}
             </div>
         </div>
