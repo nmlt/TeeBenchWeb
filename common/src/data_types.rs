@@ -867,12 +867,12 @@ pub struct TeebenchArgs {
     ///`-u | --s-path` - filepath to build S relation. Default `none`
     #[structopt(short = "u", long)]
     pub s_path: Option<String>,
-    ///`-x` - size of R in MBs. Default: `none`
-    #[structopt(short = "x", long)]
-    pub r_size: Option<u32>,
-    ///`-y` - size of S in MBs. Default: `none`
-    #[structopt(short = "y", long)]
-    pub s_size: Option<u32>,
+    /// r_size: `-x` - size of R in MBs. Default: `none`
+    #[structopt(short)]
+    pub x: Option<u32>,
+    /// s_size: `-y` - size of S in MBs. Default: `none`
+    #[structopt(short)]
+    pub y: Option<u32>,
     ///`--seal` - flag to seal join input data. Default: `false`
     #[structopt(long = "seal")]
     pub seal: bool,
@@ -901,8 +901,8 @@ impl Default for TeebenchArgs {
             s_tuples: 2097152,
             r_path: None,
             s_path: None,
-            r_size: None,
-            s_size: None,
+            x: None,
+            y: None,
             seal: false,
             sort_r: false,
             sort_s: false,
