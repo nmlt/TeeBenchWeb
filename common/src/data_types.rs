@@ -305,7 +305,7 @@ pub enum Parameter {
     DataSkew,
     JoinSelectivity,
     Algorithms,
-    OuterTableSize
+    OuterTableSize,
 }
 
 #[derive(
@@ -329,7 +329,7 @@ pub enum Measurement {
     TotalVoluntaryCS,
     TotalInvoluntaryCS,
     TotalUserCpuTime,
-    TotalSystemCpuTime
+    TotalSystemCpuTime,
 }
 
 #[derive(
@@ -777,13 +777,18 @@ impl ProfilingConfiguration {
             Parameter::Threads => "-n",
             Parameter::DataSkew => "-z",
             Parameter::JoinSelectivity => "-l",
-            Parameter::Algorithms => "-a",
-            Parameter::OuterTableSize => "-y"
+            Parameter::Algorithms => "",
+            Parameter::OuterTableSize => "-y",
         };
-        for cmd in &mut res {
-            cmd.add_args(p, val);
+        match self.parameter {
+            Parameter::Algorithms => (),
+            _ => {
+                for cmd in &mut res {
+                    cmd.add_args(p, val);
+                }
+                Commandline::double_cmds_with_different_arg_value(&mut res, &mut value_iter);
+            }
         }
-        Commandline::double_cmds_with_different_arg_value(&mut res, &mut value_iter);
 
         for cmd in &mut res {
             cmd.add_flag("--csv");

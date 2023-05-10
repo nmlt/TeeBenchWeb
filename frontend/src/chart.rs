@@ -161,7 +161,7 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
             let commit_store = commit_store.clone();
             let mut exp_chart = exp_chart.clone();
             let canvas_ref = move_canvas_ref.clone();
-            let chart_type;
+            let mut chart_type;
             let labels;
             let datasets;
             let plugins;
@@ -235,12 +235,15 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                             }
                             Measurement::TotalVoluntaryCS => {
                                 chart_type = "line";
-                                heading = String::from("Total voluntary context-switches with varying ");
+                                heading =
+                                    String::from("Total voluntary context-switches with varying ");
                                 y_axis_text = "Voluntary Context-switches";
                             }
                             Measurement::TotalInvoluntaryCS => {
                                 chart_type = "line";
-                                heading = String::from("Total involuntary context-switches with varying ");
+                                heading = String::from(
+                                    "Total involuntary context-switches with varying ",
+                                );
                                 y_axis_text = "Involuntary context-switches";
                             }
                             Measurement::TotalUserCpuTime => {
@@ -265,6 +268,7 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                 heading.push_str("Join Selectivity");
                             }
                             Parameter::Algorithms => {
+                                chart_type = "bar";
                                 heading.push_str("Algorithms");
                             }
                             Parameter::OuterTableSize => {
