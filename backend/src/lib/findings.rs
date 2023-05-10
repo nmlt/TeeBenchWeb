@@ -191,9 +191,25 @@ pub fn enrich_report_with_findings(jr: &mut Report) {
                             }
                             Parameter::DataSkew => {}
                             Parameter::JoinSelectivity => {}
+                            Parameter::Algorithms => {}
+                            Parameter::OuterTableSize => {}
                         }
                     }
-                    Measurement::EpcPaging => {}
+                    Measurement::TotalEpcPaging => {}
+                    Measurement::ThroughputAndTotalEPCPaging => {}
+                    Measurement::Phase1Cycles => {}
+                    Measurement::Phase2Cycles => {}
+                    Measurement::TotalCycles => {}
+                    Measurement::TotalL2HitRatio => {}
+                    Measurement::TotalL3HitRatio => {}
+                    Measurement::TotalL2CacheMisses => {}
+                    Measurement::TotalL3CacheMisses => {}
+                    Measurement::IPC => {}
+                    Measurement::IR => {}
+                    Measurement::TotalVoluntaryCS => {}
+                    Measurement::TotalInvoluntaryCS => {}
+                    Measurement::TotalUserCpuTime => {}
+                    Measurement::TotalSystemCpuTime => {}
                 }
             }
             JobConfig::PerfReport(c) => match c.exp_type {

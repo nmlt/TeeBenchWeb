@@ -33,8 +33,22 @@ fn create_data_hashmap(
             .entry((args.algorithm, args.app_name, args.dataset))
             .or_insert(vec![]);
         v.push(match measurement {
-            Measurement::EpcPaging => result["throughput"].clone(), // TODO Add EPC Paging.
+            Measurement::TotalEpcPaging => result["totalEWB"].clone(),
             Measurement::Throughput => result["throughput"].clone(),
+            Measurement::ThroughputAndTotalEPCPaging => String::from("0"), // TODO: find out how to pass two parameters at once
+            Measurement::Phase1Cycles => result["phase1Cycles"].clone(),
+            Measurement::Phase2Cycles => result["phase2Cycles"].clone(),
+            Measurement::TotalCycles => result["cyclesPerTuple"].clone(),
+            Measurement::TotalL2HitRatio => result["totalL2HitRatio"].clone(),
+            Measurement::TotalL3HitRatio => result["totalL3HitRatio"].clone(),
+            Measurement::TotalL2CacheMisses => result["totalL2CacheMisses"].clone(),
+            Measurement::TotalL3CacheMisses => result["totalL3CacheMisses"].clone(),
+            Measurement::IPC => result["totalIPC"].clone(),
+            Measurement::IR => result["totalIR"].clone(),
+            Measurement::TotalVoluntaryCS => result["totalVoluntaryCS"].clone(),
+            Measurement::TotalInvoluntaryCS => result["totalInvoluntaryCS"].clone(),
+            Measurement::TotalUserCpuTime => result["totalUserCpuTime"].clone(),
+            Measurement::TotalSystemCpuTime => result["totalSystemCpuTime"].clone(),
         });
     }
     data
@@ -159,7 +173,7 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                         let mut heading;
                         let y_axis_text;
                         match conf.measurement {
-                            Measurement::EpcPaging => {
+                            Measurement::TotalEpcPaging => {
                                 chart_type = "bar";
                                 heading = String::from("EPC Paging with varying ");
                                 y_axis_text = "EPC Misses";
@@ -168,6 +182,76 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                 chart_type = "line";
                                 heading = String::from("Throughput with varying ");
                                 y_axis_text = "Throughput [M rec/s]";
+                            }
+                            Measurement::ThroughputAndTotalEPCPaging => {
+                                chart_type = "line";
+                                heading = String::from("Throughput and EPC Paging with varying ");
+                                y_axis_text = "Throughput [M rec/s]";
+                            }
+                            Measurement::Phase1Cycles => {
+                                chart_type = "line";
+                                heading = String::from("Phase 1 CPU cycles with varying ");
+                                y_axis_text = "Cycles per tuple";
+                            }
+                            Measurement::Phase2Cycles => {
+                                chart_type = "line";
+                                heading = String::from("Phase 2 CPU cycles with varying ");
+                                y_axis_text = "Cycles per tuple";
+                            }
+                            Measurement::TotalCycles => {
+                                chart_type = "line";
+                                heading = String::from("Total CPU cycleswith varying ");
+                                y_axis_text = "Cycles per tuple";
+                            }
+                            Measurement::TotalL2HitRatio => {
+                                chart_type = "line";
+                                heading = String::from("Total L2 hit ratio with varying ");
+                                y_axis_text = "L2 Hit Ratio";
+                            }
+                            Measurement::TotalL3HitRatio => {
+                                chart_type = "line";
+                                heading = String::from("Total L3 hit ratio with varying ");
+                                y_axis_text = "L3 Hit Ratio";
+                            }
+                            Measurement::TotalL2CacheMisses => {
+                                chart_type = "line";
+                                heading = String::from("Total L2 cache misses with varying ");
+                                y_axis_text = "L2 Cache Misses";
+                            }
+                            Measurement::TotalL3CacheMisses => {
+                                chart_type = "line";
+                                heading = String::from("Total L3 cache misses with varying ");
+                                y_axis_text = "L3 Cache Misses";
+                            }
+                            Measurement::IPC => {
+                                chart_type = "line";
+                                heading = String::from("IPC with varying ");
+                                y_axis_text = "IPC";
+                            }
+                            Measurement::IR => {
+                                chart_type = "line";
+                                heading = String::from("Instructions retired with varying ");
+                                y_axis_text = "IR";
+                            }
+                            Measurement::TotalVoluntaryCS => {
+                                chart_type = "line";
+                                heading = String::from("Total voluntary context-switches with varying ");
+                                y_axis_text = "Voluntary Context-switches";
+                            }
+                            Measurement::TotalInvoluntaryCS => {
+                                chart_type = "line";
+                                heading = String::from("Total involuntary context-switches with varying ");
+                                y_axis_text = "Involuntary context-switches";
+                            }
+                            Measurement::TotalUserCpuTime => {
+                                chart_type = "line";
+                                heading = String::from("User CPU time with varying ");
+                                y_axis_text = "User CPU time [s]";
+                            }
+                            Measurement::TotalSystemCpuTime => {
+                                chart_type = "line";
+                                heading = String::from("System CPU time with varying ");
+                                y_axis_text = "System CPU time [s]";
                             }
                         }
                         match conf.parameter {
@@ -179,6 +263,12 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                             }
                             Parameter::JoinSelectivity => {
                                 heading.push_str("Join Selectivity");
+                            }
+                            Parameter::Algorithms => {
+                                heading.push_str("Algorithms");
+                            }
+                            Parameter::OuterTableSize => {
+                                heading.push_str("Outer Table Size");
                             }
                         }
                         match conf.datasets.iter().next().unwrap() {

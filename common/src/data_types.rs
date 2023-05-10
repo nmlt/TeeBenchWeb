@@ -213,26 +213,24 @@ pub const REPLACE_ALG: &str = "OperatorJoin";
 #[strum(serialize_all = "UPPERCASE")]
 pub enum Algorithm {
     #[default]
-    // #[strum(to_string = "JOIN - CHT")]
+    #[strum(to_string = "CHT")]
     Rho,
-    // #[strum(to_string = "JOIN - PHT")]
+    #[strum(to_string = "PHT")]
     Pht,
-    // #[strum(to_string = "JOIN - PSM")]
+    #[strum(to_string = "PSM")]
     Psm,
-    // #[strum(to_string = "JOIN - MWAY")]
+    #[strum(to_string = "MWAY")]
     Mway,
-    // #[strum(to_string = "JOIN - RHT")]
+    #[strum(to_string = "RHT")]
     Rht,
-    // #[strum(to_string = "JOIN - RHO")]
+    #[strum(to_string = "RHO")]
     Cht,
-    // #[strum(to_string = "JOIN - RSM")]
+    #[strum(to_string = "RSM")]
     Rsm,
-    // #[strum(to_string = "JOIN - INL")]
+    #[strum(to_string = "INL")]
     Inl,
-    // #[strum(to_string = "JOIN - CRKJ")]
+    #[strum(to_string = "CRKJ")]
     Crkj,
-    // #[strum(to_string = "JOIN - NestedLoopJoin")]
-    Nlj,
     #[strum(to_string = "Latest Operator")]
     Commit(CommitIdType),
 }
@@ -306,6 +304,8 @@ pub enum Parameter {
     Threads,
     DataSkew,
     JoinSelectivity,
+    Algorithms,
+    OuterTableSize
 }
 
 #[derive(
@@ -315,7 +315,21 @@ pub enum Parameter {
 pub enum Measurement {
     #[default]
     Throughput,
-    EpcPaging,
+    TotalEpcPaging,
+    ThroughputAndTotalEPCPaging,
+    Phase1Cycles,
+    Phase2Cycles,
+    TotalCycles,
+    TotalL2HitRatio,
+    TotalL3HitRatio,
+    TotalL2CacheMisses,
+    TotalL3CacheMisses,
+    IPC,
+    IR,
+    TotalVoluntaryCS,
+    TotalInvoluntaryCS,
+    TotalUserCpuTime,
+    TotalSystemCpuTime
 }
 
 #[derive(
@@ -655,7 +669,7 @@ use crate::commandline::Commandline;
 impl ProfilingConfiguration {
     pub fn param_value_iter(&self) -> Vec<String> {
         match self.parameter {
-            Parameter::JoinSelectivity | Parameter::Threads => {
+            Parameter::JoinSelectivity | Parameter::Threads | Parameter::OuterTableSize => {
                 let min: i64 = self.min.parse().unwrap();
                 let max: i64 = self.max.parse().unwrap();
                 let step: usize = self.step.parse().unwrap();
@@ -682,6 +696,13 @@ impl ProfilingConfiguration {
                         }
                         v
                     })
+                    .collect();
+                res
+            }
+            Parameter::Algorithms => {
+                let res = Vec::from_iter(self.algorithms.clone())
+                    .iter()
+                    .map(|a| a.to_string())
                     .collect();
                 res
             }
@@ -756,6 +777,8 @@ impl ProfilingConfiguration {
             Parameter::Threads => "-n",
             Parameter::DataSkew => "-z",
             Parameter::JoinSelectivity => "-l",
+            Parameter::Algorithms => "-a",
+            Parameter::OuterTableSize => "-y"
         };
         for cmd in &mut res {
             cmd.add_args(p, val);
@@ -796,7 +819,7 @@ impl ProfilingConfiguration {
                 self.sort_data = false;
             }
             ExperimentType::EpcPaging => {
-                self.measurement = Measurement::EpcPaging;
+                self.measurement = Measurement::TotalEpcPaging;
                 self.min = "2".to_string();
                 self.max = "2".to_string();
                 self.step = "1".to_string();

@@ -125,12 +125,15 @@ pub fn profiling() -> Html {
             let input_num = e.target_unchecked_into::<HtmlInputElement>();
             let value = input_num.value();
             match store.parameter {
-                Parameter::Threads | Parameter::JoinSelectivity => {
+                Parameter::Threads | Parameter::JoinSelectivity | Parameter::OuterTableSize => {
                     // TODO Notify user of wrong input if unwrap fails.
                     let _value = i64::from_str_radix(&value, 10).unwrap();
                 }
                 Parameter::DataSkew => {
                     let _value = f64::from_str(&value).unwrap();
+                }
+                Parameter::Algorithms => {
+                    // I guess do nothing?
                 }
             }
             store.min = value;
@@ -142,12 +145,15 @@ pub fn profiling() -> Html {
             let input_num = e.target_unchecked_into::<HtmlInputElement>();
             let value = input_num.value();
             match store.parameter {
-                Parameter::Threads | Parameter::JoinSelectivity => {
+                Parameter::Threads | Parameter::JoinSelectivity | Parameter::OuterTableSize => {
                     // TODO Notify user of wrong input if unwrap fails.
                     let _value = i64::from_str_radix(&value, 10).unwrap();
                 }
                 Parameter::DataSkew => {
                     let _value = f64::from_str(&value).unwrap();
+                }
+                Parameter::Algorithms => {
+                    // I guess do nothing?
                 }
             }
             store.max = value;
@@ -159,12 +165,15 @@ pub fn profiling() -> Html {
             let input_num = e.target_unchecked_into::<HtmlInputElement>();
             let value = input_num.value();
             match store.parameter {
-                Parameter::Threads | Parameter::JoinSelectivity => {
+                Parameter::Threads | Parameter::JoinSelectivity | Parameter::OuterTableSize => {
                     // TODO Notify user of wrong input if unwrap fails.
                     let _value = i64::from_str_radix(&value, 10).unwrap();
                 }
                 Parameter::DataSkew => {
                     let _value = f64::from_str(&value).unwrap();
+                }
+                Parameter::Algorithms => {
+                    // I guess do nothing?
                 }
             }
             store.step = value;
