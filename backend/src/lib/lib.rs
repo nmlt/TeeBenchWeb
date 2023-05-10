@@ -209,6 +209,9 @@ async fn run_experiment(
                 // This assumes that the Makefile of TeeBench has a different app name ("sgx" or "native"). See `common::data_types::Platform::to_app_name()`.
                 let args_key = cmd.to_teebench_args();
                 let cmd_string = format!("{cmd}");
+                if args_key.crkj_mway_wrong_thread_count() {
+                    continue;
+                }
                 match search_for_exp(conn.clone(), &args_key) {
                     Ok(Some(r)) => {
                         info!("Found cached result for `{cmd_string}`");

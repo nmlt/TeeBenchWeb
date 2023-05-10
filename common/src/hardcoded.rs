@@ -4,6 +4,8 @@ use crate::{
     data_types::{Algorithm, JobConfig, PerfReportConfig, Platform, REPLACE_ALG},
 };
 
+pub const MAX_THREADS: u8 = 32;
+
 // TODO Hardcoded Vecs could become arrays.
 pub fn hardcoded_perf_report_configs(id: CommitIdType, baseline: Algorithm) -> Vec<JobConfig> {
     let (throughput_fit, throughput_exceed) = PerfReportConfig::for_throughput(id, baseline);

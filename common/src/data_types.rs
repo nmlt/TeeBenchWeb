@@ -12,6 +12,7 @@ use std::collections::HashSet;
 use std::fmt::Display;
 
 use crate::commit::CommitIdType;
+use crate::hardcoded::MAX_THREADS;
 
 // TODO Remove this error type. Let's just use anyhow::Result.
 /// Error type for Experiments.
@@ -926,6 +927,21 @@ impl TeebenchArgs {
             dataset,
             threads,
             ..Self::default()
+        }
+    }
+    pub fn crkj_mway_wrong_thread_count(&self) -> bool {
+        match self.algorithm {
+            Algorithm::Crkj | Algorithm::Mway => {
+                for power in (0..).map(|n| 2u8.pow(n)).filter(|&n| n < MAX_THREADS) {
+                    if self.threads == power {
+                        return false;
+                    } else if self.threads < power {
+                        return true;
+                    }
+                }
+                true
+            }
+            _ => false,
         }
     }
 }
