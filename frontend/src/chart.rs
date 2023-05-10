@@ -20,6 +20,11 @@ const COLORS: [&str; 15] = [
     "#EB057A", "#d55e00", "#F8071D", "#3DB7E9", "#e69f00", "#FF8D1A", "#9EFF37",
 ];
 
+const COLORS2: [&str; 15] = [
+    "#F08700", "#00A6A6", "#BBDEF0", "#462255", "#280004", "#F0FFCE", "#B7E3CC", "#9FB8AD",
+    "#C8AD55", "#DCF2B0", "#FFE0B5", "#AA4465", "#5F5566", "#93E1D8", "#59F8E8",
+];
+
 #[derive(Clone, PartialEq, Default, Store)]
 pub struct ChartState(MyChart, bool);
 
@@ -162,16 +167,20 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
             let mut exp_chart = exp_chart.clone();
             let canvas_ref = move_canvas_ref.clone();
             let mut chart_type;
+            // let mut chart2_type;
             let labels;
             let datasets;
             let plugins;
             let scales;
             let options;
+            let data;
+            let data2;
             match exp_chart.config {
                 JobConfig::Profiling(conf) => match conf.experiment_type {
                     ExperimentType::Custom => {
                         let mut heading;
                         let y_axis_text;
+                        // let y2_axis_text;
                         match conf.measurement {
                             Measurement::TotalEpcPaging => {
                                 chart_type = "bar";
@@ -185,21 +194,23 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                             }
                             Measurement::ThroughputAndTotalEPCPaging => {
                                 chart_type = "line";
+                                // chart2_type = "bar";
                                 heading = String::from("Throughput and EPC Paging with varying ");
                                 y_axis_text = "Throughput [M rec/s]";
+                                // y2_axis_text = "EWB Misses"
                             }
                             Measurement::Phase1Cycles => {
-                                chart_type = "line";
+                                chart_type = "bar";
                                 heading = String::from("Phase 1 CPU cycles with varying ");
                                 y_axis_text = "Cycles per tuple";
                             }
                             Measurement::Phase2Cycles => {
-                                chart_type = "line";
+                                chart_type = "bar";
                                 heading = String::from("Phase 2 CPU cycles with varying ");
                                 y_axis_text = "Cycles per tuple";
                             }
                             Measurement::TotalCycles => {
-                                chart_type = "line";
+                                chart_type = "bar";
                                 heading = String::from("Total CPU cycleswith varying ");
                                 y_axis_text = "Cycles per tuple";
                             }
@@ -285,38 +296,97 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                             .results
                             .sort_unstable_by(|(a, _), (b, _)| a.cmp(b));
 
-                        let data = create_data_hashmap(&exp_chart.results, conf.measurement);
                         let mut datasets_prep = vec![];
+
+                        match conf.clone().measurement {
+                            Measurement::ThroughputAndTotalEPCPaging => {
+                                data = create_data_hashmap(
+                                    &exp_chart.results,
+                                    Measurement::Throughput,
+                                );
+                                data2 = create_data_hashmap(
+                                    &exp_chart.results,
+                                    Measurement::TotalEpcPaging,
+                                );
+                                scales = json!({
+                                    "y": {
+                                        "text": "Throughput [M rec/s]",
+                                        "type": "linear",
+                                        "display": true,
+                                        "position": "left",
+                                        "title" : {
+                                            "display": true,
+                                            "text": "Throughput [M rec/s]",
+                                        }
+                                    },
+                                    "y1": {
+                                        "type": "linear",
+                                        "display": true,
+                                        "position": "right",
+                                        // grid line settings
+                                        "grid": {
+                                            "drawOnChartArea": false, // only want the grid lines for one axis to show up
+                                        },
+                                        "title" : {
+                                            "display": true,
+                                            "text": "EPC Misses",
+                                        }
+                                    }
+                                });
+                                for (((alg, platform, _dataset), data_value), color) in
+                                    data2.iter().zip(COLORS2.iter().cycle())
+                                {
+                                    let alg = commit_store.get_title_by_algorithm(alg).unwrap();
+                                    datasets_prep.push(json!({
+                                        "label": format!("EPC Paging {alg} on {platform}"),
+                                        "data": data_value,
+                                        "backgroundColor": color,
+                                        "borderColor": color,
+                                        "yAxisID": "y1",
+                                        "order" : 1,
+                                        "type" : "bar"
+                                    }));
+                                }
+                            }
+                            _ => {
+                                data = create_data_hashmap(
+                                    &exp_chart.results,
+                                    conf.clone().measurement,
+                                );
+                                scales = json!({
+                                    "y": {
+                                            "ticks": {
+                                                "min": 0
+                                            },
+                                            "text": y_axis_text,
+                                            "type": "linear",
+                                            "display": true,
+                                            "position": "left"
+                                        }
+                                });
+                            }
+                        }
 
                         for (((alg, platform, _dataset), data_value), color) in
                             data.iter().zip(COLORS.iter().cycle())
                         {
                             let alg = commit_store.get_title_by_algorithm(alg).unwrap();
                             datasets_prep.push(json!({
-                                "label": format!("{alg} on {platform}"),
+                                "label": format!("Throughput {alg} on {platform}"),
                                 "data": data_value,
                                 "backgroundColor": color,
                                 "borderColor": color,
                                 "yAxisID": "y",
-                                "borderWidth":5
+                                "borderWidth":5,
+                                "order": 0
                             }));
                         }
+
                         datasets = json!(datasets_prep);
                         plugins = json!({
                             "title": {
                                 "display": true,
                                 "text": heading,
-                            }
-                        });
-                        scales = json!({
-                            "y": {
-                                "ticks": {
-                                    "min": 0
-                                },
-                                "text": y_axis_text,
-                                "type": "linear",
-                                "display": true,
-                                "position": "left"
                             }
                         });
                     }
