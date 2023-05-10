@@ -6,7 +6,7 @@ use yewdux::prelude::*;
 
 use common::data_types::{Algorithm, Job, JobConfig, JobResult, JobStatus, Report};
 
-use crate::chartjs::Chart;
+use crate::chart::Chart;
 use crate::components::{finding::FindingCardColumn, tag::Tag};
 use crate::modal::ModalContent;
 use crate::queue::Queue;

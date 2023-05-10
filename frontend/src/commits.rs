@@ -9,10 +9,10 @@ use yewdux::prelude::*;
 
 use std::str::FromStr;
 
-use crate::chartjs::hljs_highlight;
 use crate::components::collapse::Collapse;
 use crate::components::select::{InputSelect, SelectDataOption};
 use crate::components::tag::Tag;
+use crate::js_bindings::hljs_highlight;
 use crate::modal::Modal;
 use crate::modal::ModalContent;
 use crate::navigation::Navigation;

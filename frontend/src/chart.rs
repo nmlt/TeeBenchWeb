@@ -1,34 +1,18 @@
+use serde_json::json;
+use web_sys::HtmlCanvasElement;
+use yew::prelude::*;
+// use gloo_console::log;
+use yewdux::prelude::*;
+
+use std::collections::HashMap;
+
+use common::commit::CommitState;
 use common::data_types::{
     Algorithm, Dataset, ExperimentChart, ExperimentChartResult, ExperimentType, JobConfig,
     Measurement, Parameter, Platform, TeebenchArgs,
 };
-// use gloo_console::log;
-use common::commit::CommitState;
-use js_sys::Object;
-use serde_json::json;
-use std::collections::HashMap;
-use wasm_bindgen::prelude::wasm_bindgen;
-use web_sys::HtmlCanvasElement;
-use yew::prelude::*;
-use yewdux::prelude::*;
 
-#[allow(non_snake_case)]
-#[wasm_bindgen(module = "/deps/MyChart.js")]
-extern "C" {
-    #[derive(Clone, PartialEq, Default)]
-    type MyChart;
-
-    #[wasm_bindgen(constructor)]
-    fn new() -> MyChart;
-
-    #[wasm_bindgen(method)]
-    fn draw(this: &MyChart, context: Object, config: &str);
-
-    #[wasm_bindgen(method)]
-    fn destroy(this: &MyChart);
-
-    pub fn hljs_highlight(code: String) -> String;
-}
+use crate::js_bindings::MyChart;
 
 //const COLORS: [&str; 2] = ["#de3d82", "#72e06a"]; // Original colors
 const COLORS: [&str; 15] = [
@@ -521,88 +505,3 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
         </div>
     }
 }
-
-/*
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Dataset {
-    pub label: String,
-    pub data: Vec<f64>,
-    pub borderColor: String,
-    pub backgroundColor: String,
-    pub order: i32,
-    pub r#type: String,
-    pub yAxisID: String,
-    pub borderWidth: i32,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Data {
-    pub labels: Vec<String>,
-    pub datasets: Vec<Dataset>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Legend {
-    pub position: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Font {
-    pub size: i32,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Title {
-    pub display: bool,
-    pub text: String,
-    pub font: Font,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Plugin {
-    pub legend: Legend,
-    pub title: Title,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Ticks {
-    pub font: Font,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Grid {
-    pub drawOnChartArea: bool,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Scale {
-    pub text: Option<String>,
-    pub r#type: String,
-    pub display: bool,
-    pub position: String,
-    pub ticks: Ticks,
-    pub grid: Option<Grid>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Scales {
-    pub x: Scale,
-    pub y: Scale,
-    pub y1: Option<Scale>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Options {
-    // animation
-    pub responsive: bool,
-    pub plugins: Plugin,
-    pub scales: Scales,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Config {
-    pub r#type: String,
-    pub data: Data,
-    pub options: Options,
-}
-*/

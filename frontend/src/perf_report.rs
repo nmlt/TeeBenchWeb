@@ -2,7 +2,7 @@ use yew::prelude::*;
 use yewdux::prelude::*;
 
 use crate::{
-    chartjs::Chart, components::finding::FindingCardColumn, modal::Modal, navigation::Navigation,
+    chart::Chart, components::finding::FindingCardColumn, modal::Modal, navigation::Navigation,
 };
 use common::commit::CommitState;
 use common::data_types::JobResult;
