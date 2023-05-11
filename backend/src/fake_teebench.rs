@@ -179,20 +179,6 @@ static CSV_OUTPUT: Lazy<HashMap<(Platform, Algorithm, Dataset), &str>> = Lazy::n
             INL,2,13107200,52428800,0,0,0,0,0,0,0,0,0.00
         "},
         ),
-        (
-            (Platform::Sgx, Algorithm::Nlj, Dataset::CacheFit),
-            indoc! {"
-            matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,1000000,0
-        "},
-        ),
-        (
-            (Platform::Sgx, Algorithm::Nlj, Dataset::CacheExceed),
-            indoc! {"
-            matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,5000000,0
-        "},
-        ),
         // native:
         (
             (Platform::Native, Algorithm::Commit(1), Dataset::CacheFit),
@@ -333,21 +319,7 @@ static CSV_OUTPUT: Lazy<HashMap<(Platform, Algorithm, Dataset), &str>> = Lazy::n
             algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
             INL,2,13107200,52428800,52428800,0,0,0,149,0,0,4905579,13.3595
         "},
-        ),
-        (
-            (Platform::Native, Algorithm::Nlj, Dataset::CacheFit),
-            indoc! {"
-            matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,1000000,0
-        "},
-        ),
-        (
-            (Platform::Native, Algorithm::Nlj, Dataset::CacheExceed),
-            indoc! {"
-            matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
-            0,0,0,0,0,0,0,5000000,0
-        "},
-        ),
+        )
     ])
 });
 
