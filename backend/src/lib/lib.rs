@@ -68,12 +68,17 @@ async fn compile(
     tokio::fs::write(replace_file_path, new_code)
         .await
         .with_context(|| format!("Failed to write new operator to {REPLACE_FILE}"))?;
-    let compile_args_sgx = ["-B", "sgx"];
+    // let compile_args_sgx = ["-B", "sgx"];
     let compile_args_native = ["native", "CFLAGS=-DNATIVE_COMPILATION"];
+    let compile_args_sgx = ["sgx", "SGX_DEBUG=1", "SGX_PRERELEASE=0", "SGX_MODE=HW", "CFLAGS='-DPCM_COUNT -DSGX_COUNTERS'"];
+    //let compile_args_native = ["native", "CFLAGS='-DPCM_COUNT -DSGX_COUNTERS'"];
     let compile_args_native_joined = compile_args_native.join(" ");
     let compile_args_sgx_joined = compile_args_sgx.join(" ");
     let enclave_name = "enclave.signed.so";
-    //TokioCommand::new("make").current_dir(tee_bench_dir.clone()).args(["clean"]).status().await.expect("Failed to run make clean");
+    let clean_out = TokioCommand::new("make").current_dir(tee_bench_dir.clone()).args(["clean"]).status().await.expect("Failed to run make clean!");
+    if !clean_out.success() {
+        bail!("`make clean` failed!");
+    }
     let make_out = TokioCommand::new("make")
         .current_dir(tee_bench_dir)
         .args(compile_args_native)

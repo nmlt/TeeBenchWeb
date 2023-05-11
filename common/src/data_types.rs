@@ -53,8 +53,8 @@ impl ExperimentChart {
     }
 
     pub fn get_result_values<T: FromStr>(
-        &mut self,
-        field: String,
+        &self,
+        field: &str,
         platform: Platform,
         dataset: Dataset,
         algorithm: Algorithm,
@@ -68,7 +68,7 @@ impl ExperimentChart {
             .filter(|t| {
                 t.0.app_name == platform && t.0.dataset == dataset && t.0.algorithm == algorithm
             })
-            .map(|t| t.1.get(&field).unwrap())
+            .map(|t| t.1.get(field).unwrap())
             .map(|t| t.parse::<T>().unwrap())
             .collect::<Vec<T>>();
     }
@@ -359,6 +359,7 @@ pub enum Dataset {
     #[default]
     CacheFit,
     CacheExceed,
+    CustomSize{ x: u32, y: u32 },
 }
 
 impl Dataset {
@@ -366,6 +367,7 @@ impl Dataset {
         match self {
             Dataset::CacheFit => "cache-fit".to_string(),
             Dataset::CacheExceed => "cache-exceed".to_string(),
+            Dataset::CustomSize { x, y } => format!("-x {x} -y {y}"),
         }
     }
     pub fn from_cmd_arg(string: &str) -> Result<Self, &'static str> {
@@ -457,6 +459,7 @@ pub struct PerfReportConfig {
     /// In this struct, exp_type cannot be `::Custom`.
     pub exp_type: ExperimentType,
     pub dataset: Dataset,
+    /// As a hack, I'm putting the `id` in here too if `exp_type` EpcPaging to indicate which of the the two Algorithms should be displayed for the Chart.
     pub baseline: Algorithm,
 }
 
@@ -491,6 +494,22 @@ impl PerfReportConfig {
                 dataset: Dataset::CacheExceed,
                 baseline,
             },
+        )
+    }
+    pub fn for_epc_paging(id: CommitIdType, baseline: Algorithm) -> (PerfReportConfig, PerfReportConfig) {
+        (
+            PerfReportConfig {
+                id,
+                exp_type: ExperimentType::EpcPaging,
+                dataset: Dataset::CustomSize { x: 0, y: 0 },
+                baseline: Algorithm::Commit(id),
+            },
+            PerfReportConfig {
+                id,
+                exp_type: ExperimentType::EpcPaging,
+                dataset: Dataset::CustomSize { x: 0, y: 0 },
+                baseline: baseline,
+            }
         )
     }
 }
@@ -872,6 +891,7 @@ pub struct TeebenchArgs {
     #[structopt(skip = Platform::arg0_to_platform())]
     pub app_name: Platform,
     ///`-d` - name of pre-defined dataset. Currently working: `cache-fit`, `cache-exceed`. Default: `cache-fit`
+    // TODO Make an option.
     #[structopt(short = "d", long, parse(try_from_str = Dataset::from_cmd_arg), default_value = "cache-fit")]
     pub dataset: Dataset,
     ///`-a` - join algorithm name. Currently working: see `common::data_types::Algorithm`.
@@ -902,9 +922,11 @@ pub struct TeebenchArgs {
     #[structopt(short = "u", long)]
     pub s_path: Option<String>,
     /// r_size: `-x` - size of R in MBs. Default: `none`
+    /// If this is set, -d/--dataset is ignored.
     #[structopt(short)]
     pub x: Option<u32>,
-    /// s_size: `-y` - size of S in MBs. Default: `none`
+    /// s_size: `-y` - size of S in MBs. If not set when r_size is set, defaults to 16MB. Default: `none`
+    /// /// If this is set, -d/--dataset is ignored.
     #[structopt(short)]
     pub y: Option<u32>,
     ///`--seal` - flag to seal join input data. Default: `false`
@@ -959,6 +981,15 @@ impl TeebenchArgs {
             algorithm,
             dataset,
             threads,
+            ..Self::default()
+        }
+    }
+    pub fn for_epc_paging(algorithm: Algorithm, x: u32, y: u32) -> Self {
+        Self {
+            algorithm,
+            dataset: Dataset::CustomSize { x: x, y: y },
+            x: Some(x),
+            y: Some(y),
             ..Self::default()
         }
     }

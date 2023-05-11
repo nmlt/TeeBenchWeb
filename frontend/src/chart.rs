@@ -1,9 +1,10 @@
 use serde_json::json;
 use web_sys::HtmlCanvasElement;
 use yew::prelude::*;
-// use gloo_console::log;
+use gloo_console::log;
 use yewdux::prelude::*;
 
+use core::panic;
 use std::collections::HashMap;
 
 use common::commit::CommitState;
@@ -68,7 +69,7 @@ fn create_data_hashmap(
     data
 }
 
-/// Returns: chart_type, labels: Json: Vec<&str>, datasets: Json<Vec<Obj<>>>, plugins: Json<Vec<Obj<>>>, scales: Json<Vec<Obj<>>>, options: Json<Vec<Obj<>>>
+/// Returns: chart_type, labels: Json: Vec<&str>, datasets: Json<Vec<Obj<>>>, plugins: Json<Vec<Obj<>>>, scales: Json<Vec<Obj<>>>
 pub fn predefined_throughput_exp(
     alg_titles: Vec<String>,
     alg_data: Vec<Vec<f64>>,
@@ -94,6 +95,7 @@ pub fn predefined_throughput_exp(
     let d = match d {
         Dataset::CacheFit => "Throughput Cache Fit",
         Dataset::CacheExceed => "Throughput Cache Exceed",
+        _ => panic!("Cannot handle custom dataset size in predefined experiment!"),
     };
     let plugins = json!({
         "title": {
@@ -137,6 +139,7 @@ pub fn predefined_scalability_exp(
     let title = match d {
         Dataset::CacheFit => "Scalability Cache Fit",
         Dataset::CacheExceed => "Scalability Cache Exceed",
+        _ => panic!("Cannot handle custom dataset size in predefined experiment!"),
     };
     let plugins = json!({
         "title": {
@@ -153,6 +156,73 @@ pub fn predefined_scalability_exp(
             "type": "linear",
             "display": true,
             "position": "left"
+        }
+    });
+    (chart_type, labels, datasets, plugins, scales)
+}
+
+pub fn predefined_epc_paging_exp(
+    alg_title: String,
+    alg_data: Vec<f64>,
+    alg_data2: Vec<f64>,
+) -> (
+    &'static str,
+    serde_json::Value,
+    serde_json::Value,
+    serde_json::Value,
+    serde_json::Value,
+) {
+    let chart_type = "line";
+    let labels = json!([8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128]);
+    let datasets = json!([
+        {
+            "label": format!("{alg_title} Throughput"),
+            "data": alg_data,
+            "backgroundColor": COLORS[0],
+            "borderColor": COLORS[0],
+            "yAxisID": "y",
+            "borderWidth": 5
+        },
+        {
+            "label": format!("EPC Paging {alg_title} on SGX"),
+            "data": alg_data2,
+            "backgroundColor": COLORS2[0],
+            "borderColor": COLORS2[0],
+            "yAxisID": "y1",
+            "order" : 1,
+            "type" : "bar"
+        },
+    ]);
+    let title = format!("EPC Paging {alg_title}");
+    let plugins = json!({
+        "title": {
+            "display": true,
+            "text": title,
+        }
+    });
+    let scales = json!({
+        "y": {
+            "text": "Throughput [M rec/s]",
+            "type": "linear",
+            "display": true,
+            "position": "left",
+            "title" : {
+                "display": true,
+                "text": "Throughput [M rec/s]",
+            }
+        },
+        "y1": {
+            "type": "linear",
+            "display": true,
+            "position": "right",
+            // grid line settings
+            "grid": {
+                "drawOnChartArea": false, // only want the grid lines for one axis to show up
+            },
+            "title" : {
+                "display": true,
+                "text": "EPC Misses",
+            }
         }
     });
     (chart_type, labels, datasets, plugins, scales)
@@ -298,6 +368,7 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                         match conf.datasets.iter().next().unwrap() {
                             Dataset::CacheExceed => heading.push_str(" with dataset Cache Exceed"),
                             Dataset::CacheFit => heading.push_str(" with dataset Cache Fit"),
+                            _ => panic!("Cannot handle custom dataset size yet!")
                         }
                         let steps: Vec<_> = conf.param_value_iter();
                         labels = json!(steps);
@@ -664,7 +735,46 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                 predefined_scalability_exp(alg_titles, alg_data, pr_conf.dataset);
                         }
                         ExperimentType::EpcPaging => {
-                            todo!();
+                            let alg_title = alg_titles[1].clone();
+                            let mut alg_data = vec![];
+                            let mut alg_data2 = vec![];
+                            let y_range: [u32; 1] = [128]; // 128 MB = 16_777_216
+                            // x (Relation R) starts at 8 MB, stepping each time 8 MB = 1_048_576
+                            log!(format!("exp chart results: {:#?}", exp_chart.results));
+                            for (x, y) in (8..128).step_by(8).zip(y_range.iter().cycle()) {
+                                log!(format!("Searching for data: baseline: {:?} x {}, y {} ", pr_conf.baseline, x, y));
+                                let d1_search = TeebenchArgs::for_epc_paging(pr_conf.baseline, x, *y);
+                                log!(format!("Comparing tba to {d1_search:#?}"));
+                                let d1 = exp_chart.results
+                                    .iter()
+                                    .find(|&tuple| {
+                                        tuple.0
+                                            == d1_search
+                                    })
+                                    .unwrap()
+                                    .1["throughput"]
+                                    .parse()
+                                    .unwrap();
+                                let d2 = exp_chart.results
+                                    .iter()
+                                    .find(|&tuple| {
+                                        tuple.0
+                                            == TeebenchArgs::for_epc_paging(
+                                                pr_conf.baseline,
+                                                x,
+                                                *y
+                                            )
+                                    })
+                                    .unwrap();
+                                let d2 = d2.1["totalEWB"]
+                                    .parse()
+                                    .unwrap();
+                                alg_data.push(d1);
+                                alg_data2.push(d2);
+                                
+                            }
+                            (chart_type, labels, datasets, plugins, scales) =
+                                predefined_epc_paging_exp(alg_title, alg_data, alg_data2);
                         }
                         ExperimentType::Custom => {
                             unreachable!();

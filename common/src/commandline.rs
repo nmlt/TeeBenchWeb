@@ -57,6 +57,21 @@ impl Commandline {
         let iter = app_name.iter().chain(self.args.iter());
         let mut args = TeebenchArgs::from_iter_safe(iter).unwrap();
         // TODO Remove app_name as the way to determine the platform, use an environment variable and compile it two times.
+        if args.x.is_some() || args.y.is_some() {
+            if let Some(x) = args.x {
+                if let Some(y) = args.y {
+                    args.dataset = crate::data_types::Dataset::CustomSize{ x, y };
+                } else {
+                    args.dataset = crate::data_types::Dataset::CustomSize{ x, y: 128 };
+                }
+            } else {
+                if let Some(y) = args.y {
+                    args.dataset = crate::data_types::Dataset::CustomSize{ x: 16, y };
+                } else {
+                    args.dataset = crate::data_types::Dataset::CustomSize{ x: 16, y: 128 };
+                }
+            }
+        }
         args.app_name = self.app;
         args.algorithm = self.algorithm;
         args
