@@ -301,10 +301,15 @@ impl ExperimentType {
 #[strum(serialize_all = "title_case")]
 pub enum Parameter {
     #[default]
+    #[strum(to_string = "threads")]
     Threads,
+    #[strum(to_string = "data_skew")]
     DataSkew,
+    #[strum(to_string = "selectivity")]
     JoinSelectivity,
+    #[strum(to_string = "algorithm")]
     Algorithms,
+    #[strum(to_string = "s_size")]
     OuterTableSize,
 }
 

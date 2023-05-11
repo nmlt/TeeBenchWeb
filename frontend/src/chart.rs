@@ -31,13 +31,21 @@ pub struct ChartState(MyChart, bool);
 fn create_data_hashmap(
     results: &ExperimentChartResult,
     measurement: Measurement,
-) -> HashMap<(Algorithm, Platform, Dataset), Vec<String>> {
+    parameter: Parameter,
+) -> HashMap<(Algorithm, Platform, Dataset), Vec<(String, String)>> {
     let mut data = HashMap::new();
     for (args, result) in results {
         let v = data
             .entry((args.algorithm, args.app_name, args.dataset))
             .or_insert(vec![]);
-        v.push(match measurement {
+        let p = match parameter {
+            Parameter::Threads => result["threads"].clone(),
+            Parameter::DataSkew => args.threads.to_string(),
+            Parameter::JoinSelectivity => args.selectivity.to_string(),
+            Parameter::Algorithms => result["algorithm"].clone(),
+            Parameter::OuterTableSize => args.y.unwrap().to_string(),
+        };
+        let m = match measurement {
             Measurement::TotalEpcPaging => result["totalEWB"].clone(),
             Measurement::Throughput => result["throughput"].clone(),
             Measurement::ThroughputAndTotalEPCPaging => String::from("0"), // TODO: find out how to pass two parameters at once
@@ -54,7 +62,8 @@ fn create_data_hashmap(
             Measurement::TotalInvoluntaryCS => result["totalInvoluntaryCS"].clone(),
             Measurement::TotalUserCpuTime => result["totalUserCpuTime"].clone(),
             Measurement::TotalSystemCpuTime => result["totalSystemCpuTime"].clone(),
-        });
+        };
+        v.push((p, m));
     }
     data
 }
@@ -176,7 +185,7 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
             let data;
             let data2;
             match exp_chart.config {
-                JobConfig::Profiling(conf) => match conf.experiment_type {
+                JobConfig::Profiling(ref conf) => match conf.experiment_type {
                     ExperimentType::Custom => {
                         let mut heading;
                         let y_axis_text;
@@ -303,10 +312,12 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                 data = create_data_hashmap(
                                     &exp_chart.results,
                                     Measurement::Throughput,
+                                    conf.clone().parameter,
                                 );
                                 data2 = create_data_hashmap(
                                     &exp_chart.results,
                                     Measurement::TotalEpcPaging,
+                                    conf.clone().parameter,
                                 );
                                 scales = json!({
                                     "y": {
@@ -337,9 +348,19 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                     data2.iter().zip(COLORS2.iter().cycle())
                                 {
                                     let alg = commit_store.get_title_by_algorithm(alg).unwrap();
+                                    // compare the global label (steps) with the data_value results
+                                    // fill in with NULL if a data_value is missing, otherwise pass the result
+                                    let mut values: Vec<String> = vec![];
+                                    for s in &steps {
+                                        let v = data_value.iter().find(|(x, _)| s == x);
+                                        match v {
+                                            None => values.push("NULL".to_string()),
+                                            Some(val) => values.push(val.1.clone()),
+                                        }
+                                    }
                                     datasets_prep.push(json!({
                                         "label": format!("EPC Paging {alg} on {platform}"),
-                                        "data": data_value,
+                                        "data": values,
                                         "backgroundColor": color,
                                         "borderColor": color,
                                         "yAxisID": "y1",
@@ -352,6 +373,7 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                 data = create_data_hashmap(
                                     &exp_chart.results,
                                     conf.clone().measurement,
+                                    conf.clone().parameter,
                                 );
                                 scales = json!({
                                     "y": {
@@ -371,9 +393,19 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                             data.iter().zip(COLORS.iter().cycle())
                         {
                             let alg = commit_store.get_title_by_algorithm(alg).unwrap();
+                            // compare the global label (steps) with the data_value results
+                            // fill in with NULL if a data_value is missing, otherwise pass the result
+                            let mut values: Vec<String> = vec![];
+                            for s in &steps {
+                                let v = data_value.iter().find(|(x, _)| s == x);
+                                match v {
+                                    None => values.push("NULL".to_string()),
+                                    Some(val) => values.push(val.1.clone()),
+                                }
+                            }
                             datasets_prep.push(json!({
                                 "label": format!("Throughput {alg} on {platform}"),
-                                "data": data_value,
+                                "data": values,
                                 "backgroundColor": color,
                                 "borderColor": color,
                                 "yAxisID": "y",
@@ -461,7 +493,11 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                     }
                     ExperimentType::Throughput => {
                         // TODO TODO Do I have to do it the same way here as in Custom? Because I don't seem to need to do it that way in the PerfReport part. check that!
-                        let data = create_data_hashmap(&exp_chart.results, conf.measurement);
+                        let data = create_data_hashmap(
+                            &exp_chart.results,
+                            conf.clone().measurement,
+                            conf.clone().parameter,
+                        );
                         let mut alg_titles = vec![];
                         let mut alg_data = vec![];
                         for ((alg, _platform, _dataset), value) in data {
@@ -469,7 +505,7 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                             alg_data.push(
                                 value
                                     .iter()
-                                    .map(|v| str::parse::<f64>(v))
+                                    .map(|v| str::parse::<f64>(v.1.as_str()))
                                     .collect::<Result<Vec<_>, _>>()
                                     .unwrap(),
                             );
@@ -641,6 +677,7 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                 "responsive": true,
                 "plugins": plugins,
                 "scales": scales,
+                "spanGaps": true
             });
             let config = json!({
                 "type": chart_type,

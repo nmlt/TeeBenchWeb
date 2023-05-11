@@ -319,7 +319,7 @@ static CSV_OUTPUT: Lazy<HashMap<(Platform, Algorithm, Dataset), &str>> = Lazy::n
             algorithm,threads,relR,relS,matches,phaseBuildCycles,phasePartitionCycles,phaseProbeCycles,cyclesPerTuple,timePartitionUsec,timeJoinUsec,timeTotalUsec,throughput
             INL,2,13107200,52428800,52428800,0,0,0,149,0,0,4905579,13.3595
         "},
-        )
+        ),
     ])
 });
 
