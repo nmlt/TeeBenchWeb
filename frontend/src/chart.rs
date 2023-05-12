@@ -739,10 +739,10 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                             let mut alg_data = vec![];
                             let mut alg_data2 = vec![];
                             // 128 MB = 16_777_216
-                            let y_range: [u32; 1] = [128]; 
+                            let y_range: [u32; 1] = [128];
                             // x (Relation R) starts at 8 MB, stepping each time 8 MB = 1_048_576
                             log!(format!("exp chart results: {:#?}", exp_chart.results));
-                            for (x, y) in (8..128).step_by(8).zip(y_range.iter().cycle()) {
+                            for (x, y) in (16..256).step_by(16).zip(y_range.iter().cycle()) {
                                 log!(format!(
                                     "Searching for data: baseline: {:?} x {}, y {} ",
                                     pr_conf.baseline, x, y

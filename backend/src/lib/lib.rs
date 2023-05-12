@@ -51,6 +51,19 @@ fn display_command_output(o: &std::process::Output, cmd: String) -> String {
     res
 }
 
+async fn make_clean(tbw_dir: &PathBuf) -> Result<()> {
+    let clean_out = TokioCommand::new("make")
+        .current_dir(tbw_dir)
+        .args(["clean"])
+        .status()
+        .await
+        .expect("Failed to run make clean!");
+    if !clean_out.success() {
+        bail!("`make clean` failed!");
+    }
+    Ok(())
+}
+
 // TODO Rewrite with a better Command library, eg. duct (if that works for async?). Problems:
 // - Commands that return nonzero exit status don't return an Err. The returned result is whether it could even start the command. Makes my code more complicated.
 // - Nicer way to get the actual string representing the command for logging.
@@ -75,21 +88,13 @@ async fn compile(
         "SGX_DEBUG=1",
         "SGX_PRERELEASE=0",
         "SGX_MODE=HW",
-        "CFLAGS='-DPCM_COUNT -DSGX_COUNTERS'",
+        "CFLAGS=-DPCM_COUNT -DSGX_COUNTERS",
     ];
     //let compile_args_native = ["native", "CFLAGS='-DPCM_COUNT -DSGX_COUNTERS'"];
     let compile_args_native_joined = compile_args_native.join(" ");
     let compile_args_sgx_joined = compile_args_sgx.join(" ");
     let enclave_name = "enclave.signed.so";
-    let clean_out = TokioCommand::new("make")
-        .current_dir(tee_bench_dir.clone())
-        .args(["clean"])
-        .status()
-        .await
-        .expect("Failed to run make clean!");
-    if !clean_out.success() {
-        bail!("`make clean` failed!");
-    }
+    make_clean(&tee_bench_dir).await?;
     let make_out = TokioCommand::new("make")
         .current_dir(tee_bench_dir)
         .args(compile_args_native)
@@ -140,6 +145,7 @@ async fn compile(
     if !cmd_out.status.success() {
         bail!("Running native example failed with:\n{output}");
     }
+    make_clean(&tee_bench_dir).await?;
     let cmd_out = TokioCommand::new("make")
         .current_dir(tee_bench_dir)
         .args(compile_args_sgx)
