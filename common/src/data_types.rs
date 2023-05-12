@@ -359,7 +359,10 @@ pub enum Dataset {
     #[default]
     CacheFit,
     CacheExceed,
-    CustomSize{ x: u32, y: u32 },
+    CustomSize {
+        x: u32,
+        y: u32,
+    },
 }
 
 impl Dataset {
@@ -496,7 +499,10 @@ impl PerfReportConfig {
             },
         )
     }
-    pub fn for_epc_paging(id: CommitIdType, baseline: Algorithm) -> (PerfReportConfig, PerfReportConfig) {
+    pub fn for_epc_paging(
+        id: CommitIdType,
+        baseline: Algorithm,
+    ) -> (PerfReportConfig, PerfReportConfig) {
         (
             PerfReportConfig {
                 id,
@@ -509,7 +515,7 @@ impl PerfReportConfig {
                 exp_type: ExperimentType::EpcPaging,
                 dataset: Dataset::CustomSize { x: 0, y: 0 },
                 baseline: baseline,
-            }
+            },
         )
     }
 }
@@ -651,7 +657,7 @@ impl Default for ProfilingConfiguration {
             min: 2.to_string(),
             max: 8.to_string(),
             step: 1.to_string(),
-            datasets: HashSet::from([Dataset::CacheExceed, Dataset::CacheFit]),
+            datasets: HashSet::from([Dataset::CacheFit]),
             platforms: HashSet::from([Platform::default()]),
             sort_data: false,
         }

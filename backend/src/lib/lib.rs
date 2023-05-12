@@ -70,12 +70,23 @@ async fn compile(
         .with_context(|| format!("Failed to write new operator to {REPLACE_FILE}"))?;
     // let compile_args_sgx = ["-B", "sgx"];
     let compile_args_native = ["native", "CFLAGS=-DNATIVE_COMPILATION"];
-    let compile_args_sgx = ["sgx", "SGX_DEBUG=1", "SGX_PRERELEASE=0", "SGX_MODE=HW", "CFLAGS='-DPCM_COUNT -DSGX_COUNTERS'"];
+    let compile_args_sgx = [
+        "sgx",
+        "SGX_DEBUG=1",
+        "SGX_PRERELEASE=0",
+        "SGX_MODE=HW",
+        "CFLAGS='-DPCM_COUNT -DSGX_COUNTERS'",
+    ];
     //let compile_args_native = ["native", "CFLAGS='-DPCM_COUNT -DSGX_COUNTERS'"];
     let compile_args_native_joined = compile_args_native.join(" ");
     let compile_args_sgx_joined = compile_args_sgx.join(" ");
     let enclave_name = "enclave.signed.so";
-    let clean_out = TokioCommand::new("make").current_dir(tee_bench_dir.clone()).args(["clean"]).status().await.expect("Failed to run make clean!");
+    let clean_out = TokioCommand::new("make")
+        .current_dir(tee_bench_dir.clone())
+        .args(["clean"])
+        .status()
+        .await
+        .expect("Failed to run make clean!");
     if !clean_out.success() {
         bail!("`make clean` failed!");
     }
@@ -93,16 +104,28 @@ async fn compile(
         bail!("Failed to compile native version:\n{output}");
     }
     let (mut app_path, mut bin_path) = (tee_bench_dir.clone(), tee_bench_dir.clone());
+    let (mut libpcm_path_dest, mut libpcm_path_src) =
+        (tee_bench_dir.clone(), tee_bench_dir.clone());
     bin_path.push(BIN_FOLDER);
     tokio::fs::create_dir_all(&bin_path)
         .await
         .with_context(|| format!("Failed to create $TEE_BENCH_DIR/{BIN_FOLDER}!"))?;
+    libpcm_path_dest.push(BIN_FOLDER);
+    libpcm_path_dest.push("lib/pcm");
+    tokio::fs::create_dir_all(&libpcm_path_dest)
+        .await
+        .with_context(|| format!("Failed to create {libpcm_path_dest:?}!"))?;
+    libpcm_path_dest.push("libpcm.so");
+    libpcm_path_src.push("lib/pcm/libpcm.so");
+    tokio::fs::copy(&libpcm_path_src, &libpcm_path_dest)
+        .await
+        .with_context(|| format!("Failed to copy libpcm.so to {libpcm_path_dest:?}!"))?;
     app_path.push("app");
     bin_path.push("native");
     debug!("Copying from {app_path:?} to {bin_path:?}");
     tokio::fs::copy(&app_path, &bin_path)
         .await
-        .context("Failed to copy native binary over!")?;
+        .with_context(|| format!("Failed to copy native binary to {bin_path:?}!"))?;
     bin_path.pop();
     let cmd_out = TokioCommand::new("./native")
         .args(&["-a", REPLACE_ALG])
@@ -219,7 +242,10 @@ async fn run_experiment(
                 }
                 match search_for_exp(conn.clone(), &args_key) {
                     Ok(Some(r)) => {
-                        info!("Found cached result for `{cmd_string}`");
+                        info!(
+                            "Found cached result for `{cmd_string}` (alg: {:?})",
+                            cmd.algorithm
+                        );
                         cmd_tasks.insert(args_key, Ok(r));
                         continue;
                     }
@@ -238,7 +264,7 @@ async fn run_experiment(
                     switched_in.replace(cmd.algorithm);
                 }
                 tee_bench_dir.push(BIN_FOLDER);
-                info!("Running `{cmd_string}`");
+                info!("Running `{cmd_string}` (alg: {:?})", cmd.algorithm);
                 let output = to_command(cmd)
                     .current_dir(tee_bench_dir)
                     .output()

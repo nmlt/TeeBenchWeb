@@ -1,7 +1,7 @@
+use gloo_console::log;
 use serde_json::json;
 use web_sys::HtmlCanvasElement;
 use yew::prelude::*;
-use gloo_console::log;
 use yewdux::prelude::*;
 
 use core::panic;
@@ -368,7 +368,7 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                         match conf.datasets.iter().next().unwrap() {
                             Dataset::CacheExceed => heading.push_str(" with dataset Cache Exceed"),
                             Dataset::CacheFit => heading.push_str(" with dataset Cache Fit"),
-                            _ => panic!("Cannot handle custom dataset size yet!")
+                            _ => panic!("Cannot handle custom dataset size yet!"),
                         }
                         let steps: Vec<_> = conf.param_value_iter();
                         labels = json!(steps);
@@ -738,40 +738,37 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                             let alg_title = alg_titles[1].clone();
                             let mut alg_data = vec![];
                             let mut alg_data2 = vec![];
-                            let y_range: [u32; 1] = [128]; // 128 MB = 16_777_216
+                            // 128 MB = 16_777_216
+                            let y_range: [u32; 1] = [128]; 
                             // x (Relation R) starts at 8 MB, stepping each time 8 MB = 1_048_576
                             log!(format!("exp chart results: {:#?}", exp_chart.results));
                             for (x, y) in (8..128).step_by(8).zip(y_range.iter().cycle()) {
-                                log!(format!("Searching for data: baseline: {:?} x {}, y {} ", pr_conf.baseline, x, y));
-                                let d1_search = TeebenchArgs::for_epc_paging(pr_conf.baseline, x, *y);
+                                log!(format!(
+                                    "Searching for data: baseline: {:?} x {}, y {} ",
+                                    pr_conf.baseline, x, y
+                                ));
+                                let d1_search =
+                                    TeebenchArgs::for_epc_paging(pr_conf.baseline, x, *y);
                                 log!(format!("Comparing tba to {d1_search:#?}"));
-                                let d1 = exp_chart.results
+                                let d1 = exp_chart
+                                    .results
                                     .iter()
-                                    .find(|&tuple| {
-                                        tuple.0
-                                            == d1_search
-                                    })
+                                    .find(|&tuple| tuple.0 == d1_search)
                                     .unwrap()
                                     .1["throughput"]
                                     .parse()
                                     .unwrap();
-                                let d2 = exp_chart.results
+                                let d2 = exp_chart
+                                    .results
                                     .iter()
                                     .find(|&tuple| {
                                         tuple.0
-                                            == TeebenchArgs::for_epc_paging(
-                                                pr_conf.baseline,
-                                                x,
-                                                *y
-                                            )
+                                            == TeebenchArgs::for_epc_paging(pr_conf.baseline, x, *y)
                                     })
                                     .unwrap();
-                                let d2 = d2.1["totalEWB"]
-                                    .parse()
-                                    .unwrap();
+                                let d2 = d2.1["totalEWB"].parse().unwrap();
                                 alg_data.push(d1);
                                 alg_data2.push(d2);
-                                
                             }
                             (chart_type, labels, datasets, plugins, scales) =
                                 predefined_epc_paging_exp(alg_title, alg_data, alg_data2);

@@ -60,15 +60,15 @@ impl Commandline {
         if args.x.is_some() || args.y.is_some() {
             if let Some(x) = args.x {
                 if let Some(y) = args.y {
-                    args.dataset = crate::data_types::Dataset::CustomSize{ x, y };
+                    args.dataset = crate::data_types::Dataset::CustomSize { x, y };
                 } else {
-                    args.dataset = crate::data_types::Dataset::CustomSize{ x, y: 128 };
+                    args.dataset = crate::data_types::Dataset::CustomSize { x, y: 128 };
                 }
             } else {
                 if let Some(y) = args.y {
-                    args.dataset = crate::data_types::Dataset::CustomSize{ x: 16, y };
+                    args.dataset = crate::data_types::Dataset::CustomSize { x: 16, y };
                 } else {
-                    args.dataset = crate::data_types::Dataset::CustomSize{ x: 16, y: 128 };
+                    args.dataset = crate::data_types::Dataset::CustomSize { x: 16, y: 128 };
                 }
             }
         }

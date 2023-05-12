@@ -179,7 +179,11 @@ pub fn profiling() -> Html {
             store.step = value;
         })
     };
-    let datasets: Vec<CheckboxData> = datasets.iter().map(|d| CheckboxData::new(&d, &d)).collect();
+    let datasets: Vec<CheckboxData> = datasets
+        .iter()
+        .filter(|&d| d != &"Custom Size")
+        .map(|d| CheckboxData::new(&d, &d))
+        .collect();
     let datasets_onchange = {
         let (_store, dispatch) = use_store::<ProfilingConfiguration>();
         dispatch.reduce_mut_callback_with(|s, e: Event| {
