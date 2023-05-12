@@ -302,7 +302,6 @@ fn CommitsList() -> Html {
                 }
             })
         };
-        let commit_id = commit.id;
         let commit_title = commit.get_title();
         let compile_status_view = match commit.compilation {
             CompilationStatus::Uncompiled => html! {"waiting to start compilation..."},
