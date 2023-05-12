@@ -263,9 +263,12 @@ async fn run_experiment(
                         || (switched_in.is_some() && switched_in.unwrap() != cmd.algorithm))
                 {
                     info!("Compiling: {cmd:?}, switched in : {switched_in:?}");
-                    if let Err(e) = compile(&cmd.algorithm, &tee_bench_dir, code_hashmap).await {
-                        error!("Error while switching in code and compiling commit for experiment:\n{e:#}");
-                        return JobResult::Exp(Err(TeeBenchWebError::Compile(format!("{e:#}"))));
+                    match compile(&cmd.algorithm, &tee_bench_dir, code_hashmap).await {
+                        Ok(o) => debug!("Compiler output: {o}"),
+                        Err(e) => {
+                            error!("Error while switching in code and compiling commit for experiment:\n{e:#}");
+                            return JobResult::Exp(Err(TeeBenchWebError::Compile(format!("{e:#}"))));
+                        }
                     }
                     switched_in.replace(cmd.algorithm);
                 }

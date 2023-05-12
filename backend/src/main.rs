@@ -156,9 +156,9 @@ impl AppState {
 
 #[tokio::main]
 async fn main() {
-    // If I use Level::DEBUG, I get lots of log messages from hyper/mio/etc.
+    dotenv::dotenv().ok();
     tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::INFO)
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .init();
 
     let commits = Arc::new(Mutex::new(CommitState::new(vec![

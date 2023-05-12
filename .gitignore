@@ -3,3 +3,5 @@ trunk-target/
 dist/
 .idea/
 fake_teebench
+.env
+cache.sqlite

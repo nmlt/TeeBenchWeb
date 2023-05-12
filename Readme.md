@@ -13,6 +13,20 @@ Requirements
 Running the server app with the web app
 ---------------------------------------
 
+### Setup
+
+This assumes that TeeBench is in a subdirectory called `tee-bench`. Change the created `.env` file when `tee-bench` is somewhere else.
+
+```sh
+mv .env.example .env
+```
+
+### Run
+
+```sh
+./run.sh # You will be asked for your password by sudo
+```
+
 Use `run.sh`. You can set the environment variable `TEEBENCHWEB_RUN_DIR` to a directory with TeeBench. TeeBenchWeb will compile TeeBench, create a `bin` folder, and copy the executables (native and sgx) and enclave file there. It also relies on TeeBench having a `Joins/TBW/` folder, in which it will copy uploaded Operators (called Commits in the code) into a file called `OperatorJoin.cpp`.
 
 If you do not set this environment variable, TeeBenchWeb will use a fake version of TeeBench which outputs precomputed results.
