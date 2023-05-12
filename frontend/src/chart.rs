@@ -49,7 +49,7 @@ fn create_data_hashmap(
         let m = match measurement {
             Measurement::TotalEpcPaging => result["totalEWB"].clone(),
             Measurement::Throughput => result["throughput"].clone(),
-            Measurement::ThroughputAndTotalEPCPaging => String::from("0"), // TODO: find out how to pass two parameters at once
+            Measurement::ThroughputAndTotalEPCPaging => panic!("Should not ask for a single value"),
             Measurement::Phase1Cycles => result["phase1Cycles"].clone(),
             Measurement::Phase2Cycles => result["phase2Cycles"].clone(),
             Measurement::TotalCycles => result["cyclesPerTuple"].clone(),
@@ -63,6 +63,7 @@ fn create_data_hashmap(
             Measurement::TotalInvoluntaryCS => result["totalInvoluntaryCS"].clone(),
             Measurement::TotalUserCpuTime => result["totalUserCpuTime"].clone(),
             Measurement::TotalSystemCpuTime => result["totalSystemCpuTime"].clone(),
+            Measurement::TwoPhasesCycles => panic!("Should not ask for a single value"),
         };
         v.push((p, m));
     }
@@ -346,6 +347,11 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                 heading = String::from("System CPU time with varying ");
                                 y_axis_text = "System CPU time [s]";
                             }
+                            Measurement::TwoPhasesCycles => {
+                                chart_type = "bar";
+                                heading = String::from("CPU cycles with varying ");
+                                y_axis_text = "CPU Cycles / tuple";
+                            }
                         }
                         match conf.parameter {
                             Parameter::Threads => {
@@ -439,6 +445,109 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                         "type" : "bar"
                                     }));
                                 }
+                                for (((alg, platform, _dataset), data_value), color) in
+                                    data.iter().zip(COLORS.iter().cycle())
+                                {
+                                    let alg = commit_store.get_title_by_algorithm(alg).unwrap();
+                                    // compare the global label (steps) with the data_value results
+                                    // fill in with NULL if a data_value is missing, otherwise pass the result
+                                    let mut values: Vec<String> = vec![];
+                                    for s in &steps {
+                                        let v = data_value.iter().find(|(x, _)| s == x);
+                                        match v {
+                                            None => values.push("NULL".to_string()),
+                                            Some(val) => values.push(val.1.clone()),
+                                        }
+                                    }
+                                    datasets_prep.push(json!({
+                                        "label": format!("Throughput {alg} on {platform}"),
+                                        "data": values,
+                                        "backgroundColor": color,
+                                        "borderColor": color,
+                                        "yAxisID": "y",
+                                        "borderWidth":5,
+                                        "order": 0
+                                    }));
+                                }
+                            }
+                            Measurement::TwoPhasesCycles => {
+                                data = create_data_hashmap(
+                                    &exp_chart.results,
+                                    Measurement::Phase1Cycles,
+                                    conf.clone().parameter,
+                                );
+                                data2 = create_data_hashmap(
+                                    &exp_chart.results,
+                                    Measurement::Phase2Cycles,
+                                    conf.clone().parameter,
+                                );
+                                scales = json!({
+                                    "x": {
+                                        "stacked": true
+                                    },
+                                    "y": {
+                                            "ticks": {
+                                                "min": 0
+                                            },
+                                            "text": y_axis_text,
+                                            "type": "linear",
+                                            "display": true,
+                                            "position": "left",
+                                            "stacked": true
+                                        }
+                                });
+                                for (((alg, platform, _dataset), data_value), color) in
+                                    data.iter().zip(COLORS.iter().cycle())
+                                {
+                                    let alg = commit_store.get_title_by_algorithm(alg).unwrap();
+                                    // compare the global label (steps) with the data_value results
+                                    // fill in with NULL if a data_value is missing, otherwise pass the result
+                                    let mut values: Vec<String> = vec![];
+                                    for s in &steps {
+                                        let v = data_value.iter().find(|(x, _)| s == x);
+                                        match v {
+                                            None => values.push("NULL".to_string()),
+                                            Some(val) => values.push(val.1.clone()),
+                                        }
+                                    }
+                                    datasets_prep.push(json!({
+                                        "label": format!("Phase 1 {alg} on {platform}"),
+                                        "data": values,
+                                        "backgroundColor": color,
+                                        "borderColor": color,
+                                        "yAxisID": "y",
+                                        "borderWidth":5,
+                                        "order": 0
+                                    }));
+                                }
+                                let colors_alpha: Vec<String> = COLORS
+                                    .iter()
+                                    .map(|c| c.clone().to_owned() + &"AA".to_string())
+                                    .collect();
+                                for (((alg, platform, _dataset), data_value), color) in
+                                    data2.iter().zip(colors_alpha.iter().cycle())
+                                {
+                                    let alg = commit_store.get_title_by_algorithm(alg).unwrap();
+                                    // compare the global label (steps) with the data_value results
+                                    // fill in with NULL if a data_value is missing, otherwise pass the result
+                                    let mut values: Vec<String> = vec![];
+                                    for s in &steps {
+                                        let v = data_value.iter().find(|(x, _)| s == x);
+                                        match v {
+                                            None => values.push("NULL".to_string()),
+                                            Some(val) => values.push(val.1.clone()),
+                                        }
+                                    }
+                                    datasets_prep.push(json!({
+                                        "label": format!("Phase 2 {alg} on {platform}"),
+                                        "data": values,
+                                        "backgroundColor": color,
+                                        "borderColor": color,
+                                        "yAxisID": "y",
+                                        "borderWidth":5,
+                                        "order": 0
+                                    }));
+                                }
                             }
                             _ => {
                                 data = create_data_hashmap(
@@ -457,32 +566,31 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                             "position": "left"
                                         }
                                 });
-                            }
-                        }
-
-                        for (((alg, platform, _dataset), data_value), color) in
-                            data.iter().zip(COLORS.iter().cycle())
-                        {
-                            let alg = commit_store.get_title_by_algorithm(alg).unwrap();
-                            // compare the global label (steps) with the data_value results
-                            // fill in with NULL if a data_value is missing, otherwise pass the result
-                            let mut values: Vec<String> = vec![];
-                            for s in &steps {
-                                let v = data_value.iter().find(|(x, _)| s == x);
-                                match v {
-                                    None => values.push("NULL".to_string()),
-                                    Some(val) => values.push(val.1.clone()),
+                                for (((alg, platform, _dataset), data_value), color) in
+                                    data.iter().zip(COLORS.iter().cycle())
+                                {
+                                    let alg = commit_store.get_title_by_algorithm(alg).unwrap();
+                                    // compare the global label (steps) with the data_value results
+                                    // fill in with NULL if a data_value is missing, otherwise pass the result
+                                    let mut values: Vec<String> = vec![];
+                                    for s in &steps {
+                                        let v = data_value.iter().find(|(x, _)| s == x);
+                                        match v {
+                                            None => values.push("NULL".to_string()),
+                                            Some(val) => values.push(val.1.clone()),
+                                        }
+                                    }
+                                    datasets_prep.push(json!({
+                                        "label": format!("Throughput {alg} on {platform}"),
+                                        "data": values,
+                                        "backgroundColor": color,
+                                        "borderColor": color,
+                                        "yAxisID": "y",
+                                        "borderWidth":5,
+                                        "order": 0
+                                    }));
                                 }
                             }
-                            datasets_prep.push(json!({
-                                "label": format!("Throughput {alg} on {platform}"),
-                                "data": values,
-                                "backgroundColor": color,
-                                "borderColor": color,
-                                "yAxisID": "y",
-                                "borderWidth":5,
-                                "order": 0
-                            }));
                         }
 
                         datasets = json!(datasets_prep);

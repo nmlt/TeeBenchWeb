@@ -19,6 +19,7 @@ use tracing::{debug, error, info, instrument, warn};
 use backend_lib::profiling_task;
 use common::commit::{Commit, CommitState};
 use common::data_types::{ClientMessage, Job, JobStatus, ServerMessage};
+use common::hardcoded::hardcoded_profiling_jobs;
 
 const DEFAULT_TASK_CHANNEL_SIZE: usize = 5;
 
@@ -164,7 +165,7 @@ async fn main() {
     let commits = Arc::new(Mutex::new(CommitState::new(vec![
         common::hardcoded::predefined_commit(),
     ])));
-    let queue = Arc::new(Mutex::new(VecDeque::new()));
+    let queue: Arc<Mutex<VecDeque<Job>>> = Arc::new(Mutex::new(hardcoded_profiling_jobs()));
     let (queue_tx, queue_rx) = mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);
     let (profiling_tx, profiling_rx) = mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);
 

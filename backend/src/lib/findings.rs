@@ -210,6 +210,7 @@ pub fn enrich_report_with_findings(jr: &mut Report) {
                     Measurement::TotalInvoluntaryCS => {}
                     Measurement::TotalUserCpuTime => {}
                     Measurement::TotalSystemCpuTime => {}
+                    Measurement::TwoPhasesCycles => {}
                 }
             }
             JobConfig::PerfReport(c) => match c.exp_type {

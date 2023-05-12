@@ -3,8 +3,76 @@ use crate::{
     commit::CommitIdType,
     data_types::{Algorithm, JobConfig, PerfReportConfig, Platform, REPLACE_ALG},
 };
+use std::collections::{HashSet, VecDeque};
 
 pub const MAX_THREADS: u8 = 32;
+
+pub fn hardcoded_profiling_jobs() -> VecDeque<Job> {
+    let configs: Vec<ProfilingConfiguration> = Vec::from([
+        //Throughput(threads)
+        ProfilingConfiguration {
+            algorithms: HashSet::from([Rho, Pht, Psm, Mway, Rht, Cht, Rsm, Inl, Crkj]),
+            experiment_type: ExperimentType::Custom,
+            parameter: Parameter::Threads,
+            measurement: Measurement::Throughput,
+            min: String::from("1"),
+            max: String::from("8"),
+            step: String::from("1"),
+            datasets: HashSet::from([Dataset::CacheFit, Dataset::CacheExceed]),
+            platforms: HashSet::from([Platform::Sgx]),
+            sort_data: false,
+        },
+        // Throughput(algorithm)
+        ProfilingConfiguration {
+            algorithms: HashSet::from([Rho, Pht, Psm, Mway, Rht, Cht, Rsm, Inl, Crkj]),
+            experiment_type: ExperimentType::Custom,
+            parameter: Parameter::Algorithms,
+            measurement: Measurement::Throughput,
+            min: String::from("1"),
+            max: String::from("9"),
+            step: String::from("1"),
+            datasets: HashSet::from([Dataset::CacheFit, Dataset::CacheExceed]),
+            platforms: HashSet::from([Platform::Sgx]),
+            sort_data: false,
+        },
+        //CHT throughput and EPC paging - FIXME: this doesn't work yet
+        ProfilingConfiguration {
+            algorithms: HashSet::from([Cht]),
+            experiment_type: ExperimentType::Custom,
+            parameter: Parameter::OuterTableSize,
+            measurement: Measurement::ThroughputAndTotalEPCPaging,
+            min: String::from("16"),
+            max: String::from("48"),
+            step: String::from("16"),
+            datasets: HashSet::from([Dataset::CacheFit]),
+            platforms: HashSet::from([Platform::Sgx]),
+            sort_data: false,
+        },
+        //CPU cycles per phase per algorithm
+        ProfilingConfiguration {
+            algorithms: HashSet::from([Rho, Pht, Psm, Mway, Rht, Cht, Rsm, Inl, Crkj]),
+            experiment_type: ExperimentType::Custom,
+            parameter: Parameter::Algorithms,
+            measurement: Measurement::TwoPhasesCycles,
+            min: String::from("0"),
+            max: String::from("0"),
+            step: String::from("0"),
+            datasets: HashSet::from([Dataset::CacheFit, Dataset::CacheExceed]),
+            platforms: HashSet::from([Platform::Sgx]),
+            sort_data: false,
+        },
+    ]);
+    let jobs: Vec<Job> = configs
+        .iter()
+        .map(|c| Job {
+            config: c.clone().into(),
+            submitted: OffsetDateTime::now_utc(),
+            ..Job::default()
+        })
+        .collect();
+
+    VecDeque::from(jobs)
+}
 
 // TODO Hardcoded Vecs could become arrays.
 pub fn hardcoded_perf_report_configs(id: CommitIdType, baseline: Algorithm) -> Vec<JobConfig> {
@@ -156,7 +224,13 @@ pub fn hardcoded_perf_report_commands(
 }
 
 use crate::commit::{Commit, Operator};
+use crate::data_types::Algorithm::*;
+use crate::data_types::{
+    Dataset, ExperimentType, Job, Measurement, Parameter, ProfilingConfiguration,
+};
 use indoc::indoc;
+use time::OffsetDateTime;
+
 pub fn predefined_commit() -> Commit {
     let merge_ = indoc! {r#"
         #include <JoinCommons.h>
@@ -320,7 +394,6 @@ pub fn predefined_commit() -> Commit {
         }
     "#}.to_string();
     use crate::data_types::{
-        Algorithm::Rho,
         Dataset::{CacheExceed, CacheFit},
         ExperimentChart,
         ExperimentType::{Scalability, Throughput},

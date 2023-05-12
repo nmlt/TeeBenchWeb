@@ -267,7 +267,9 @@ async fn run_experiment(
                         Ok(o) => debug!("Compiler output: {o}"),
                         Err(e) => {
                             error!("Error while switching in code and compiling commit for experiment:\n{e:#}");
-                            return JobResult::Exp(Err(TeeBenchWebError::Compile(format!("{e:#}"))));
+                            return JobResult::Exp(Err(TeeBenchWebError::Compile(format!(
+                                "{e:#}"
+                            ))));
                         }
                     }
                     switched_in.replace(cmd.algorithm);
@@ -280,7 +282,7 @@ async fn run_experiment(
                     .await
                     .expect("Failed to run TeeBench");
                 if !output.status.success() {
-                    error!("Command failed with {output:#?}");
+                    error!("Command {cmd_string} failed with {output:#?}");
                     cmd_tasks.insert(
                         args_key,
                         Err(TeeBenchWebError::TeeBenchCrash(format!(

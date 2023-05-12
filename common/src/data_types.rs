@@ -213,7 +213,7 @@ pub const REPLACE_ALG: &str = "OperatorJoin";
 #[strum(serialize_all = "UPPERCASE")]
 pub enum Algorithm {
     #[default]
-    #[strum(to_string = "CHT")]
+    #[strum(to_string = "RHO")]
     Rho,
     #[strum(to_string = "PHT")]
     Pht,
@@ -223,7 +223,7 @@ pub enum Algorithm {
     Mway,
     #[strum(to_string = "RHT")]
     Rht,
-    #[strum(to_string = "RHO")]
+    #[strum(to_string = "CHT")]
     Cht,
     #[strum(to_string = "RSM")]
     Rsm,
@@ -325,6 +325,7 @@ pub enum Measurement {
     Phase1Cycles,
     Phase2Cycles,
     TotalCycles,
+    TwoPhasesCycles,
     TotalL2HitRatio,
     TotalL3HitRatio,
     TotalL2CacheMisses,
