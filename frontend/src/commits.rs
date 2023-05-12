@@ -9,7 +9,6 @@ use yewdux::prelude::*;
 
 use std::str::FromStr;
 
-use crate::components::collapse::Collapse;
 use crate::components::select::{InputSelect, SelectDataOption};
 use crate::components::tag::Tag;
 use crate::js_bindings::hljs_highlight;
@@ -304,7 +303,7 @@ fn CommitsList() -> Html {
             })
         };
         let commit_id = commit.id;
-        let output_html_id = format!("commit{commit_id}CompilerOutputCollapse");
+        let commit_title = commit.get_title();
         let compile_status_view = match commit.compilation {
             CompilationStatus::Uncompiled => html! {"waiting to start compilation..."},
             CompilationStatus::Compiling => html! {"compiling..."},
@@ -312,24 +311,38 @@ fn CommitsList() -> Html {
                 if warnings.is_empty() {
                     html! {"Successfully compiled."}
                 } else {
+                    let compiler_output_onclick = {
+                        let content_dispatch = content_dispatch.clone();
+                        let warnings = warnings.clone();
+                        content_dispatch.set_callback(move |_| {
+                            let warnings = warnings.clone();
+                            ModalContent::with_modal_skeleton(html! {
+                                <pre>
+                                    {warnings}
+                                </pre>
+                            }, html! {{format!("Compiler output for {commit_title}")}})
+                        })
+                    };
                     html! {
-                        <Collapse id={output_html_id} label="Show Compiler Output" style="btn-primary">
-                            <pre>
-                                {warnings}
-                            </pre>
-                        </Collapse>
+                        <button class="btn btn-success" onclick={compiler_output_onclick} data-bs-toggle="modal" data-bs-target="#mainModal">{"Show Compiler Output"}</button>
                     }
                 }
             }
             CompilationStatus::Failed(ref e) => {
-                html! {
-                    html! {
-                        <Collapse id={output_html_id} label="Show Compiler Output" style="btn-danger">
+                let compiler_output_onclick = {
+                    let content_dispatch = content_dispatch.clone();
+                    let e = e.clone();
+                    content_dispatch.set_callback(move |_| {
+                        let e = e.clone();
+                        ModalContent::with_modal_skeleton(html! {
                             <pre>
                                 {e}
                             </pre>
-                        </Collapse>
-                    }
+                        }, html! {{format!("Compiler output for {commit_title}")}})
+                    })
+                };
+                html! {
+                    <button class="btn btn-danger" onclick={compiler_output_onclick} data-bs-toggle="modal" data-bs-target="#mainModal">{"Show Compiler Output"}</button>
                 }
             }
         };
