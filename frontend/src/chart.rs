@@ -1,4 +1,5 @@
 use gloo_console::log;
+use rand::seq::SliceRandom;
 use serde_json::json;
 use web_sys::HtmlCanvasElement;
 use yew::prelude::*;
@@ -25,6 +26,26 @@ const COLORS2: [&str; 15] = [
     "#F08700", "#00A6A6", "#BBDEF0", "#462255", "#280004", "#F0FFCE", "#B7E3CC", "#9FB8AD",
     "#C8AD55", "#DCF2B0", "#FFE0B5", "#AA4465", "#5F5566", "#93E1D8", "#59F8E8",
 ];
+
+fn get_color_by_algorithm(alg: &String) -> &str {
+    let color_alg: HashMap<&str, &str> = HashMap::from([
+        ("CHT", "#b44b20"),
+        ("PHT", "#7b8b3d"),
+        ("PSM", "#c7b186"),
+        ("RHT", "#885a20"),
+        ("RHO", "#e6ab48"),
+        ("RSM", "#4c748a"),
+        ("INL", "#7620b4"),
+        ("MWAY", "#fd2455"),
+        ("CRKJ", "#B3346C"),
+    ]);
+    let s = match color_alg.get(alg.as_str()) {
+        // if not found - return a random color
+        None => COLORS.choose(&mut rand::thread_rng()).unwrap().clone(),
+        Some(c) => c,
+    };
+    s
+}
 
 #[derive(Clone, PartialEq, Default, Store)]
 pub struct ChartState(MyChart, bool);
@@ -421,10 +442,9 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                         }
                                     }
                                 });
-                                for (((alg, platform, _dataset), data_value), color) in
-                                    data2.iter().zip(COLORS2.iter().cycle())
-                                {
+                                for ((alg, platform, _dataset), data_value) in data2.iter() {
                                     let alg = commit_store.get_title_by_algorithm(alg).unwrap();
+                                    let alg_color = get_color_by_algorithm(&alg);
                                     // compare the global label (steps) with the data_value results
                                     // fill in with NULL if a data_value is missing, otherwise pass the result
                                     let mut values: Vec<String> = vec![];
@@ -438,17 +458,16 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                     datasets_prep.push(json!({
                                         "label": format!("EPC Paging {alg} on {platform}"),
                                         "data": values,
-                                        "backgroundColor": color,
-                                        "borderColor": color,
+                                        "backgroundColor": alg_color,
+                                        "borderColor": alg_color,
                                         "yAxisID": "y1",
                                         "order" : 1,
                                         "type" : "bar"
                                     }));
                                 }
-                                for (((alg, platform, _dataset), data_value), color) in
-                                    data.iter().zip(COLORS.iter().cycle())
-                                {
+                                for ((alg, platform, _dataset), data_value) in data.iter() {
                                     let alg = commit_store.get_title_by_algorithm(alg).unwrap();
+                                    let alg_color = get_color_by_algorithm(&alg);
                                     // compare the global label (steps) with the data_value results
                                     // fill in with NULL if a data_value is missing, otherwise pass the result
                                     let mut values: Vec<String> = vec![];
@@ -462,8 +481,8 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                     datasets_prep.push(json!({
                                         "label": format!("Throughput {alg} on {platform}"),
                                         "data": values,
-                                        "backgroundColor": color,
-                                        "borderColor": color,
+                                        "backgroundColor": alg_color,
+                                        "borderColor": alg_color,
                                         "yAxisID": "y",
                                         "borderWidth":5,
                                         "order": 0
@@ -496,10 +515,9 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                             "stacked": true
                                         }
                                 });
-                                for (((alg, platform, _dataset), data_value), color) in
-                                    data.iter().zip(COLORS.iter().cycle())
-                                {
+                                for ((alg, platform, _dataset), data_value) in data.iter() {
                                     let alg = commit_store.get_title_by_algorithm(alg).unwrap();
+                                    let alg_color = get_color_by_algorithm(&alg);
                                     // compare the global label (steps) with the data_value results
                                     // fill in with NULL if a data_value is missing, otherwise pass the result
                                     let mut values: Vec<String> = vec![];
@@ -513,21 +531,18 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                     datasets_prep.push(json!({
                                         "label": format!("Phase 1 {alg} on {platform}"),
                                         "data": values,
-                                        "backgroundColor": color,
-                                        "borderColor": color,
+                                        "backgroundColor": alg_color,
+                                        "borderColor": alg_color,
                                         "yAxisID": "y",
                                         "borderWidth":5,
                                         "order": 0
                                     }));
                                 }
-                                let colors_alpha: Vec<String> = COLORS
-                                    .iter()
-                                    .map(|c| c.clone().to_owned() + &"AA".to_string())
-                                    .collect();
-                                for (((alg, platform, _dataset), data_value), color) in
-                                    data2.iter().zip(colors_alpha.iter().cycle())
-                                {
+
+                                for ((alg, platform, _dataset), data_value) in data2.iter() {
                                     let alg = commit_store.get_title_by_algorithm(alg).unwrap();
+                                    let alg_color = get_color_by_algorithm(&alg).to_string()
+                                        + &"AA".to_string();
                                     // compare the global label (steps) with the data_value results
                                     // fill in with NULL if a data_value is missing, otherwise pass the result
                                     let mut values: Vec<String> = vec![];
@@ -541,8 +556,8 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                     datasets_prep.push(json!({
                                         "label": format!("Phase 2 {alg} on {platform}"),
                                         "data": values,
-                                        "backgroundColor": color,
-                                        "borderColor": color,
+                                        "backgroundColor": alg_color,
+                                        "borderColor": alg_color,
                                         "yAxisID": "y",
                                         "borderWidth":5,
                                         "order": 0
@@ -566,10 +581,9 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                             "position": "left"
                                         }
                                 });
-                                for (((alg, platform, _dataset), data_value), color) in
-                                    data.iter().zip(COLORS.iter().cycle())
-                                {
+                                for ((alg, platform, _dataset), data_value) in data.iter() {
                                     let alg = commit_store.get_title_by_algorithm(alg).unwrap();
+                                    let alg_color = get_color_by_algorithm(&alg);
                                     // compare the global label (steps) with the data_value results
                                     // fill in with NULL if a data_value is missing, otherwise pass the result
                                     let mut values: Vec<String> = vec![];
@@ -583,8 +597,8 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                     datasets_prep.push(json!({
                                         "label": format!("Throughput {alg} on {platform}"),
                                         "data": values,
-                                        "backgroundColor": color,
-                                        "borderColor": color,
+                                        "backgroundColor": alg_color,
+                                        "borderColor": alg_color,
                                         "yAxisID": "y",
                                         "borderWidth":5,
                                         "order": 0

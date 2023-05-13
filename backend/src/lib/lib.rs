@@ -529,7 +529,7 @@ pub async fn profiling_task(
         {
             let locked = queue.lock().unwrap();
             if !locked.is_empty() {
-                let (work_finished_tx, mut work_finished_rx) = oneshot::channel();
+                let (work_finished_tx, _work_finished_rx) = oneshot::channel();
                 tokio::spawn(work_on_queue(
                     queue.clone(),
                     work_finished_tx,
