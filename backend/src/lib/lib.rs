@@ -526,6 +526,20 @@ pub async fn profiling_task(
     // Connection uses RefCell internally, so the Mutex is required.
     let conn = Arc::new(Mutex::new(conn));
     loop {
+        {
+            let locked = queue.lock().unwrap();
+            if !locked.is_empty() {
+                let (work_finished_tx, mut work_finished_rx) = oneshot::channel();
+                tokio::spawn(work_on_queue(
+                    queue.clone(),
+                    work_finished_tx,
+                    queue_tx.clone(),
+                    commits.clone(),
+                    currently_switched_in.clone(),
+                    conn.clone(),
+                ));
+            }
+        }
         receive_confs(queue.clone(), rx.clone()).await;
         let (work_finished_tx, mut work_finished_rx) = oneshot::channel();
         tokio::spawn(work_on_queue(
