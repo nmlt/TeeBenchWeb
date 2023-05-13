@@ -111,9 +111,14 @@ pub fn JobResultView(JobResultViewProps { job }: &JobResultViewProps) -> Html {
             } else {
                 html! {{"Error! No results."}}
             };
+            let (measurement, parameter) = match &job.config {
+                JobConfig::Profiling(p) => (p.measurement.to_string(), p.parameter.to_string()),
+                _ => (String::from(""), String::from("")),
+            };
             html! {
                 <li class="list-group-item" title={format!("{}", job.config)}>
-                    {"Submitted at: "}<span class="fw-bold">{format!("{} ", job.submitted.format(time_format).unwrap())}</span>
+                    <span class="fw-bold">{format!("{} ", job.submitted.format(time_format).unwrap())}</span>
+                    {format!("|{}({})|", measurement, parameter)}
                     {for algs}
                     <span>{format!(" took {runtime:.1} ")}</span>
                     {result}
