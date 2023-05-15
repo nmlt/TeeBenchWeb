@@ -118,7 +118,7 @@ pub fn JobResultView(JobResultViewProps { job }: &JobResultViewProps) -> Html {
             html! {
                 <li class="list-group-item" title={format!("{}", job.config)}>
                     <span class="fw-bold">{format!("{} ", job.submitted.format(time_format).unwrap())}</span>
-                    {format!("|{}({})|", measurement, parameter)}
+                    {format!(" {}({}) ", measurement, parameter)}
                     {for algs}
                     <span>{format!(" took {runtime:.1} ")}</span>
                     {result}

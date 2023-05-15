@@ -731,10 +731,11 @@ impl ProfilingConfiguration {
                 res
             }
             Parameter::Algorithms => {
-                let res = Vec::from_iter(self.algorithms.clone())
+                let mut res: Vec<String> = Vec::from_iter(self.algorithms.clone())
                     .iter()
                     .map(|a| a.to_string())
                     .collect();
+                res.sort();
                 res
             }
         }

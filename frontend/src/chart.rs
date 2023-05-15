@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use common::commit::CommitState;
 use common::data_types::{
     Algorithm, Dataset, ExperimentChart, ExperimentChartResult, ExperimentType, JobConfig,
-    Measurement, Parameter, Platform, TeebenchArgs,
+    Measurement, Parameter, Platform, SingleRunResult, TeebenchArgs,
 };
 
 use crate::js_bindings::MyChart;
@@ -50,6 +50,31 @@ fn get_color_by_algorithm(alg: &String) -> &str {
 #[derive(Clone, PartialEq, Default, Store)]
 pub struct ChartState(MyChart, bool);
 
+fn get_measurement_from_single_result(
+    single_run: &SingleRunResult,
+    measurement: &Measurement,
+) -> String {
+    match measurement {
+        Measurement::TotalEpcPaging => single_run["totalEWB"].clone(),
+        Measurement::Throughput => single_run["throughput"].clone(),
+        Measurement::ThroughputAndTotalEPCPaging => panic!("Should not ask for a single value"),
+        Measurement::Phase1Cycles => single_run["phase1Cycles"].clone(),
+        Measurement::Phase2Cycles => single_run["phase2Cycles"].clone(),
+        Measurement::TotalCycles => single_run["cyclesPerTuple"].clone(),
+        Measurement::TotalL2HitRatio => single_run["totalL2HitRatio"].clone(),
+        Measurement::TotalL3HitRatio => single_run["totalL3HitRatio"].clone(),
+        Measurement::TotalL2CacheMisses => single_run["totalL2CacheMisses"].clone(),
+        Measurement::TotalL3CacheMisses => single_run["totalL3CacheMisses"].clone(),
+        Measurement::IPC => single_run["totalIPC"].clone(),
+        Measurement::IR => single_run["totalIR"].clone(),
+        Measurement::TotalVoluntaryCS => single_run["totalVoluntaryCS"].clone(),
+        Measurement::TotalInvoluntaryCS => single_run["totalInvoluntaryCS"].clone(),
+        Measurement::TotalUserCpuTime => single_run["totalUserCpuTime"].clone(),
+        Measurement::TotalSystemCpuTime => single_run["totalSystemCpuTime"].clone(),
+        Measurement::TwoPhasesCycles => panic!("Should not ask for a single value"),
+    }
+}
+
 fn create_data_hashmap(
     results: &ExperimentChartResult,
     measurement: Measurement,
@@ -67,25 +92,7 @@ fn create_data_hashmap(
             Parameter::Algorithms => result["algorithm"].clone(),
             Parameter::OuterTableSize => args.y.unwrap().to_string(),
         };
-        let m = match measurement {
-            Measurement::TotalEpcPaging => result["totalEWB"].clone(),
-            Measurement::Throughput => result["throughput"].clone(),
-            Measurement::ThroughputAndTotalEPCPaging => panic!("Should not ask for a single value"),
-            Measurement::Phase1Cycles => result["phase1Cycles"].clone(),
-            Measurement::Phase2Cycles => result["phase2Cycles"].clone(),
-            Measurement::TotalCycles => result["cyclesPerTuple"].clone(),
-            Measurement::TotalL2HitRatio => result["totalL2HitRatio"].clone(),
-            Measurement::TotalL3HitRatio => result["totalL3HitRatio"].clone(),
-            Measurement::TotalL2CacheMisses => result["totalL2CacheMisses"].clone(),
-            Measurement::TotalL3CacheMisses => result["totalL3CacheMisses"].clone(),
-            Measurement::IPC => result["totalIPC"].clone(),
-            Measurement::IR => result["totalIR"].clone(),
-            Measurement::TotalVoluntaryCS => result["totalVoluntaryCS"].clone(),
-            Measurement::TotalInvoluntaryCS => result["totalInvoluntaryCS"].clone(),
-            Measurement::TotalUserCpuTime => result["totalUserCpuTime"].clone(),
-            Measurement::TotalSystemCpuTime => result["totalSystemCpuTime"].clone(),
-            Measurement::TwoPhasesCycles => panic!("Should not ask for a single value"),
-        };
+        let m = get_measurement_from_single_result(result, &measurement);
         v.push((p, m));
     }
     data
@@ -581,28 +588,63 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                             "position": "left"
                                         }
                                 });
-                                for ((alg, platform, _dataset), data_value) in data.iter() {
-                                    let alg = commit_store.get_title_by_algorithm(alg).unwrap();
-                                    let alg_color = get_color_by_algorithm(&alg);
-                                    // compare the global label (steps) with the data_value results
-                                    // fill in with NULL if a data_value is missing, otherwise pass the result
-                                    let mut values: Vec<String> = vec![];
-                                    for s in &steps {
-                                        let v = data_value.iter().find(|(x, _)| s == x);
-                                        match v {
-                                            None => values.push("NULL".to_string()),
-                                            Some(val) => values.push(val.1.clone()),
+                                match conf.parameter {
+                                    Parameter::Algorithms => {
+                                        let mut values: Vec<String> = vec![];
+                                        let mut colors: Vec<String> = vec![];
+                                        for s in &steps {
+                                            let alg_color =
+                                                get_color_by_algorithm(s).to_string().clone();
+                                            colors.push(alg_color);
+                                            match exp_chart.results.iter().find(|(a, _)| {
+                                                a.algorithm.to_string() == s.to_string()
+                                            }) {
+                                                None => {}
+                                                Some((_, r)) => {
+                                                    let val = get_measurement_from_single_result(
+                                                        r,
+                                                        &conf.measurement,
+                                                    );
+                                                    values.push(val);
+                                                }
+                                            }
                                         }
-                                    }
-                                    datasets_prep.push(json!({
-                                        "label": format!("Throughput {alg} on {platform}"),
+                                        datasets_prep.push(json!({
+                                        "label": format!("Throughput"),
                                         "data": values,
-                                        "backgroundColor": alg_color,
-                                        "borderColor": alg_color,
+                                        "backgroundColor": colors,
+                                        "borderColor": colors,
                                         "yAxisID": "y",
                                         "borderWidth":5,
                                         "order": 0
-                                    }));
+                                        }));
+                                    }
+                                    _ => {
+                                        for ((alg, platform, _dataset), data_value) in data.iter() {
+                                            let alg =
+                                                commit_store.get_title_by_algorithm(alg).unwrap();
+                                            let alg_color = get_color_by_algorithm(&alg);
+                                            // compare the global label (steps) with the data_value results
+                                            // fill in with NULL if a data_value is missing, otherwise pass the result
+                                            let mut values: Vec<String> = vec![];
+                                            for s in &steps {
+                                                let v = data_value.iter().find(|(x, _)| s == x);
+                                                match v {
+                                                    None => values.push("NULL".to_string()),
+                                                    Some(val) => values.push(val.1.clone()),
+                                                }
+                                            }
+                                            datasets_prep.push(json!({
+                                                "label": format!("Throughput {alg} on {platform}"),
+                                                "data": values,
+                                                "backgroundColor": alg_color,
+                                                "borderColor": alg_color,
+                                                "yAxisID": "y",
+                                                "borderWidth":5,
+                                                "order": 0
+                                            }));
+                                        }
+                                    }
                                 }
                             }
                         }
