@@ -90,14 +90,14 @@ pub fn JobResultView(JobResultViewProps { job }: &JobResultViewProps) -> Html {
                                         <h5 class="modal-title">{"Job Result for "}{for algs.clone()}</h5>
                                         <button type="button" class="btn-close" onclick={destroy_onclick.clone()} data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
-                                    <div class="modal-body">
+                                    <div class="modal-body py-0">
                                         {for charts}
-                                    </div>
-                                    <div class="modal-header">
-                                        <h5 class="modal-title">{"Analyser Findings"}</h5>
-                                    </div>
-                                    <div class="row" style="padding:20px">
-                                        {for findings}
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">{"Analyser Findings"}</h5>
+                                        </div>
+                                        <div class="row" style="padding:20px">
+                                            {for findings}
+                                        </div>
                                     </div>
                                     <div class="modal-footer">
                                         <button type="button" class="btn btn-secondary" onclick={destroy_onclick.clone()} data-bs-dismiss="modal">{"Close"}</button>

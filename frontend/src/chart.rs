@@ -977,7 +977,7 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
         (),
     );
     html! {
-        <div>
+        <div style="position: relative; height:80vh; width:90vw; margin: auto; padding: 2">
             <canvas ref={canvas_ref}></canvas>
         </div>
     }
