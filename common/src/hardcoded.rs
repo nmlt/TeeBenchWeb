@@ -1,7 +1,7 @@
 use crate::{
     commandline::Commandline,
     commit::CommitIdType,
-    data_types::{Algorithm, JobConfig, PerfReportConfig, Platform, REPLACE_ALG},
+    data_types::{Algorithm, JobConfig, PerfReportConfig, Platform, EPC_SIZE_KB, REPLACE_ALG},
 };
 use std::collections::{HashSet, VecDeque};
 
@@ -42,9 +42,9 @@ pub fn hardcoded_profiling_jobs() -> VecDeque<Job> {
             parameter: Parameter::OuterTableSize,
             measurement: Measurement::ThroughputAndTotalEPCPaging,
             min: String::from("16"),
-            max: String::from("48"),
+            max: String::from("32"),
             step: String::from("16"),
-            datasets: HashSet::from([Dataset::CacheFit]),
+            datasets: HashSet::from([Dataset::CustomSize { x: (5), y: (5) }]),
             platforms: HashSet::from([Platform::Sgx]),
             sort_data: false,
         },

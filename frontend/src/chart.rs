@@ -90,7 +90,7 @@ fn create_data_hashmap(
             Parameter::DataSkew => args.threads.to_string(),
             Parameter::JoinSelectivity => args.selectivity.to_string(),
             Parameter::Algorithms => result["algorithm"].clone(),
-            Parameter::OuterTableSize => args.y.unwrap().to_string(),
+            Parameter::OuterTableSize => args.x.unwrap().to_string(),
         };
         let m = get_measurement_from_single_result(result, &measurement);
         v.push((p, m));
@@ -376,7 +376,7 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                 y_axis_text = "System CPU time [s]";
                             }
                             Measurement::TwoPhasesCycles => {
-                                chart_type = "bar";
+                                chart_type = "line";
                                 heading = String::from("CPU cycles with varying ");
                                 y_axis_text = "CPU Cycles / tuple";
                             }
@@ -402,7 +402,7 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                         match conf.datasets.iter().next().unwrap() {
                             Dataset::CacheExceed => heading.push_str(" with dataset Cache Exceed"),
                             Dataset::CacheFit => heading.push_str(" with dataset Cache Fit"),
-                            _ => panic!("Cannot handle custom dataset size yet!"),
+                            _ => (),
                         }
                         let steps: Vec<_> = conf.param_value_iter();
                         labels = json!(steps);
@@ -449,6 +449,8 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                         }
                                     }
                                 });
+                                log!(format!("data2: {data2:#?}"));
+                                // EPC paging
                                 for ((alg, platform, _dataset), data_value) in data2.iter() {
                                     let alg = commit_store.get_title_by_algorithm(alg).unwrap();
                                     let alg_color = get_color_by_algorithm(&alg);
@@ -462,6 +464,7 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                             Some(val) => values.push(val.1.clone()),
                                         }
                                     }
+                                    log!(format!("values: {values:#?}"));
                                     datasets_prep.push(json!({
                                         "label": format!("EPC Paging {alg} on {platform}"),
                                         "data": values,
@@ -472,9 +475,11 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                         "type" : "bar"
                                     }));
                                 }
-                                for ((alg, platform, _dataset), data_value) in data.iter() {
+                                for (((alg, platform, _dataset), data_value), color) in
+                                    data.iter().zip(COLORS.iter())
+                                {
                                     let alg = commit_store.get_title_by_algorithm(alg).unwrap();
-                                    let alg_color = get_color_by_algorithm(&alg);
+                                    let alg_color = color;
                                     // compare the global label (steps) with the data_value results
                                     // fill in with NULL if a data_value is missing, otherwise pass the result
                                     let mut values: Vec<String> = vec![];

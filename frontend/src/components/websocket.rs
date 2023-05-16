@@ -100,7 +100,7 @@ pub fn Websocket() -> Html {
                 let commit_dispatch = Dispatch::<CommitState>::new();
                 while let Some(Ok(Message::Bytes(msg))) = read.next().await {
                     let msg = serde_json::from_slice(&msg).unwrap();
-                    log!(format!("Got msg {msg:?}"));
+                    log!(format!("Got msg {msg:#?}"));
                     match msg {
                         ServerMessage::RemoveQueueItem(finished_job) => match finished_job.config {
                             JobConfig::Profiling(_) => {

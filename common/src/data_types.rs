@@ -14,6 +14,14 @@ use std::fmt::Display;
 use crate::commit::CommitIdType;
 use crate::hardcoded::MAX_THREADS;
 
+// Machine-dependent variables
+pub const CPU_PHYSICAL_CORES: u8 = 4;
+// pub const CPU_LOGICAL_CORES: i32  = 16;
+// pub const L1_SIZE_KB: i32        = 256;
+// pub const L2_SIZE_KB: i32        = 2048;
+// pub const L3_SIZE_KB: i32        = 16384;
+pub const EPC_SIZE_KB: u32 = 262144; // 256 MB
+
 // TODO Remove this error type. Let's just use anyhow::Result.
 /// Error type for Experiments.
 #[derive(Error, Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
@@ -371,9 +379,10 @@ impl Dataset {
         match self {
             Dataset::CacheFit => "cache-fit".to_string(),
             Dataset::CacheExceed => "cache-exceed".to_string(),
-            Dataset::CustomSize { x, y } => format!("-x {x} -y {y}"),
+            Dataset::CustomSize { .. } => panic!("Should not get here"), //format!("-x {x} -y {y}"),
         }
     }
+
     pub fn from_cmd_arg(string: &str) -> Result<Self, &'static str> {
         match string {
             "cache-fit" | "Cache Fit" | "CacheFit" => Ok(Dataset::CacheFit),
@@ -745,6 +754,7 @@ impl ProfilingConfiguration {
     /// - If multiple Datasets were selected, each dataset goes to a separate chart.
     /// -
     pub fn to_teebench_cmd(&self) -> Vec<Vec<Commandline>> {
+        let custom_ds_flag;
         match self.experiment_type {
             ExperimentType::EpcPaging => panic!(),
             ExperimentType::Throughput => {
@@ -795,9 +805,25 @@ impl ProfilingConfiguration {
         }
         let mut dataset_iter = self.datasets.iter();
         let ds = dataset_iter.next().unwrap(); // There is always at least one dataset in a ProfilingConfiguration.
-        for cmd in &mut res {
-            cmd.add_args("-d", ds.to_cmd_arg());
+        match ds {
+            Dataset::CustomSize { x, y } => {
+                custom_ds_flag = true;
+                for cmd in &mut res {
+                    match self.parameter {
+                        Parameter::OuterTableSize => (),
+                        _ => cmd.add_args("-x", format!("{x}")),
+                    }
+                    cmd.add_args("-y", format!("{y}"));
+                }
+            }
+            _ => {
+                custom_ds_flag = false;
+                for cmd in &mut res {
+                    cmd.add_args("-d", ds.to_cmd_arg());
+                }
+            }
         }
+
         Commandline::double_cmds_with_different_arg_value(
             &mut res,
             &mut dataset_iter.map(|ds| ds.to_cmd_arg()),
@@ -810,7 +836,7 @@ impl ProfilingConfiguration {
             Parameter::DataSkew => "-z",
             Parameter::JoinSelectivity => "-l",
             Parameter::Algorithms => "",
-            Parameter::OuterTableSize => "-y",
+            Parameter::OuterTableSize => "-x",
         };
         match self.parameter {
             Parameter::Algorithms => (),
@@ -828,18 +854,28 @@ impl ProfilingConfiguration {
         let mut ds_slice = Dataset::iter().collect::<Vec<_>>();
         ds_slice.sort_unstable();
         let acc = vec![vec![], vec![]];
-        res.iter().fold(acc, |mut acc, cmd| {
+        let acc = res.iter().fold(acc, |mut acc, cmd| {
             for (i, ds) in ds_slice.iter().enumerate() {
-                if cmd.args.contains(&ds.to_cmd_arg()) {
-                    if let Some(bucket) = acc.get_mut(i) {
-                        bucket.push(cmd.clone());
-                    } else {
-                        panic!("If you add more datasets, fix the acc initialization.");
+                match ds {
+                    Dataset::CustomSize { .. } => (),
+                    _ => {
+                        if cmd.args.contains(&ds.to_cmd_arg()) {
+                            if let Some(bucket) = acc.get_mut(i) {
+                                bucket.push(cmd.clone());
+                            } else {
+                                panic!("If you add more datasets, fix the acc initialization.");
+                            }
+                        }
                     }
                 }
             }
             acc
-        })
+        });
+        if custom_ds_flag {
+            vec![res.clone()]
+        } else {
+            acc
+        }
     }
     /// Set default values for preconfigured experiment types. These then overwrite the values previously entered in the config form (if called in the frontend/profiling.rs in a dispatch). Not useful for now, as the config form can not represent the preconfigured experiments.
     // TODO This actually does not work for the <select> elements (at least it doesn't display the change. The store value changes).

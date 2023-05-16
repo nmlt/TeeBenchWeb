@@ -1,16 +1,8 @@
 use common::data_types::{
     Dataset, ExperimentChartResult, ExperimentType, FindingStyle, JobConfig, Measurement,
-    Parameter, Platform, Report,
+    Parameter, Platform, Report, CPU_PHYSICAL_CORES,
 };
 use tracing::instrument;
-
-// Machine-dependent variables
-const CPU_PHYSICAL_CORES: u8 = 4;
-// const CPU_LOGICAL_CORES: i32  = 16;
-// const L1_SIZE_KB: i32        = 256;
-// const L2_SIZE_KB: i32        = 2048;
-// const L3_SIZE_KB: i32        = 16384;
-// const EPC_SIZE_KB: i32       = 262144; // 256 MB
 
 #[instrument]
 pub fn enrich_report_with_findings(jr: &mut Report) {
@@ -210,7 +202,153 @@ pub fn enrich_report_with_findings(jr: &mut Report) {
                     Measurement::TotalInvoluntaryCS => {}
                     Measurement::TotalUserCpuTime => {}
                     Measurement::TotalSystemCpuTime => {}
-                    Measurement::TwoPhasesCycles => {}
+                    Measurement::TwoPhasesCycles => {
+                        // find the fastest 1 phase
+                        let slowest_1phase = ex
+                            .results
+                            .iter()
+                            .max_by(|(_, r1), (_, r2)| {
+                                r1.get("phase1Cycles")
+                                    .unwrap()
+                                    .parse::<u64>()
+                                    .unwrap()
+                                    .partial_cmp(
+                                        &r2.get("phase1Cycles").unwrap().parse::<u64>().unwrap(),
+                                    )
+                                    .unwrap()
+                            })
+                            .unwrap()
+                            .clone();
+
+                        let slowest_2phase = ex
+                            .results
+                            .iter()
+                            .max_by(|(_, r1), (_, r2)| {
+                                r1.get("phase2Cycles")
+                                    .unwrap()
+                                    .parse::<u64>()
+                                    .unwrap()
+                                    .partial_cmp(
+                                        &r2.get("phase2Cycles").unwrap().parse::<u64>().unwrap(),
+                                    )
+                                    .unwrap()
+                            })
+                            .unwrap()
+                            .clone();
+                        if slowest_1phase
+                            .1
+                            .get("phase1Cycles")
+                            .unwrap()
+                            .parse::<u64>()
+                            .unwrap_or_default()
+                            > slowest_2phase
+                                .1
+                                .get("phase2Cycles")
+                                .unwrap()
+                                .parse::<u64>()
+                                .unwrap_or_default()
+                        {
+                            jr.findings.push(common::data_types::Finding {
+                                title: "Slowest Phase".to_string(),
+                                message: format!(
+                                    "{:?} Phase 1: {:?} CPU Cycles",
+                                    slowest_1phase.1.get("algorithm").unwrap(),
+                                    slowest_1phase.1.get("phase1Cycles").unwrap(),
+                                ),
+                                style: FindingStyle::Bad,
+                            });
+                        } else {
+                            jr.findings.push(common::data_types::Finding {
+                                title: "Slowest Phase".to_string(),
+                                message: format!(
+                                    "{:?} Phase 2: {:?} CPU Cycles",
+                                    slowest_2phase.1.get("algorithm").unwrap(),
+                                    slowest_2phase.1.get("phase2Cycles").unwrap(),
+                                ),
+                                style: FindingStyle::Bad,
+                            });
+                        }
+                        // find the fastest phase
+                        let fastest_1phase = ex
+                            .results
+                            .iter()
+                            .filter(|(_, r)| {
+                                r.get("phase1Cycles")
+                                    .unwrap()
+                                    .parse::<u64>()
+                                    .unwrap_or_default()
+                                    > 0
+                            })
+                            .min_by(|(_, r1), (_, r2)| {
+                                r1.get("phase1Cycles")
+                                    .unwrap()
+                                    .parse::<u64>()
+                                    .unwrap()
+                                    .partial_cmp(
+                                        &r2.get("phase1Cycles").unwrap().parse::<u64>().unwrap(),
+                                    )
+                                    .unwrap()
+                            })
+                            .unwrap()
+                            .clone();
+
+                        let fastest_2phase = ex
+                            .results
+                            .iter()
+                            .filter(|(_, r)| {
+                                r.get("phase2Cycles")
+                                    .unwrap()
+                                    .parse::<u64>()
+                                    .unwrap_or_default()
+                                    > 0
+                            })
+                            .min_by(|(_, r1), (_, r2)| {
+                                r1.get("phase2Cycles")
+                                    .unwrap()
+                                    .parse::<u64>()
+                                    .unwrap()
+                                    .partial_cmp(
+                                        &r2.get("phase2Cycles").unwrap().parse::<u64>().unwrap(),
+                                    )
+                                    .unwrap()
+                            })
+                            .unwrap()
+                            .clone();
+                        if fastest_1phase
+                            .1
+                            .get("phase1Cycles")
+                            .unwrap()
+                            .parse::<u64>()
+                            .unwrap_or_default()
+                            < fastest_2phase
+                                .1
+                                .get("phase2Cycles")
+                                .unwrap()
+                                .parse::<u64>()
+                                .unwrap_or_default()
+                        {
+                            jr.findings.push(common::data_types::Finding {
+                                title: "Fastest Phase".to_string(),
+                                message: format!(
+                                    "{:?} Phase 1: {:?} CPU Cycles",
+                                    fastest_1phase.1.get("algorithm").unwrap(),
+                                    fastest_1phase.1.get("phase1Cycles").unwrap(),
+                                ),
+                                style: FindingStyle::Good,
+                            });
+                        } else {
+                            jr.findings.push(common::data_types::Finding {
+                                title: "Fastest Phase".to_string(),
+                                message: format!(
+                                    "{:?} Phase 2: {:?} CPU Cycles",
+                                    fastest_2phase.1.get("algorithm").unwrap(),
+                                    fastest_2phase.1.get("phase2Cycles").unwrap(),
+                                ),
+                                style: FindingStyle::Good,
+                            });
+                        }
+                        // find the most imbalanced algorithm
+                    }
                 }
             }
             JobConfig::PerfReport(c) => match c.exp_type {
