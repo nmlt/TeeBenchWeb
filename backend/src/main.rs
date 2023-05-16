@@ -93,7 +93,6 @@ async fn handle_socket(
                             if let Ok(request) = serde_json::from_slice(&b) {
                                 match request {
                                     ClientMessage::RequestClear => {
-                                        // TODO Cancel current job and clear queue (This needs the _queue).
                                         {
                                             info!("Clearing queue...");
                                             let mut queue = queue.lock().unwrap();
@@ -184,7 +183,7 @@ async fn main() {
     let commits = Arc::new(Mutex::new(CommitState::new(vec![
         common::hardcoded::predefined_commit(),
     ])));
-    let queue: Arc<Mutex<VecDeque<Job>>> = Arc::new(Mutex::new(VecDeque::new()));//hardcoded_profiling_jobs()));
+    let queue: Arc<Mutex<VecDeque<Job>>> = Arc::new(Mutex::new(hardcoded_profiling_jobs()));
     let (queue_tx, queue_rx) = mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);
     let (profiling_tx, profiling_rx) = mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);
     let (cancel_tx, cancel_rx) = mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);

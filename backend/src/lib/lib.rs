@@ -12,7 +12,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use time::Instant;
 use tokio::process::Command as TokioCommand;
-use tokio::sync::{mpsc, oneshot};
+use tokio::sync::mpsc;
 use tracing::{debug, error, info, instrument, warn};
 
 use common::commandline::Commandline;
@@ -437,10 +437,9 @@ async fn runner(
     }
 }
 
-#[instrument(skip(queue, oneshot_tx, queue_tx, commits, currently_switched_in, conn))]
+#[instrument(skip(queue, queue_tx, commits, currently_switched_in, conn))]
 async fn work_on_queue(
     queue: Arc<Mutex<VecDeque<Job>>>,
-    oneshot_tx: oneshot::Sender<()>,
     queue_tx: mpsc::Sender<Job>,
     commits: Arc<Mutex<CommitState>>,
     currently_switched_in: SwitchedInType,
@@ -479,12 +478,6 @@ async fn work_on_queue(
         }
         queue_tx.send(finished_job).await.unwrap();
     }
-    match oneshot_tx.send(()) {
-        Ok(()) => (),
-        Err(e) => {
-            error!("Could not send to websocket (seeing this error once is ok as long as the initial queue isn't empty): {e:?}");
-        }
-    };
 }
 
 #[instrument(skip(queue, rx))]
@@ -536,10 +529,8 @@ pub async fn profiling_task(
         let handle = {
             let locked = queue.lock().unwrap();
             if !locked.is_empty() {
-                let (work_finished_tx, _work_finished_rx) = oneshot::channel();
                 Some(tokio::spawn(work_on_queue(
                     queue.clone(),
-                    work_finished_tx,
                     queue_tx.clone(),
                     commits.clone(),
                     currently_switched_in.clone(),
@@ -549,14 +540,27 @@ pub async fn profiling_task(
                 None
             }
         };
-        receive_confs(queue.clone(), rx.clone()).await;
-        let (work_finished_tx, mut work_finished_rx) = oneshot::channel();
         if let Some(handle) = handle {
-            handle.await.unwrap();
+            // Futures that are references must be pinned or implement Unpin to be await'ed.
+            tokio::pin!(handle);
+            let mut cancel_rx = cancel_rx.lock().await;
+            loop {
+                tokio::select! {
+                    _ = receive_confs(queue.clone(), rx.clone()) => (),
+                    // By making handle a &mut, it will not be cancelled. Source: https://users.rust-lang.org/t/tokio-select-without-cancellation/71300/6
+                    _ = &mut handle => break,
+                    _ = cancel_rx.recv() => {
+                        info!("Cancelled current job!");
+                        handle.abort();
+                        break;
+                    }
+                }
+            }
+        } else {
+            receive_confs(queue.clone(), rx.clone()).await;
         }
-        let handle = tokio::spawn(work_on_queue(
+        let mut handle = tokio::spawn(work_on_queue(
             queue.clone(),
-            work_finished_tx,
             queue_tx.clone(),
             commits.clone(),
             currently_switched_in.clone(),
@@ -568,7 +572,7 @@ pub async fn profiling_task(
             // .await;
             tokio::select! {
                 _ = receive_confs(queue.clone(), rx.clone()) => {},
-                _ = &mut work_finished_rx => { break; },
+                _ = &mut handle => break,
                 _ = cancel_rx.recv() => {
                     info!("Cancelled current job!");
                     handle.abort();
