@@ -449,55 +449,64 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                         }
                                     }
                                 });
-                                log!(format!("data2: {data2:#?}"));
                                 // EPC paging
-                                for ((alg, platform, _dataset), data_value) in data2.iter() {
-                                    let alg = commit_store.get_title_by_algorithm(alg).unwrap();
-                                    let alg_color = get_color_by_algorithm(&alg);
-                                    // compare the global label (steps) with the data_value results
-                                    // fill in with NULL if a data_value is missing, otherwise pass the result
+                                for a in conf.algorithms.iter() {
+                                    let alg_color =
+                                        get_color_by_algorithm(&a.to_string()).to_string().clone();
                                     let mut values: Vec<String> = vec![];
                                     for s in &steps {
-                                        let v = data_value.iter().find(|(x, _)| s == x);
-                                        match v {
-                                            None => values.push("NULL".to_string()),
-                                            Some(val) => values.push(val.1.clone()),
+                                        match exp_chart.results.iter().find(|(args, res)| {
+                                            args.algorithm.to_string() == a.to_string()
+                                                && args.x.unwrap().to_string() == s.clone()
+                                        }) {
+                                            None => {}
+                                            Some((_, r)) => {
+                                                let val = get_measurement_from_single_result(
+                                                    r,
+                                                    &Measurement::TotalEpcPaging,
+                                                );
+                                                values.push(val);
+                                            }
                                         }
                                     }
-                                    log!(format!("values: {values:#?}"));
                                     datasets_prep.push(json!({
-                                        "label": format!("EPC Paging {alg} on {platform}"),
-                                        "data": values,
-                                        "backgroundColor": alg_color,
-                                        "borderColor": alg_color,
-                                        "yAxisID": "y1",
-                                        "order" : 1,
-                                        "type" : "bar"
+                                    "label": format!("{} EPC Paging", a.to_string()),
+                                    "data": values,
+                                    "backgroundColor": alg_color,
+                                    "borderColor": alg_color,
+                                    "yAxisID": "y1",
+                                    "order": 1,
+                                    "type": "bar"
                                     }));
                                 }
-                                for (((alg, platform, _dataset), data_value), color) in
-                                    data.iter().zip(COLORS.iter())
-                                {
-                                    let alg = commit_store.get_title_by_algorithm(alg).unwrap();
-                                    let alg_color = color;
-                                    // compare the global label (steps) with the data_value results
-                                    // fill in with NULL if a data_value is missing, otherwise pass the result
+                                //Throughput
+                                for a in conf.algorithms.iter() {
+                                    // let alg_color = get_color_by_algorithm(&a.to_string()).to_string().clone();
+                                    let alg_color =
+                                        COLORS.choose(&mut rand::thread_rng()).unwrap().clone();
                                     let mut values: Vec<String> = vec![];
                                     for s in &steps {
-                                        let v = data_value.iter().find(|(x, _)| s == x);
-                                        match v {
-                                            None => values.push("NULL".to_string()),
-                                            Some(val) => values.push(val.1.clone()),
+                                        match exp_chart.results.iter().find(|(args, res)| {
+                                            args.algorithm.to_string() == a.to_string()
+                                                && args.x.unwrap().to_string() == s.clone()
+                                        }) {
+                                            None => {}
+                                            Some((_, r)) => {
+                                                let val = get_measurement_from_single_result(
+                                                    r,
+                                                    &Measurement::Throughput,
+                                                );
+                                                values.push(val);
+                                            }
                                         }
                                     }
                                     datasets_prep.push(json!({
-                                        "label": format!("Throughput {alg} on {platform}"),
-                                        "data": values,
-                                        "backgroundColor": alg_color,
-                                        "borderColor": alg_color,
-                                        "yAxisID": "y",
-                                        "borderWidth":5,
-                                        "order": 0
+                                    "label": format!("Throughput {}", a.to_string()),
+                                    "data": values,
+                                    "backgroundColor": alg_color,
+                                    "borderColor": alg_color,
+                                    "yAxisID": "y",
+                                    "order": 0
                                     }));
                                 }
                             }

@@ -42,15 +42,18 @@ pub fn hardcoded_profiling_jobs() -> VecDeque<Job> {
             parameter: Parameter::OuterTableSize,
             measurement: Measurement::ThroughputAndTotalEPCPaging,
             min: String::from("16"),
-            max: String::from("32"),
+            max: String::from("256"),
             step: String::from("16"),
-            datasets: HashSet::from([Dataset::CustomSize { x: (5), y: (5) }]),
+            datasets: HashSet::from([Dataset::CustomSize {
+                x: (EPC_SIZE_KB / 1024),
+                y: (EPC_SIZE_KB / 1024),
+            }]),
             platforms: HashSet::from([Platform::Sgx]),
             sort_data: false,
         },
         //CPU cycles per phase per algorithm
         ProfilingConfiguration {
-            algorithms: HashSet::from([Rho, Pht, Psm, Mway, Rht, Cht, Rsm, Inl, Crkj]),
+            algorithms: HashSet::from([Rho, Pht, Psm, Mway, Rht, Cht, Rsm, Inl]),
             experiment_type: ExperimentType::Custom,
             parameter: Parameter::Algorithms,
             measurement: Measurement::TwoPhasesCycles,
