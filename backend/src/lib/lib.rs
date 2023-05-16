@@ -511,15 +511,17 @@ async fn receive_confs(
 /// queue: the actual queue, shared with the server, so it can send the queue to any newly connecting client
 /// queue_tx: this channel notifies the server of any changes in the queue.
 /// rx: incoming new profiling configs
-#[instrument(skip(commits, queue, queue_tx, rx))]
+#[instrument(skip(commits, queue, queue_tx, rx, cancel_rx))]
 pub async fn profiling_task(
     commits: Arc<Mutex<CommitState>>,
     queue: Arc<Mutex<VecDeque<Job>>>,
     queue_tx: mpsc::Sender<Job>,
     rx: mpsc::Receiver<Job>,
+    cancel_rx: mpsc::Receiver<bool>,
 ) {
     // Using a tokio Mutex here to make it Send. Which is required...
     let rx = Arc::new(tokio::sync::Mutex::new(rx));
+    let cancel_rx = Arc::new(tokio::sync::Mutex::new(cancel_rx));
     // TODO Make this just a &mut, Arc should not be needed except if the compiler requires it, but it is never concurrently accessed.
     let currently_switched_in = Arc::new(tokio::sync::Mutex::new(None));
     let conn = setup_sqlite().unwrap();
@@ -552,9 +554,15 @@ pub async fn profiling_task(
         ));
         loop {
             // Following the advice in the tokio::oneshot documentation to make the rx &mut.
+            let mut cancel_rx = cancel_rx.lock().await;
+            // .await;
             tokio::select! {
                 _ = receive_confs(queue.clone(), rx.clone()) => {},
                 _ = &mut work_finished_rx => { break; },
+                _ = cancel_rx.recv() => {
+                    info!("Cancelled current job!");
+                    break;
+                }
             }
         }
     }

@@ -55,20 +55,29 @@ async fn get_queue(State(app_state): State<AppState>) -> impl IntoResponse {
     Json(guard.clone())
 }
 
-#[instrument(skip(app_state, ws))]
+//#[instrument(skip(app_state, ws))]
 async fn ws_handler(State(app_state): State<AppState>, ws: WebSocketUpgrade) -> impl IntoResponse {
     info!("ws_handler running.");
-    ws.on_upgrade(|socket| handle_socket(socket, app_state.queue, app_state.unqueued_notifier))
+    ws.on_upgrade(|socket| {
+        handle_socket(
+            socket,
+            app_state.queue,
+            app_state.unqueued_notifier,
+            app_state.cancel_notifier,
+        )
+    })
 }
 
-#[instrument(skip(socket, _queue, unqueued_notifier))]
+//#[instrument(skip(socket, queue, unqueued_notifier, cancel_notifier))]
 async fn handle_socket(
     mut socket: WebSocket,
-    _queue: Arc<Mutex<VecDeque<Job>>>,
+    queue: Arc<Mutex<VecDeque<Job>>>,
     unqueued_notifier: Arc<tokio::sync::Mutex<mpsc::Receiver<Job>>>,
+    cancel_notifier: Arc<tokio::sync::Mutex<mpsc::Sender<bool>>>,
 ) {
     loop {
         let mut guard = unqueued_notifier.lock().await;
+        let tx = cancel_notifier.lock().await;
         debug!("Looping back to select socket or queue_state channel receiver");
         // TODO Check if data loss could happen due to cancelation.
         tokio::select! {
@@ -85,7 +94,13 @@ async fn handle_socket(
                                 match request {
                                     ClientMessage::RequestClear => {
                                         // TODO Cancel current job and clear queue (This needs the _queue).
-                                        warn!("Unimplemented clear queue request received.");
+                                        {
+                                            info!("Clearing queue...");
+                                            let mut queue = queue.lock().unwrap();
+                                            queue.clear();
+                                            info!("Queue cleared.");
+                                        }
+                                        tx.send(true).await.unwrap();
                                     }
                                     ClientMessage::Acknowledge => {
                                         // TODO I don't think I need this.
@@ -137,6 +152,7 @@ struct AppState {
     queue: Arc<Mutex<VecDeque<Job>>>,
     unqueued_notifier: Arc<tokio::sync::Mutex<mpsc::Receiver<Job>>>,
     worker_task_tx: Arc<mpsc::Sender<Job>>,
+    cancel_notifier: Arc<tokio::sync::Mutex<mpsc::Sender<bool>>>,
 }
 
 impl AppState {
@@ -145,12 +161,14 @@ impl AppState {
         queue: Arc<Mutex<VecDeque<Job>>>,
         unqueued_notifier: Arc<tokio::sync::Mutex<mpsc::Receiver<Job>>>,
         worker_task_tx: Arc<mpsc::Sender<Job>>,
+        cancel_notifier: Arc<tokio::sync::Mutex<mpsc::Sender<bool>>>,
     ) -> Self {
         AppState {
             commits,
             queue,
             unqueued_notifier,
             worker_task_tx,
+            cancel_notifier,
         }
     }
 }
@@ -168,12 +186,14 @@ async fn main() {
     let queue: Arc<Mutex<VecDeque<Job>>> = Arc::new(Mutex::new(hardcoded_profiling_jobs()));
     let (queue_tx, queue_rx) = mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);
     let (profiling_tx, profiling_rx) = mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);
+    let (cancel_tx, cancel_rx) = mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);
 
     tokio::spawn(profiling_task(
         Arc::clone(&commits),
         Arc::clone(&queue),
         queue_tx,
         profiling_rx,
+        cancel_rx,
     ));
 
     let app_state = AppState::new(
@@ -181,6 +201,7 @@ async fn main() {
         queue,
         Arc::new(tokio::sync::Mutex::new(queue_rx)),
         Arc::new(profiling_tx),
+        Arc::new(tokio::sync::Mutex::new(cancel_tx)),
     );
 
     let spa = SpaRouter::new("/assets", "../dist"); // TODO Remove and use the tower middleware instead.
