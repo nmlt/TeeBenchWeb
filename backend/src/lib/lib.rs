@@ -479,7 +479,12 @@ async fn work_on_queue(
         }
         queue_tx.send(finished_job).await.unwrap();
     }
-    oneshot_tx.send(()).unwrap();
+    match oneshot_tx.send(()) {
+        Ok(()) => (),
+        Err(e) => {
+            error!("Could not send to websocket (seeing this error once is ok as long as the initial queue isn't empty): {e:?}");
+        }
+    };
 }
 
 #[instrument(skip(queue, rx))]
@@ -528,23 +533,28 @@ pub async fn profiling_task(
     // Connection uses RefCell internally, so the Mutex is required.
     let conn = Arc::new(Mutex::new(conn));
     loop {
-        {
+        let handle = {
             let locked = queue.lock().unwrap();
             if !locked.is_empty() {
                 let (work_finished_tx, _work_finished_rx) = oneshot::channel();
-                tokio::spawn(work_on_queue(
+                Some(tokio::spawn(work_on_queue(
                     queue.clone(),
                     work_finished_tx,
                     queue_tx.clone(),
                     commits.clone(),
                     currently_switched_in.clone(),
                     conn.clone(),
-                ));
+                )))
+            } else {
+                None
             }
-        }
+        };
         receive_confs(queue.clone(), rx.clone()).await;
         let (work_finished_tx, mut work_finished_rx) = oneshot::channel();
-        tokio::spawn(work_on_queue(
+        if let Some(handle) = handle {
+            handle.await.unwrap();
+        }
+        let handle = tokio::spawn(work_on_queue(
             queue.clone(),
             work_finished_tx,
             queue_tx.clone(),
@@ -561,6 +571,7 @@ pub async fn profiling_task(
                 _ = &mut work_finished_rx => { break; },
                 _ = cancel_rx.recv() => {
                     info!("Cancelled current job!");
+                    handle.abort();
                     break;
                 }
             }

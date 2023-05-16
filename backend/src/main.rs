@@ -101,6 +101,7 @@ async fn handle_socket(
                                             info!("Queue cleared.");
                                         }
                                         tx.send(true).await.unwrap();
+                                        info!("Cancelled current job.");
                                     }
                                     ClientMessage::Acknowledge => {
                                         // TODO I don't think I need this.
@@ -183,7 +184,7 @@ async fn main() {
     let commits = Arc::new(Mutex::new(CommitState::new(vec![
         common::hardcoded::predefined_commit(),
     ])));
-    let queue: Arc<Mutex<VecDeque<Job>>> = Arc::new(Mutex::new(hardcoded_profiling_jobs()));
+    let queue: Arc<Mutex<VecDeque<Job>>> = Arc::new(Mutex::new(VecDeque::new()));//hardcoded_profiling_jobs()));
     let (queue_tx, queue_rx) = mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);
     let (profiling_tx, profiling_rx) = mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);
     let (cancel_tx, cancel_rx) = mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);
