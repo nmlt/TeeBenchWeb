@@ -33,6 +33,7 @@ const BIN_FOLDER: &str = "bin";
 const REPLACE_FILE: &str = "Joins/TBW/OperatorJoin.cpp";
 
 type SwitchedInType = Arc<tokio::sync::Mutex<Option<Algorithm>>>;
+pub type CancelNotifierType = bool;
 
 fn display_command_output(o: &std::process::Output, cmd: String) -> String {
     let mut res = String::new();
@@ -515,7 +516,7 @@ pub async fn profiling_task(
     queue: Arc<Mutex<VecDeque<Job>>>,
     queue_tx: mpsc::Sender<Job>,
     rx: mpsc::Receiver<Job>,
-    cancel_rx: mpsc::Receiver<bool>,
+    cancel_rx: mpsc::Receiver<CancelNotifierType>,
 ) {
     // Using a tokio Mutex here to make it Send. Which is required...
     let rx = Arc::new(tokio::sync::Mutex::new(rx));

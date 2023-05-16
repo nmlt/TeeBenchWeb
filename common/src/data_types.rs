@@ -156,11 +156,14 @@ pub enum JobStatus {
     },
 }
 
+pub type JobIdType = uuid::Uuid;
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Job {
     pub config: JobConfig,
     pub submitted: OffsetDateTime,
     pub status: JobStatus,
+    pub id: JobIdType,
 }
 
 impl Default for Job {
@@ -169,6 +172,7 @@ impl Default for Job {
             config: JobConfig::default(),
             submitted: OffsetDateTime::now_utc(),
             status: JobStatus::default(),
+            id: uuid::Uuid::new_v4(),
         }
     }
 }
@@ -185,9 +189,8 @@ impl Job {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ClientMessage {
-    RequestClear,
-    // Frontend received message
-    Acknowledge, // TODO Can I trust that transmission succeeds?
+    RemoveAllJobs,
+    RemoveJob(JobIdType),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

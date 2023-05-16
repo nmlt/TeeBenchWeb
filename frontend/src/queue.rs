@@ -147,7 +147,7 @@ pub fn ClearQueueButton() -> Html {
         let websocket_store = use_store_value::<WebsocketState>();
         Callback::from(move |_| {
             let websocket_store = websocket_store.clone();
-            websocket_store.send(ClientMessage::RequestClear);
+            websocket_store.send(ClientMessage::RemoveAllJobs);
         })
     };
     html! {

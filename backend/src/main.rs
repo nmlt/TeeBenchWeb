@@ -16,7 +16,7 @@ use std::sync::Mutex;
 use tokio::sync::mpsc;
 use tracing::{debug, error, info, instrument, warn};
 
-use backend_lib::profiling_task;
+use backend_lib::{CancelNotifierType, profiling_task};
 use common::commit::{Commit, CommitState};
 use common::data_types::{ClientMessage, Job, JobStatus, ServerMessage};
 use common::hardcoded::hardcoded_profiling_jobs;
@@ -73,7 +73,7 @@ async fn handle_socket(
     mut socket: WebSocket,
     queue: Arc<Mutex<VecDeque<Job>>>,
     unqueued_notifier: Arc<tokio::sync::Mutex<mpsc::Receiver<Job>>>,
-    cancel_notifier: Arc<tokio::sync::Mutex<mpsc::Sender<bool>>>,
+    cancel_notifier: Arc<tokio::sync::Mutex<mpsc::Sender<CancelNotifierType>>>,
 ) {
     loop {
         let mut guard = unqueued_notifier.lock().await;
@@ -92,7 +92,7 @@ async fn handle_socket(
                             info!("Client sent binary data.");
                             if let Ok(request) = serde_json::from_slice(&b) {
                                 match request {
-                                    ClientMessage::RequestClear => {
+                                    ClientMessage::RemoveAllJobs => {
                                         {
                                             info!("Clearing queue...");
                                             let mut queue = queue.lock().unwrap();
@@ -102,9 +102,20 @@ async fn handle_socket(
                                         tx.send(true).await.unwrap();
                                         info!("Cancelled current job.");
                                     }
-                                    ClientMessage::Acknowledge => {
-                                        // TODO I don't think I need this.
-                                        warn!("Acknowledge received.");
+                                    ClientMessage::RemoveJob(id) => {
+                                        info!("Removing specific job {id:?}...");
+                                        let mut done = false;
+                                        {
+                                            let mut queue = queue.lock().unwrap();
+                                            if let Some(found) = queue.iter().position(|j| j.id == id) {
+                                                queue.remove(found);
+                                                done = true;
+                                            }
+                                        }
+                                        if !done {
+                                            tx.send(true).await.unwrap();
+                                        }
+                                        info!("Removed job {id:?}.");
                                     }
                                 }
                             }
@@ -152,7 +163,7 @@ struct AppState {
     queue: Arc<Mutex<VecDeque<Job>>>,
     unqueued_notifier: Arc<tokio::sync::Mutex<mpsc::Receiver<Job>>>,
     worker_task_tx: Arc<mpsc::Sender<Job>>,
-    cancel_notifier: Arc<tokio::sync::Mutex<mpsc::Sender<bool>>>,
+    cancel_notifier: Arc<tokio::sync::Mutex<mpsc::Sender<CancelNotifierType>>>,
 }
 
 impl AppState {
@@ -161,7 +172,7 @@ impl AppState {
         queue: Arc<Mutex<VecDeque<Job>>>,
         unqueued_notifier: Arc<tokio::sync::Mutex<mpsc::Receiver<Job>>>,
         worker_task_tx: Arc<mpsc::Sender<Job>>,
-        cancel_notifier: Arc<tokio::sync::Mutex<mpsc::Sender<bool>>>,
+        cancel_notifier: Arc<tokio::sync::Mutex<mpsc::Sender<CancelNotifierType>>>,
     ) -> Self {
         AppState {
             commits,
