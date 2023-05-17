@@ -1,6 +1,7 @@
 use gloo_console::log;
 use gloo_net::http::{Method, Request};
 use std::collections::VecDeque;
+use time::macros::format_description;
 use yew::platform::spawn_local;
 use yew::prelude::*;
 use yewdux::prelude::*;
@@ -17,18 +18,19 @@ struct QueueItemProps {
 
 #[function_component]
 fn QueueItem(QueueItemProps { job, running }: &QueueItemProps) -> Html {
-    let spinner = if *running {
-        html! {
+    let time_format = format_description!("[hour]:[minute]");
+    let (spinner, desc) = if *running {
+        (html! {
             <div class="spinner-border" role="status">
                 <span class="visually-hidden">{"Running..."}</span>
             </div>
-        }
+        }, "running...")
     } else {
-        html! {
+        (html! {
             <div class="m-5">
                 <span class="visually-hidden">{"Waiting..."}</span>
             </div>
-        }
+        }, "waiting...")
     };
     let algs: Vec<_> = job
         .config
@@ -38,11 +40,13 @@ fn QueueItem(QueueItemProps { job, running }: &QueueItemProps) -> Html {
         .collect();
     html! {
         <li class="list-group-item" title={format!("{}", job.config)}>
-            {spinner}
-            //{"Submitted at: "}<span class="fw-bold">{format!("{} ", submitted.format(time_format).unwrap())}</span>
-            {" "}
-            {for algs}
-            <span>{" running... "}</span>
+            <div class="">
+                <span class="px-1">{spinner}</span>
+                <span class="px-1">{"Submitted at: "}<span class="fw-bold">{format!("{} ", job.submitted.format(time_format).unwrap())}</span></span>
+                <span class="px-1">{for algs}</span>
+                <span class="px-1">{desc}</span>
+                <span class="float-end"><RemoveJobButton id={job.id} /></span>
+            </div>
         </li>
     }
 }
@@ -183,12 +187,14 @@ pub fn RemoveJobButton(RemoveJobButtonProps { id }: &RemoveJobButtonProps) -> Ht
         queue_dispatch.reduce_mut_callback(move |s| {
             let websocket_store = websocket_store.clone();
             websocket_store.send(ClientMessage::RemoveJob(id));
-            s.queue.clear();
+            if let Some(pos) = s.queue.iter().position(|j| j.id == id) {
+                s.queue.remove(pos);
+            }
         })
     };
     html! {
         <button class="btn btn-danger" disabled={empty} {onclick}>
-            <i class="fs-3 bi-trash text-primary"></i>
+            <i class="bi-trash"></i>
         </button>
     }
 }

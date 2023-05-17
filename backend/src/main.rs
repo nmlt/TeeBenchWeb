@@ -109,7 +109,7 @@ async fn handle_socket(
                                             let mut queue = queue.lock().unwrap();
                                             if let Some(found) = queue.iter().position(|j| j.id == id) {
                                                 queue.remove(found);
-                                                done = true;
+                                                if found != 0 { done = true; }
                                             }
                                         }
                                         if !done {
