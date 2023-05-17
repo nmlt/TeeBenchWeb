@@ -986,8 +986,17 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
         (),
     );
     html! {
-        <div style="position: relative; height:80vh; width:90vw; margin: auto; padding: 2px">
+        <div>
             <canvas ref={canvas_ref}></canvas>
+        </div>
+    }
+}
+
+#[function_component]
+pub fn CenteredChart(ChartProps { exp_chart }: &ChartProps) -> Html {
+    html! {
+        <div style="position: relative; height:80vh; width:90vw; margin: auto; padding: 2px">
+            <Chart exp_chart={exp_chart.clone()} />
         </div>
     }
 }

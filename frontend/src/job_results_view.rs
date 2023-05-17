@@ -4,9 +4,11 @@ use time::macros::format_description;
 use yew::prelude::*;
 use yewdux::prelude::*;
 
-use common::data_types::{Algorithm, Job, JobConfig, JobResult, JobStatus, Report, ProfilingConfiguration};
+use common::data_types::{
+    Algorithm, Job, JobConfig, JobResult, JobStatus, ProfilingConfiguration, Report,
+};
 
-use crate::chart::Chart;
+use crate::chart::CenteredChart;
 use crate::components::{finding::FindingCardColumn, tag::Tag};
 use crate::modal::ModalContent;
 use crate::queue::Queue;
@@ -80,7 +82,7 @@ pub fn JobResultView(JobResultViewProps { job }: &JobResultViewProps) -> Html {
                         });
                         let charts = report.charts.iter().map(|exp_chart| {
                             html! {
-                                <Chart exp_chart={exp_chart.clone()}/>
+                                <CenteredChart exp_chart={exp_chart.clone()}/>
                             }
                         });
                         ModalContent {

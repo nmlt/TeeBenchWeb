@@ -30,7 +30,10 @@ fn QueueItem(QueueItemProps { job, running }: &QueueItemProps) -> Html {
             </div>
         }
     };
-    let algs: Vec<_> = job.config.algorithms(None).into_iter()
+    let algs: Vec<_> = job
+        .config
+        .algorithms(None)
+        .into_iter()
         .map(|a| html! { <Tag text={a} /> })
         .collect();
     html! {

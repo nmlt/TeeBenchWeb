@@ -16,7 +16,7 @@ use std::sync::Mutex;
 use tokio::sync::mpsc;
 use tracing::{debug, error, info, instrument, warn};
 
-use backend_lib::{CancelNotifierType, profiling_task};
+use backend_lib::{profiling_task, CancelNotifierType};
 use common::commit::{Commit, CommitState};
 use common::data_types::{ClientMessage, Job, JobStatus, ServerMessage};
 use common::hardcoded::hardcoded_profiling_jobs;

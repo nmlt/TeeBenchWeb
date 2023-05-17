@@ -584,9 +584,7 @@ use crate::commit::CommitState;
 impl JobConfig {
     pub fn algorithms(&self, commits: Option<&CommitState>) -> Vec<String> {
         match self {
-            Self::Profiling(c) => {
-                c.algorithms.iter().map(|a| a.to_string()).collect()
-            }
+            Self::Profiling(c) => c.algorithms.iter().map(|a| a.to_string()).collect(),
             Self::Compile(id) => {
                 if let Some(cs) = commits {
                     vec![cs.get_title(id).unwrap()]
