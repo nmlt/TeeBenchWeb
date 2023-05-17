@@ -27,7 +27,7 @@ fn QueueItem(QueueItemProps { job, running }: &QueueItemProps) -> Html {
         }, "running...")
     } else {
         (html! {
-            <div class="m-5">
+            <div class="spinner-border opacity-0">
                 <span class="visually-hidden">{"Waiting..."}</span>
             </div>
         }, "waiting...")
