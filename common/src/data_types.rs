@@ -572,10 +572,35 @@ impl Display for JobConfig {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Profiling(c) => write!(f, "{c}"),
-            Self::PerfReport(_) => {
-                write!(f, "PerfReport")
+            Self::PerfReport(c) => {
+                write!(f, "{c:?}")
             }
-            Self::Compile(c) => write!(f, "Compile {c}"),
+            Self::Compile(id) => write!(f, "Compile {id}"),
+        }
+    }
+}
+
+use crate::commit::CommitState;
+impl JobConfig {
+    pub fn algorithms(&self, commits: Option<&CommitState>) -> Vec<String> {
+        match self {
+            Self::Profiling(c) => {
+                c.algorithms.iter().map(|a| a.to_string()).collect()
+            }
+            Self::Compile(id) => {
+                if let Some(cs) = commits {
+                    vec![cs.get_title(id).unwrap()]
+                } else {
+                    panic!("Cannot get commit title without CommitState structure!");
+                }
+            }
+            Self::PerfReport(c) => {
+                if let Some(cs) = commits {
+                    vec![cs.get_title(&c.id).unwrap(), c.baseline.to_string()]
+                } else {
+                    panic!("Cannot get commit title without CommitState structure!");
+                }
+            }
         }
     }
 }

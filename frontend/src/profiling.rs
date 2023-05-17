@@ -227,15 +227,12 @@ pub fn profiling() -> Html {
         let store = use_store_value::<ProfilingConfiguration>();
         let queue_dispatch = Dispatch::<QueueState>::new();
         queue_dispatch.reduce_mut_future_callback_with(move |s, _| {
+            // Using different notation for clone call because otherwise Rc::clone is called.
             let store = ProfilingConfiguration::clone(&store);
             Box::pin(async move {
                 //e.prevent_default(); // Doesn't seem to work with type="submit".
-                let store = ProfilingConfiguration::clone(&store);
-                let job = Job {
-                    config: store.clone().into(),
-                    submitted: OffsetDateTime::now_utc(),
-                    ..Job::default()
-                };
+                use common::data_types::JobConfig;
+                let job = Job::new(JobConfig::Profiling(store), OffsetDateTime::now_utc());
                 let resp = Request::get("/api/job")
                     .method(Method::POST)
                     .json(&job)
@@ -244,7 +241,7 @@ pub fn profiling() -> Html {
                     .await
                     .expect("Server didn't respond. Is it running?");
                 log!("Sent request got: ", format!("{resp:?}"));
-                s.queue.push_back(store);
+                s.queue.push_back(job);
             })
         })
     };

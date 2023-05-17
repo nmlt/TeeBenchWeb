@@ -4,7 +4,7 @@ use time::macros::format_description;
 use yew::prelude::*;
 use yewdux::prelude::*;
 
-use common::data_types::{Algorithm, Job, JobConfig, JobResult, JobStatus, Report};
+use common::data_types::{Algorithm, Job, JobConfig, JobResult, JobStatus, Report, ProfilingConfiguration};
 
 use crate::chart::Chart;
 use crate::components::{finding::FindingCardColumn, tag::Tag};
@@ -144,7 +144,7 @@ pub fn JobResultsView() -> Html {
     html! {
         <ul class="list-group">
             {for jobs}
-            <Queue />
+            <Queue filter_by={JobConfig::Profiling(ProfilingConfiguration::default())} />
         </ul>
     }
 }
