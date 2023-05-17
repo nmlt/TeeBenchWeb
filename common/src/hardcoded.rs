@@ -1925,6 +1925,7 @@ pub fn predefined_commit() -> Commit {
         1,
         Algorithm::Rho,
     );
+    c.perf_report_running = crate::commit::PerfReportStatus::Successful;
     c.compilation = crate::commit::CompilationStatus::Successful("".to_string());
     c
 }

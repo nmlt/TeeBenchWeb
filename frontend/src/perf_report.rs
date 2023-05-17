@@ -4,7 +4,7 @@ use yewdux::prelude::*;
 use crate::{
     chart::Chart, components::finding::FindingCardColumn, modal::Modal, navigation::Navigation,
 };
-use common::commit::CommitState;
+use common::commit::{CommitState, PerfReportStatus};
 use common::data_types::JobResult;
 
 #[derive(Debug, PartialEq, Properties)]
@@ -92,10 +92,16 @@ pub fn PerfReport(PerfReportProps { commit: current }: &PerfReportProps) -> Html
         }];
     } else {
         findings = vec![];
-        let msg = if commit.perf_report_running {
-            "Waiting for performance report generation..."
-        } else {
-            "To start generating a performance report switch to the Operator tab."
+        let msg = match commit.perf_report_running {
+            PerfReportStatus::None => {
+                "To start generating a performance report switch to the Operator tab."
+            }
+            PerfReportStatus::Running(_) => "Waiting for performance report generation...",
+            // TODO Check this somewhere further up, having this case here doesn't make sense.
+            PerfReportStatus::Successful => unreachable!(),
+            PerfReportStatus::Failed => {
+                "Error creating this performance report. Log at the server logs!"
+            }
         };
         charts = vec![html! {
             <div class="alert alert-info mx-2" role="alert">

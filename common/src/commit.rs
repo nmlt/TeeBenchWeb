@@ -1,4 +1,4 @@
-use crate::data_types::{Algorithm, JobResult};
+use crate::data_types::{Algorithm, JobIdType, JobResult};
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString, EnumVariantNames};
 use time::OffsetDateTime;
@@ -26,6 +26,15 @@ pub enum CompilationStatus {
     Failed(String),
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum PerfReportStatus {
+    None,
+    // TODO Add variant Waiting with job id. Then I could make the stop button a trash button (to trash the job, not the whole commit). And there wouldn't be so many spinners.
+    Running(JobIdType),
+    Successful,
+    Failed,
+}
+
 pub type CommitIdType = usize;
 
 /// A commit represents an algorithm/operator and its performance report.
@@ -48,7 +57,7 @@ pub struct Commit {
     /// Compilation status
     pub compilation: CompilationStatus,
     /// Whether a PerfReport job is running right now for this commit
-    pub perf_report_running: bool,
+    pub perf_report_running: PerfReportStatus,
     /// Which other commit or Algorithm should serve as the baseline. Other commits are identified by Algorithm::Commit(CommitIdType).
     pub baseline: Algorithm,
 }
@@ -73,7 +82,7 @@ impl Commit {
             report: reports,
             id,
             compilation: CompilationStatus::Uncompiled,
-            perf_report_running: false,
+            perf_report_running: PerfReportStatus::None,
             baseline,
         }
     }

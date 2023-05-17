@@ -16,10 +16,10 @@ use tokio::sync::mpsc;
 use tracing::{debug, error, info, instrument, warn};
 
 use common::commandline::Commandline;
-use common::commit::{CommitState, CompilationStatus};
+use common::commit::{CommitState, CompilationStatus, PerfReportStatus};
 use common::data_types::{
-    Algorithm, ExperimentChart, Job, JobConfig, JobResult, JobStatus, Report, TeeBenchWebError,
-    REPLACE_ALG,
+    Algorithm, ExperimentChart, Job, JobConfig, JobIdType, JobResult, JobStatus, Report,
+    TeeBenchWebError, REPLACE_ALG,
 };
 use common::hardcoded::{hardcoded_perf_report_commands, hardcoded_perf_report_configs};
 
@@ -333,6 +333,7 @@ async fn run_experiment(
 #[instrument(skip(conf, commits, currently_switched_in, conn))]
 async fn runner(
     conf: JobConfig,
+    job_id: JobIdType,
     commits: Arc<Mutex<CommitState>>,
     currently_switched_in: SwitchedInType,
     conn: Arc<Mutex<Connection>>,
@@ -383,7 +384,7 @@ async fn runner(
             let baseline = || {
                 let mut guard = commits.lock().unwrap();
                 if let Some(mut c) = guard.get_by_id_mut(&pr_conf.id) {
-                    c.perf_report_running = true;
+                    c.perf_report_running = PerfReportStatus::Running(job_id);
                     return c.baseline;
                 }
                 panic!("Could not find the commit!");
@@ -404,7 +405,11 @@ async fn runner(
                 let mut guard = commits.lock().unwrap();
                 if let Some(mut c) = guard.get_by_id_mut(&pr_conf.id) {
                     c.report = Some(results.clone());
-                    c.perf_report_running = false;
+                    c.perf_report_running = if results.is_ok() {
+                        PerfReportStatus::Successful
+                    } else {
+                        PerfReportStatus::Failed
+                    };
                 }
             }
             results
@@ -457,6 +462,7 @@ async fn work_on_queue(
         let now = Instant::now();
         let result = runner(
             current_job.config.clone(),
+            current_job.id,
             commits.clone(),
             currently_switched_in.clone(),
             conn.clone(),

@@ -16,7 +16,9 @@ use crate::modal::Modal;
 use crate::modal::ModalContent;
 use crate::navigation::Navigation;
 
-use common::commit::{Commit, CommitIdType, CommitState, CompilationStatus, Operator};
+use common::commit::{
+    Commit, CommitIdType, CommitState, CompilationStatus, Operator, PerfReportStatus,
+};
 use common::data_types::{Algorithm, Job, JobConfig, PerfReportConfig, VariantNames};
 
 use yew_router::components::Link;
@@ -345,47 +347,55 @@ fn CommitsList() -> Html {
                 }
             }
         };
-        let report_button = if commit.perf_report_running {
-            html! {
+        let report_button = match commit.perf_report_running {
+            PerfReportStatus::None => {
+                if let CompilationStatus::Successful(_) = commit.compilation {
+                    let onclick = {
+                        let commit_dispatch = commit_dispatch.clone();
+                        let id = commit.id;
+                        let baseline = commit.baseline;
+                        commit_dispatch.reduce_mut_future_callback(move |s| Box::pin(async move {
+                            // TODO Passing fit in here and disregarding _exceed?
+                            let (fit, _exceed) = PerfReportConfig::for_throughput(id, baseline);
+                            let perf_report_job = Job::new(JobConfig::PerfReport(fit), OffsetDateTime::now_utc());
+                            let _resp = Request::get("/api/job")
+                                .method(Method::POST)
+                                .json(&perf_report_job)
+                                .unwrap()
+                                .send()
+                                .await
+                                .expect("Server didn't respond. Is it running?");
+                            for c in s.0.iter_mut() {
+                                if c.id == id {
+                                    c.perf_report_running = PerfReportStatus::Running(perf_report_job.id);
+                                    break;
+                                }
+                            }
+                        }))
+                    };
+                    html! { <button class="btn btn-info" {onclick}>{"Generate Report"}</button> }
+                } else {
+                    html! {
+                        <button class="btn btn-info" disabled={true}>{"Report"}</button>
+                    }
+                }
+            }
+            PerfReportStatus::Running(id) => html! {
+                <>
                 <Link<Route> classes={classes!("btn", "btn-info")} to={Route::PerfReport { commit: commit.title.clone() }}>
                     {"Report"}
                     <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                 </Link<Route>>
-            }
-        } else {
-            // TODO Either store in the commit that the perfReport generation has finished or do something else, not this!
-            if commit.report.is_some() {
-               html! {
-                    <Link<Route> classes={classes!("btn", "btn-info")} to={Route::PerfReport { commit: commit.title.clone() }}>
-                        {"View Report"}
-                    </Link<Route>>
-                }
-            } else if let CompilationStatus::Successful(_) = commit.compilation {
-                let onclick = {
-                    let commit_dispatch = commit_dispatch.clone();
-                    let id = commit.id;
-                    let baseline = commit.baseline;
-                    commit_dispatch.reduce_mut_future_callback(move |s| Box::pin(async move {
-                        let (fit, _exceed) = PerfReportConfig::for_throughput(id, baseline);
-                        let perf_report_job = Job::new(JobConfig::PerfReport(fit), OffsetDateTime::now_utc());
-                        let _resp = Request::get("/api/job")
-                            .method(Method::POST)
-                            .json(&perf_report_job)
-                            .unwrap()
-                            .send()
-                            .await
-                            .expect("Server didn't respond. Is it running?");
-                        for c in s.0.iter_mut() {
-                            if c.id == id {
-                                c.perf_report_running = true;
-                                break;
-                            }
-                        }
-                    }))
-                };
-                html! { <button class="btn btn-info" {onclick}>{"Generate Report"}</button> }
-            } else {
-                html! { <button class="btn btn-info" disabled={true}>{"Report"}</button> }
+                <RemovePerfReportButton id={id} />
+                </>
+            },
+            PerfReportStatus::Successful => html! {
+                <Link<Route> classes={classes!("btn", "btn-info")} to={Route::PerfReport { commit: commit.title.clone() }}>
+                    {"View Report"}
+                </Link<Route>>
+            },
+            PerfReportStatus::Failed => html! {
+                <button class="btn btn-info" disabled={true}>{"Report"}</button>
             }
         };
         let baseline = {
@@ -469,5 +479,39 @@ pub fn Commits() -> Html {
             </div>
             <Modal />
         </div>
+    }
+}
+
+use crate::components::websocket::WebsocketState;
+use common::data_types::{ClientMessage, JobIdType};
+#[derive(PartialEq, Properties)]
+pub struct RemovePerfReportButtonProps {
+    pub id: JobIdType,
+}
+
+#[function_component]
+pub fn RemovePerfReportButton(
+    RemovePerfReportButtonProps { id }: &RemovePerfReportButtonProps,
+) -> Html {
+    let (commit_store, commit_dispatch) = use_store::<CommitState>();
+    let empty = commit_store.0.is_empty();
+    let onclick = {
+        let websocket_store = use_store_value::<WebsocketState>();
+        let id = id.clone();
+        commit_dispatch.reduce_mut_callback(move |s| {
+            websocket_store.send(ClientMessage::RemoveJob(id));
+            if let Some(ref mut found) = s.0
+                .iter_mut()
+                .find(|c| matches!(c.perf_report_running, PerfReportStatus::Running(incoming_id) if incoming_id == id))
+            {
+                found.perf_report_running = PerfReportStatus::None;
+            }
+            // TODO Also remove from queue as it's in there now too, isn't it?
+        })
+    };
+    html! {
+        <button class="btn btn-danger" disabled={empty} {onclick}>
+            <i class="bi-stop-fill"></i>
+        </button>
     }
 }

@@ -12,7 +12,7 @@ use wasm_bindgen_futures::spawn_local;
 
 use crate::job_results_view::FinishedJobState;
 use crate::queue::QueueState;
-use common::commit::CommitState;
+use common::commit::{CommitState, PerfReportStatus};
 
 // Idea: Use a struct component to tap into the component lifecycle: create to establish the websocket connection, and update to send and receive (eg. async clock example in yew sends itself a message if something arrives on a channel, so that should also be possible for a websocket). Now the question is, how do I get the other components (Commits, PerfReport, Profiling) to communicate with this struct component?
 // Easiest would be if they could send messages to the component. Maybe by passing a callback around? Or just use a channel. I could store the transmitter part in a hook and pass the receiver part as props to the struct component.
@@ -119,8 +119,12 @@ pub fn Websocket() -> Html {
                                     if let Some(mut commit) = commit {
                                         if let JobStatus::Done { result, .. } = finished_job.status
                                         {
+                                            commit.perf_report_running = if result.is_ok() {
+                                                PerfReportStatus::Successful
+                                            } else {
+                                                PerfReportStatus::Failed
+                                            };
                                             commit.report = Some(result);
-                                            commit.perf_report_running = false;
                                         } else {
                                             log!("Error: Got an unfinished job in the websocket.");
                                         }

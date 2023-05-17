@@ -20,17 +20,23 @@ struct QueueItemProps {
 fn QueueItem(QueueItemProps { job, running }: &QueueItemProps) -> Html {
     let time_format = format_description!("[hour]:[minute]");
     let (spinner, desc) = if *running {
-        (html! {
-            <div class="spinner-border" role="status">
-                <span class="visually-hidden">{"Running..."}</span>
-            </div>
-        }, "running...")
+        (
+            html! {
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">{"Running..."}</span>
+                </div>
+            },
+            "running...",
+        )
     } else {
-        (html! {
-            <div class="spinner-border opacity-0">
-                <span class="visually-hidden">{"Waiting..."}</span>
-            </div>
-        }, "waiting...")
+        (
+            html! {
+                <div class="spinner-border opacity-0">
+                    <span class="visually-hidden">{"Waiting..."}</span>
+                </div>
+            },
+            "waiting...",
+        )
     };
     let algs: Vec<_> = job
         .config
@@ -162,7 +168,6 @@ pub fn ClearQueueButton() -> Html {
     let onclick = {
         let websocket_store = use_store_value::<WebsocketState>();
         queue_dispatch.reduce_mut_callback(move |s| {
-            let websocket_store = websocket_store.clone();
             websocket_store.send(ClientMessage::RemoveAllJobs);
             s.queue.clear();
         })
@@ -185,7 +190,6 @@ pub fn RemoveJobButton(RemoveJobButtonProps { id }: &RemoveJobButtonProps) -> Ht
         let websocket_store = use_store_value::<WebsocketState>();
         let id = id.clone();
         queue_dispatch.reduce_mut_callback(move |s| {
-            let websocket_store = websocket_store.clone();
             websocket_store.send(ClientMessage::RemoveJob(id));
             if let Some(pos) = s.queue.iter().position(|j| j.id == id) {
                 s.queue.remove(pos);
