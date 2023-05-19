@@ -54,6 +54,7 @@ fn display_command_output(o: &std::process::Output, cmd: String) -> String {
 
 async fn make_clean(tbw_dir: &PathBuf) -> Result<()> {
     let clean_out = TokioCommand::new("make")
+        .kill_on_drop(true)
         .current_dir(tbw_dir)
         .args(["clean"])
         .status()
@@ -97,6 +98,7 @@ async fn compile(
     let enclave_name = "enclave.signed.so";
     make_clean(&tee_bench_dir).await?;
     let make_out = TokioCommand::new("make")
+        .kill_on_drop(true)
         .current_dir(tee_bench_dir)
         .args(compile_args_native)
         .output()
@@ -134,6 +136,7 @@ async fn compile(
         .with_context(|| format!("Failed to copy native binary to {bin_path:?}!"))?;
     bin_path.pop();
     let cmd_out = TokioCommand::new("./native")
+        .kill_on_drop(true)
         .args(&["-a", REPLACE_ALG])
         .current_dir(&bin_path)
         .output()
@@ -148,6 +151,7 @@ async fn compile(
     }
     make_clean(&tee_bench_dir).await?;
     let cmd_out = TokioCommand::new("make")
+        .kill_on_drop(true)
         .current_dir(tee_bench_dir)
         .args(compile_args_sgx)
         .output()
@@ -175,6 +179,7 @@ async fn compile(
         .with_context(|| format!("Failed to copy {enclave_name} over!"))?;
     bin_path.pop();
     let cmd_out = TokioCommand::new("./sgx")
+        .kill_on_drop(true)
         .args(&["-a", REPLACE_ALG])
         .current_dir(&bin_path)
         .output()
@@ -277,7 +282,7 @@ async fn run_experiment(
                 }
                 tee_bench_dir.push(BIN_FOLDER);
                 info!("Running `{cmd_string}` (alg: {:?})", cmd.algorithm);
-                let output = to_command(cmd)
+                let output = to_command(&cmd)
                     .current_dir(tee_bench_dir)
                     .output()
                     .await
@@ -591,8 +596,9 @@ pub async fn profiling_task(
 }
 
 /// Consumes `Commandline` and makes a tokio process out of it.
-fn to_command(cmdline: Commandline) -> TokioCommand {
+fn to_command(cmdline: &Commandline) -> TokioCommand {
     let mut cmd = TokioCommand::new(cmdline.app.to_app_name());
-    cmd.args(cmdline.args);
+    cmd.args(cmdline.args.clone());
+    cmd.kill_on_drop(true);
     cmd
 }
