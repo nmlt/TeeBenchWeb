@@ -286,24 +286,22 @@ fn CommitsList() -> Html {
                 let commit = commit.clone();
                 let html = hljs_highlight(commit.code.clone());
                 let parsed = Html::from_html_unchecked(AttrValue::from(format!("<code class=\"hljs language-cpp\">{html}</code>")));
-                ModalContent {
-                    content: html! {
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">{commit.get_title()}</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                <pre>
-                                    {parsed}
-                                </pre>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{"Close"}</button>
-                            </div>
+                ModalContent::new(html! {
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">{commit.get_title()}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
-                    }
-                }
+                        <div class="modal-body">
+                            <pre>
+                                {parsed}
+                            </pre>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{"Close"}</button>
+                        </div>
+                    </div>
+                })
             })
         };
         let commit_title = commit.get_title();

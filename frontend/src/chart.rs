@@ -12,7 +12,7 @@ use std::collections::HashMap;
 use common::commit::CommitState;
 use common::data_types::{
     Algorithm, Dataset, ExperimentChart, ExperimentChartResult, ExperimentType, JobConfig,
-    Measurement, Parameter, PerfReportConfig, Platform, SingleRunResult, TeebenchArgs,
+    Measurement, Parameter, Platform, SingleRunResult, TeebenchArgs,
 };
 
 use crate::js_bindings::MyChart;
@@ -670,16 +670,16 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
 
                         match conf.clone().measurement {
                             Measurement::ThroughputAndTotalEPCPaging => {
-                                data = create_data_hashmap(
-                                    &exp_chart.results,
-                                    Measurement::Throughput,
-                                    conf.clone().parameter,
-                                );
-                                data2 = create_data_hashmap(
-                                    &exp_chart.results,
-                                    Measurement::TotalEpcPaging,
-                                    conf.clone().parameter,
-                                );
+                                // data = create_data_hashmap(
+                                //     &exp_chart.results,
+                                //     Measurement::Throughput,
+                                //     conf.clone().parameter,
+                                // );
+                                // data2 = create_data_hashmap(
+                                //     &exp_chart.results,
+                                //     Measurement::TotalEpcPaging,
+                                //     conf.clone().parameter,
+                                // );
                                 scales = json!({
                                     "y": {
                                         "text": "Throughput [M rec/s]",
@@ -711,7 +711,7 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                         get_color_by_algorithm(&a.to_string()).to_string().clone();
                                     let mut values: Vec<String> = vec![];
                                     for s in &steps {
-                                        match exp_chart.results.iter().find(|(args, res)| {
+                                        match exp_chart.results.iter().find(|(args, _res)| {
                                             args.algorithm.to_string() == a.to_string()
                                                 && args.x.unwrap().to_string() == s.clone()
                                         }) {
@@ -742,7 +742,7 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                         COLORS.choose(&mut rand::thread_rng()).unwrap().clone();
                                     let mut values: Vec<String> = vec![];
                                     for s in &steps {
-                                        match exp_chart.results.iter().find(|(args, res)| {
+                                        match exp_chart.results.iter().find(|(args, _res)| {
                                             args.algorithm.to_string() == a.to_string()
                                                 && args.x.unwrap().to_string() == s.clone()
                                         }) {

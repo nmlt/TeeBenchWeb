@@ -73,40 +73,36 @@ pub fn JobResultView(JobResultViewProps { job }: &JobResultViewProps) -> Html {
                         });
                         // TODO Make destroying part of the modal.rs file, don't do it here.
                         let destroy_onclick = content_dispatch.set_callback(|_| {
-                            ModalContent {
-                                content: html! {
-                                    <>
-                                    </>
-                                }
-                            }
+                            ModalContent::new(html! {
+                                <>
+                                </>
+                            })
                         });
                         let charts = report.charts.iter().map(|exp_chart| {
                             html! {
                                 <CenteredChart exp_chart={exp_chart.clone()}/>
                             }
                         });
-                        ModalContent {
-                            content: html! {
-                                <div class="modal-content">
+                        ModalContent::new(html! {
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">{"Job Result for "}{for algs.clone()}</h5>
+                                    <button type="button" class="btn-close" onclick={destroy_onclick.clone()} data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body py-0">
+                                    {for charts}
                                     <div class="modal-header">
-                                        <h5 class="modal-title">{"Job Result for "}{for algs.clone()}</h5>
-                                        <button type="button" class="btn-close" onclick={destroy_onclick.clone()} data-bs-dismiss="modal" aria-label="Close"></button>
+                                        <h5 class="modal-title">{"Analyser Findings"}</h5>
                                     </div>
-                                    <div class="modal-body py-0">
-                                        {for charts}
-                                        <div class="modal-header">
-                                            <h5 class="modal-title">{"Analyser Findings"}</h5>
-                                        </div>
-                                        <div class="row" style="padding:20px">
-                                            {for findings}
-                                        </div>
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-secondary" onclick={destroy_onclick.clone()} data-bs-dismiss="modal">{"Close"}</button>
+                                    <div class="row" style="padding:20px">
+                                        {for findings}
                                     </div>
                                 </div>
-                            }
-                        }
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" onclick={destroy_onclick.clone()} data-bs-dismiss="modal">{"Close"}</button>
+                                </div>
+                            </div>
+                        })
                     })
                 };
                 html! {<button class="btn btn-info" type="button" {onclick} data-bs-toggle="modal" data-bs-target="#mainModal">{"Results"}</button>}

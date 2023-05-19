@@ -1,7 +1,7 @@
 use anyhow::{bail, Result};
 use common::data_types::{
-    Dataset, ExperimentChartResult, ExperimentType, FindingStyle, JobConfig, Measurement,
-    Parameter, Platform, Report, UnwrapedExperimentResult, CPU_PHYSICAL_CORES,
+    Dataset, ExperimentType, FindingStyle, JobConfig, Measurement, Parameter, Platform, Report,
+    UnwrapedExperimentResult, CPU_PHYSICAL_CORES,
 };
 use tracing::instrument;
 
@@ -9,7 +9,7 @@ use tracing::instrument;
 pub fn enrich_report_with_findings(jr: &mut Report) -> Result<()> {
     // 1. iterate over each experiment chart and enrich it with findings
     for ex in &mut jr.charts {
-        if ex.results.iter().all(|res| !res.1.is_ok()) {
+        if ex.results.iter().any(|res| res.1.is_err()) {
             bail!("Some results are errors!");
         };
         let results: UnwrapedExperimentResult = ex
