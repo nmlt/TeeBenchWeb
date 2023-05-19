@@ -16,7 +16,7 @@ use std::sync::Mutex;
 use tokio::sync::mpsc;
 use tracing::{debug, error, info, instrument, warn};
 
-use backend_lib::{profiling_task, CancelNotifierType};
+use backend_lib::{profiling_task, CancelNotifierType, PartialReportType};
 use common::commit::{Commit, CommitState};
 use common::data_types::{ClientMessage, Job, JobStatus, ServerMessage};
 use common::hardcoded::hardcoded_profiling_jobs;
@@ -64,6 +64,7 @@ async fn ws_handler(State(app_state): State<AppState>, ws: WebSocketUpgrade) -> 
             app_state.queue,
             app_state.unqueued_notifier,
             app_state.cancel_notifier,
+            app_state.partial_results_receiver,
         )
     })
 }
@@ -74,10 +75,12 @@ async fn handle_socket(
     queue: Arc<Mutex<VecDeque<Job>>>,
     unqueued_notifier: Arc<tokio::sync::Mutex<mpsc::Receiver<Job>>>,
     cancel_notifier: Arc<tokio::sync::Mutex<mpsc::Sender<CancelNotifierType>>>,
+    partial_results_receiver: Arc<tokio::sync::Mutex<mpsc::Receiver<PartialReportType>>>,
 ) {
     loop {
-        let mut guard = unqueued_notifier.lock().await;
-        let tx = cancel_notifier.lock().await;
+        let mut unqueued_notifier = unqueued_notifier.lock().await;
+        let cancel_notifier = cancel_notifier.lock().await;
+        let mut partial_results_receiver = partial_results_receiver.lock().await;
         debug!("Looping back to select socket or queue_state channel receiver");
         // TODO Check if data loss could happen due to cancelation.
         tokio::select! {
@@ -99,7 +102,7 @@ async fn handle_socket(
                                             queue.clear();
                                             info!("Queue cleared.");
                                         }
-                                        tx.send(true).await.unwrap();
+                                        cancel_notifier.send(true).await.unwrap();
                                         info!("Cancelled current job.");
                                     }
                                     ClientMessage::RemoveJob(id) => {
@@ -113,7 +116,7 @@ async fn handle_socket(
                                             }
                                         }
                                         if !done {
-                                            tx.send(true).await.unwrap();
+                                            cancel_notifier.send(true).await.unwrap();
                                         }
                                         info!("Removed job {id:?}.");
                                     }
@@ -136,7 +139,7 @@ async fn handle_socket(
                     return;
                 }
             },
-            Some(job) = guard.recv() => {
+            Some(job) = unqueued_notifier.recv() => {
                 info!("Queue receiver got a finished job. Notifying client...");
                 match job.status {
                     JobStatus::Waiting => {
@@ -152,6 +155,14 @@ async fn handle_socket(
                     }
                 }
             }
+            Some((job_id, report)) = partial_results_receiver.recv() => {
+                let msg = ServerMessage::PartialReport(job_id, report);
+                let serialized = serde_json::to_vec(&msg).unwrap();
+                if socket.send(Message::Binary(serialized)).await.is_err() {
+                    error!("Sending a partial report to client failed!");
+                    return;
+                }
+            }
         }
     }
 }
@@ -164,6 +175,7 @@ struct AppState {
     unqueued_notifier: Arc<tokio::sync::Mutex<mpsc::Receiver<Job>>>,
     worker_task_tx: Arc<mpsc::Sender<Job>>,
     cancel_notifier: Arc<tokio::sync::Mutex<mpsc::Sender<CancelNotifierType>>>,
+    partial_results_receiver: Arc<tokio::sync::Mutex<mpsc::Receiver<PartialReportType>>>,
 }
 
 impl AppState {
@@ -173,6 +185,7 @@ impl AppState {
         unqueued_notifier: Arc<tokio::sync::Mutex<mpsc::Receiver<Job>>>,
         worker_task_tx: Arc<mpsc::Sender<Job>>,
         cancel_notifier: Arc<tokio::sync::Mutex<mpsc::Sender<CancelNotifierType>>>,
+        partial_results_receiver: Arc<tokio::sync::Mutex<mpsc::Receiver<PartialReportType>>>,
     ) -> Self {
         AppState {
             commits,
@@ -180,6 +193,7 @@ impl AppState {
             unqueued_notifier,
             worker_task_tx,
             cancel_notifier,
+            partial_results_receiver,
         }
     }
 }
@@ -198,6 +212,8 @@ async fn main() {
     let (queue_tx, queue_rx) = mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);
     let (profiling_tx, profiling_rx) = mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);
     let (cancel_tx, cancel_rx) = mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);
+    let (partial_results_sender, partial_results_receiver) =
+        mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);
 
     tokio::spawn(profiling_task(
         Arc::clone(&commits),
@@ -205,6 +221,7 @@ async fn main() {
         queue_tx,
         profiling_rx,
         cancel_rx,
+        Arc::new(tokio::sync::Mutex::new(partial_results_sender)),
     ));
 
     let app_state = AppState::new(
@@ -213,6 +230,7 @@ async fn main() {
         Arc::new(tokio::sync::Mutex::new(queue_rx)),
         Arc::new(profiling_tx),
         Arc::new(tokio::sync::Mutex::new(cancel_tx)),
+        Arc::new(tokio::sync::Mutex::new(partial_results_receiver)),
     );
 
     let spa = SpaRouter::new("/assets", "../dist"); // TODO Remove and use the tower middleware instead.

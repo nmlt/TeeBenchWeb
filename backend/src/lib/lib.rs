@@ -34,6 +34,7 @@ const REPLACE_FILE: &str = "Joins/TBW/OperatorJoin.cpp";
 
 type SwitchedInType = Arc<tokio::sync::Mutex<Option<Algorithm>>>;
 pub type CancelNotifierType = bool;
+pub type PartialReportType = (JobIdType, Report);
 
 fn display_command_output(o: &std::process::Output, cmd: String) -> String {
     let mut res = String::new();
@@ -213,10 +214,10 @@ async fn run_teebench(
     mut tee_bench_dir: PathBuf,
     code_hashmap: HashMap<Algorithm, String>,
     cmd_string: String,
-    cmd_tasks: &mut HashMap<
+    cmd_tasks: &mut Vec<(
         common::data_types::TeebenchArgs,
         Result<HashMap<String, String>, TeeBenchWebError>,
-    >,
+    )>,
     args_key: common::data_types::TeebenchArgs,
     errors: &mut bool,
     conn: Arc<Mutex<Connection>>,
@@ -245,12 +246,12 @@ async fn run_teebench(
         .expect("Failed to run TeeBench");
     if !output.status.success() {
         error!("Command {cmd_string} failed with {output:#?}");
-        cmd_tasks.insert(
+        cmd_tasks.push((
             args_key,
             Err(TeeBenchWebError::TeeBenchCrash(format!(
                 "Command `{cmd_string}` failed with:\n{output:#?}"
             ))),
-        );
+        ));
         *errors = true;
         bail!("Failed to run teebench!");
     } else {
@@ -260,11 +261,11 @@ async fn run_teebench(
         match data {
             Ok(results) => {
                 insert_experiment(conn.clone(), args_key.clone(), results.clone()).unwrap();
-                cmd_tasks.insert(args_key, Ok(results));
+                cmd_tasks.push((args_key, Ok(results)));
             }
             Err(e) => {
                 warn!("Failed to parse output: {e}");
-                cmd_tasks.insert(args_key, Err(TeeBenchWebError::Unknown));
+                cmd_tasks.push((args_key, Err(TeeBenchWebError::Unknown)));
             }
         }
     }
@@ -272,7 +273,16 @@ async fn run_teebench(
 }
 
 // Showing `switched_in` with tracing seems to be wrong. It is always shown as empty, but the code doesn't run like it is.
-#[instrument(skip(tee_bench_dir, configs, cmds, code_hashmap, switched_in, conn))]
+#[instrument(skip(
+    tee_bench_dir,
+    configs,
+    cmds,
+    code_hashmap,
+    switched_in,
+    conn,
+    partial_results_sender,
+    job_id
+))]
 async fn run_experiment(
     tee_bench_dir: PathBuf,
     configs: Vec<JobConfig>,
@@ -280,69 +290,67 @@ async fn run_experiment(
     code_hashmap: HashMap<Algorithm, String>,
     switched_in: SwitchedInType,
     conn: Arc<Mutex<Connection>>,
+    partial_results_sender: Arc<tokio::sync::Mutex<mpsc::Sender<PartialReportType>>>,
+    job_id: JobIdType,
 ) -> JobResult {
-    let mut all_tasks = vec![];
     let mut errors = false;
-    for (chart_cmds, conf) in cmds.iter().zip(configs) {
-        if errors {
-            break;
-        }
-        let mut cmd_tasks: HashMap<
-            common::data_types::TeebenchArgs,
-            Result<HashMap<String, String>, _>,
-        > = HashMap::new();
-        for cmd in chart_cmds {
-            // Each task should get the full "power" of the machine, so don't run them in parallel (by awaiting the handle).
-            {
-                let args_key = cmd.to_teebench_args();
-                let cmd_string = format!("{cmd}");
-                if args_key.crkj_mway_wrong_thread_count() {
-                    continue;
-                }
-                match search_for_exp(conn.clone(), &args_key) {
-                    Ok(Some(r)) => {
-                        info!(
-                            "Found cached result for `{cmd_string}` (alg: {:?})",
-                            cmd.algorithm
-                        );
-                        cmd_tasks.insert(args_key, Ok(r));
-                        continue;
-                    }
-                    Ok(None) => {
-                        match run_teebench(
-                            cmd,
-                            switched_in.clone(),
-                            tee_bench_dir.clone(),
-                            code_hashmap.clone(),
-                            cmd_string,
-                            &mut cmd_tasks,
-                            args_key,
-                            &mut errors,
-                            conn.clone(),
-                        )
-                        .await
-                        {
-                            Ok(()) => (),
-                            Err(e) => warn!("Error running TeeBench: {e}"),
-                        }
-                    }
-                    Err(e) => error!("Searching the cache failed with: {e}"),
-                }
-            }
-        }
-        all_tasks.push((conf, cmd_tasks));
-    }
     let mut report = Report {
         charts: vec![],
         findings: vec![],
     };
-    for (conf, tasks) in all_tasks {
-        // TODO Maybe change the new function to also take a HashMap (like `tasks` is) instead of just a Vec.
-        let mut experiment_chart = ExperimentChart::new(conf, vec![], vec![]);
-        for (args, task) in tasks {
-            experiment_chart.results.push((args, task));
+    for (chart_cmds, conf) in cmds.iter().zip(configs) {
+        if errors {
+            break;
         }
+        let mut cmd_tasks: Vec<(
+            common::data_types::TeebenchArgs,
+            Result<HashMap<String, String>, _>,
+        )> = vec![];
+        for cmd in chart_cmds {
+            let args_key = cmd.to_teebench_args();
+            let cmd_string = format!("{cmd}");
+            if args_key.crkj_mway_wrong_thread_count() {
+                continue;
+            }
+            match search_for_exp(conn.clone(), &args_key) {
+                Ok(Some(r)) => {
+                    info!(
+                        "Found cached result for `{cmd_string}` (alg: {:?})",
+                        cmd.algorithm
+                    );
+                    cmd_tasks.push((args_key, Ok(r)));
+                    continue;
+                }
+                Ok(None) => {
+                    match run_teebench(
+                        cmd,
+                        switched_in.clone(),
+                        tee_bench_dir.clone(),
+                        code_hashmap.clone(),
+                        cmd_string,
+                        &mut cmd_tasks,
+                        args_key,
+                        &mut errors,
+                        conn.clone(),
+                    )
+                    .await
+                    {
+                        Ok(()) => (),
+                        Err(e) => warn!("Error running TeeBench: {e}"),
+                    }
+                }
+                Err(e) => error!("Searching the cache failed with: {e}"),
+            }
+        }
+        let experiment_chart = ExperimentChart::new(conf, cmd_tasks, vec![]);
         report.charts.push(experiment_chart);
+        {
+            let partial_results_sender = partial_results_sender.lock().await;
+            partial_results_sender
+                .send((job_id, report.clone()))
+                .await
+                .unwrap();
+        }
     }
 
     match enrich_report_with_findings(&mut report) {
@@ -353,13 +361,14 @@ async fn run_experiment(
     JobResult::Exp(Ok(report))
 }
 
-#[instrument(skip(conf, commits, currently_switched_in, conn))]
+#[instrument(skip(conf, commits, currently_switched_in, conn, partial_results_sender))]
 async fn runner(
     conf: JobConfig,
     job_id: JobIdType,
     commits: Arc<Mutex<CommitState>>,
     currently_switched_in: SwitchedInType,
     conn: Arc<Mutex<Connection>>,
+    partial_results_sender: Arc<tokio::sync::Mutex<mpsc::Sender<PartialReportType>>>,
 ) -> JobResult {
     let tee_bench_dir = PathBuf::from(
         var(RUN_DIR_VAR_NAME).unwrap_or_else(|_| panic!("{RUN_DIR_VAR_NAME} not set")),
@@ -400,6 +409,8 @@ async fn runner(
                 code_hashmap,
                 currently_switched_in,
                 conn,
+                partial_results_sender,
+                job_id,
             )
             .await
         }
@@ -422,6 +433,8 @@ async fn runner(
                 code_hashmap,
                 currently_switched_in,
                 conn,
+                partial_results_sender,
+                job_id,
             )
             .await;
             {
@@ -466,13 +479,21 @@ async fn runner(
     }
 }
 
-#[instrument(skip(queue, queue_tx, commits, currently_switched_in, conn))]
+#[instrument(skip(
+    queue,
+    queue_tx,
+    commits,
+    currently_switched_in,
+    conn,
+    partial_results_sender
+))]
 async fn work_on_queue(
     queue: Arc<Mutex<VecDeque<Job>>>,
     queue_tx: mpsc::Sender<Job>,
     commits: Arc<Mutex<CommitState>>,
     currently_switched_in: SwitchedInType,
     conn: Arc<Mutex<Connection>>,
+    partial_results_sender: Arc<tokio::sync::Mutex<mpsc::Sender<PartialReportType>>>,
 ) {
     fn peek_queue(queue: Arc<Mutex<VecDeque<Job>>>) -> Option<Job> {
         let guard = queue.lock().unwrap();
@@ -489,6 +510,7 @@ async fn work_on_queue(
             commits.clone(),
             currently_switched_in.clone(),
             conn.clone(),
+            partial_results_sender.clone(),
         )
         .await;
         let runtime = now.elapsed();
@@ -499,7 +521,8 @@ async fn work_on_queue(
         };
         info!("Process completed: {result_type}.");
         let finished_job = Job {
-            status: JobStatus::Done { runtime, result },
+            status: JobStatus::Done { runtime },
+            result: Some(result),
             ..current_job
         };
         {
@@ -539,13 +562,14 @@ async fn receive_confs(
 /// queue: the actual queue, shared with the server, so it can send the queue to any newly connecting client
 /// queue_tx: this channel notifies the server of any changes in the queue.
 /// rx: incoming new profiling configs
-#[instrument(skip(commits, queue, queue_tx, rx, cancel_rx))]
+#[instrument(skip(commits, queue, queue_tx, rx, cancel_rx, partial_results_sender))]
 pub async fn profiling_task(
     commits: Arc<Mutex<CommitState>>,
     queue: Arc<Mutex<VecDeque<Job>>>,
     queue_tx: mpsc::Sender<Job>,
     rx: mpsc::Receiver<Job>,
     cancel_rx: mpsc::Receiver<CancelNotifierType>,
+    partial_results_sender: Arc<tokio::sync::Mutex<mpsc::Sender<PartialReportType>>>,
 ) {
     // Using a tokio Mutex here to make it Send. Which is required...
     let rx = Arc::new(tokio::sync::Mutex::new(rx));
@@ -565,6 +589,7 @@ pub async fn profiling_task(
                     commits.clone(),
                     currently_switched_in.clone(),
                     conn.clone(),
+                    partial_results_sender.clone(),
                 )))
             } else {
                 None
@@ -595,6 +620,7 @@ pub async fn profiling_task(
             commits.clone(),
             currently_switched_in.clone(),
             conn.clone(),
+            partial_results_sender.clone(),
         ));
         loop {
             // Following the advice in the tokio::oneshot documentation to make the rx &mut.

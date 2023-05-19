@@ -26,7 +26,7 @@ pub fn JobResultView(JobResultViewProps { job }: &JobResultViewProps) -> Html {
     let time_format = format_description!("[hour]:[minute]");
     match &job.status {
         JobStatus::Waiting => html! { <span>{"Error!"}</span> },
-        JobStatus::Done { runtime, result } => {
+        JobStatus::Done { runtime } => {
             let algs: Vec<_> = if let JobConfig::Profiling(c) = &job.config {
                 c.algorithms
                     .iter()
@@ -46,9 +46,9 @@ pub fn JobResultView(JobResultViewProps { job }: &JobResultViewProps) -> Html {
             } else {
                 panic!("Can only display Profiling Jobs here!");
             };
-            let result = match result {
-                JobResult::Exp(r) => r,
-                JobResult::Compile(_) => {
+            let result = match &job.result {
+                Some(JobResult::Exp(r)) => r,
+                Some(JobResult::Compile(_)) | None => {
                     panic!("Cannot display compile results in job results view!")
                 }
             };

@@ -4,7 +4,9 @@ use yew::prelude::*;
 use yewdux::prelude::*;
 
 use common::commit::CompilationStatus;
-use common::data_types::{ClientMessage, JobConfig, JobResult, JobStatus, ServerMessage};
+use common::data_types::{
+    ClientMessage, JobConfig, JobResult, JobStatus, PerfReportConfig, ServerMessage,
+};
 use futures::{SinkExt, StreamExt};
 use gloo_console::log;
 use gloo_net::websocket::{futures::WebSocket, Message};
@@ -109,7 +111,7 @@ pub fn Websocket() -> Html {
                                 });
                                 queue_state_dispatch.reduce_mut(|queue_state| {
                                     if queue_state.queue.pop_front().is_none() {
-                                        log!("Error: Queue out of sync!");
+                                        log!("Error: Queue out of sync! Reload the page?");
                                     }
                                 });
                             }
@@ -117,14 +119,14 @@ pub fn Websocket() -> Html {
                                 commit_dispatch.reduce_mut(|commit_store| {
                                     let commit = commit_store.get_by_id_mut(&pr_conf.id);
                                     if let Some(mut commit) = commit {
-                                        if let JobStatus::Done { result, .. } = finished_job.status
-                                        {
-                                            commit.perf_report_running = if result.is_ok() {
-                                                PerfReportStatus::Successful
-                                            } else {
-                                                PerfReportStatus::Failed
-                                            };
-                                            commit.report = Some(result);
+                                        if let JobStatus::Done { .. } = finished_job.status {
+                                            commit.perf_report_running =
+                                                if finished_job.result.is_some() {
+                                                    PerfReportStatus::Successful
+                                                } else {
+                                                    PerfReportStatus::Failed
+                                                };
+                                            commit.report = finished_job.result;
                                         } else {
                                             log!("Error: Got an unfinished job in the websocket.");
                                         }
@@ -135,8 +137,8 @@ pub fn Websocket() -> Html {
                                 commit_dispatch.reduce_mut(|commit_store| {
                                     let commit = commit_store.get_by_id_mut(id);
                                     if let Some(mut commit) = commit {
-                                        if let JobStatus::Done { result, .. } = finished_job.status {
-                                            if let JobResult::Compile(r) = result {
+                                        if let JobStatus::Done { .. } = finished_job.status {
+                                            if let Some(JobResult::Compile(r)) = finished_job.result {
                                                 match r {
                                                     Ok(msg) => commit.compilation = CompilationStatus::Successful(msg),
                                                     Err(e) => commit.compilation = CompilationStatus::Failed(e),
@@ -151,6 +153,25 @@ pub fn Websocket() -> Html {
                                 });
                             }
                         },
+                        ServerMessage::PartialReport(job_id, report) => {
+                            queue_state_dispatch.reduce_mut(|queue_state| {
+                                if let Some(mut job) = queue_state.queue.iter_mut().find(|j| j.id == job_id) {
+                                    let res = Some(JobResult::Exp(Ok(report)));
+                                    job.result = res.clone();
+                                    if let JobConfig::PerfReport(PerfReportConfig { id, ..}) =  job.config {
+                                        commit_dispatch.reduce_mut(|commit_state| {
+                                            if let Some(commit) = commit_state.get_by_id_mut(&id) {
+                                                commit.report = res;
+                                            } else {
+                                                log!("Error: Commits out of sync with jobs!");
+                                            }
+                                        });
+                                    }
+                                } else {
+                                    log!("Error: Queue out of sync! Partial job result's id not in queue. Reload the page?");
+                                }
+                            });
+                        }
                     }
                 }
                 //log!("Done!");

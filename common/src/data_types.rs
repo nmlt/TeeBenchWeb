@@ -153,6 +153,7 @@ impl Finding {
     }
 }
 
+// TODO Might not be needed in this form anymore.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum JobResult {
     Exp(Result<Report, TeeBenchWebError>),
@@ -172,9 +173,9 @@ impl JobResult {
 pub enum JobStatus {
     #[default]
     Waiting,
+    // TODO Running ;)
     Done {
         runtime: Duration,
-        result: JobResult,
     },
 }
 
@@ -184,6 +185,7 @@ pub type JobIdType = uuid::Uuid;
 pub struct Job {
     pub config: JobConfig,
     pub submitted: OffsetDateTime,
+    pub result: Option<JobResult>,
     pub status: JobStatus,
     pub id: JobIdType,
 }
@@ -193,6 +195,7 @@ impl Default for Job {
         Self {
             config: JobConfig::default(),
             submitted: OffsetDateTime::now_utc(),
+            result: None,
             status: JobStatus::default(),
             id: uuid::Uuid::new_v4(),
         }
@@ -220,6 +223,7 @@ pub enum ServerMessage {
     /// Backend has finished the current top queue item and wants the frontend to remove it from the queue.
     /// Also the frontend should add the attached JobResult to that Job.
     RemoveQueueItem(Job),
+    PartialReport(JobIdType, Report),
 }
 
 /// Name of the algorithm for Teebench that is always replaced with the current commit's code.

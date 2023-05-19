@@ -80,21 +80,7 @@ pub struct QueueState {
 
 impl QueueState {
     pub fn new(jobs: Vec<Job>) -> Self {
-        let queue: VecDeque<Job> = jobs
-            .into_iter()
-            .map(|j| {
-                if let Job {
-                    config: JobConfig::Profiling(_),
-                    ..
-                } = j
-                {
-                    return Some(j);
-                }
-                // Nothing to display, other kind of jobs are shown in the Operator (commits.rs) view.
-                None
-            })
-            .flatten()
-            .collect();
+        let queue: VecDeque<Job> = jobs.into();
         QueueState { queue }
     }
 }

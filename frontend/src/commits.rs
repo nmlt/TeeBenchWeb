@@ -15,6 +15,7 @@ use crate::js_bindings::hljs_highlight;
 use crate::modal::Modal;
 use crate::modal::ModalContent;
 use crate::navigation::Navigation;
+use crate::queue::QueueState;
 
 use common::commit::{
     Commit, CommitIdType, CommitState, CompilationStatus, Operator, PerfReportStatus,
@@ -272,6 +273,7 @@ fn UploadCommit() -> Html {
 fn CommitsList() -> Html {
     let (_content_store, content_dispatch) = use_store::<ModalContent>();
     let (commit_store, commit_dispatch) = use_store::<CommitState>();
+    let queue_dispatch = Dispatch::<QueueState>::new();
 
     let current_date = commit_store.get_latest().map(|c| c.get_date());
     let list_items_html = commit_store.0.iter().rev().map(|commit| {
@@ -352,26 +354,33 @@ fn CommitsList() -> Html {
                 if let CompilationStatus::Successful(_) = commit.compilation {
                     let onclick = {
                         let commit_dispatch = commit_dispatch.clone();
+                        let queue_dispatch = queue_dispatch.clone();
                         let id = commit.id;
                         let baseline = commit.baseline;
-                        commit_dispatch.reduce_mut_future_callback(move |s| Box::pin(async move {
-                            // TODO Passing fit in here and disregarding _exceed?
-                            let (fit, _exceed) = PerfReportConfig::for_throughput(id, baseline);
-                            let perf_report_job = Job::new(JobConfig::PerfReport(fit), OffsetDateTime::now_utc());
-                            let _resp = Request::get("/api/job")
-                                .method(Method::POST)
-                                .json(&perf_report_job)
-                                .unwrap()
-                                .send()
-                                .await
-                                .expect("Server didn't respond. Is it running?");
-                            for c in s.0.iter_mut() {
-                                if c.id == id {
-                                    c.perf_report_running = PerfReportStatus::Running(perf_report_job.id);
-                                    break;
+                        commit_dispatch.reduce_mut_future_callback(move |store| {
+                            let queue_dispatch = queue_dispatch.clone();
+                            Box::pin(async move {
+                                // TODO Passing fit in here and disregarding _exceed?
+                                let (fit, _exceed) = PerfReportConfig::for_throughput(id, baseline);
+                                let perf_report_job = Job::new(JobConfig::PerfReport(fit), OffsetDateTime::now_utc());
+                                let _resp = Request::get("/api/job")
+                                    .method(Method::POST)
+                                    .json(&perf_report_job)
+                                    .unwrap()
+                                    .send()
+                                    .await
+                                    .expect("Server didn't respond. Is it running?");
+                                for c in store.0.iter_mut() {
+                                    if c.id == id {
+                                        c.perf_report_running = PerfReportStatus::Running(perf_report_job.id);
+                                        break;
+                                    }
                                 }
-                            }
-                        }))
+                                queue_dispatch.reduce_mut(|queue| {
+                                    queue.queue.push_back(perf_report_job);
+                                });
+                            })
+                        })
                     };
                     html! { <button class="btn btn-info" {onclick}>{"Generate Report"}</button> }
                 } else {
