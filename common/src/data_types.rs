@@ -22,7 +22,8 @@ pub const CPU_PHYSICAL_CORES: u8 = 4;
 // pub const L3_SIZE_KB: i32        = 16384;
 pub const EPC_SIZE_KB: u32 = 262144; // 256 MB
 
-// TODO Remove this error type. Let's just use anyhow::Result.
+// I need my own error type as anyhow::Error does not implement serde's traits.
+// TODO Maybe add a function to quickly convert an anyhow error to mine.
 /// Error type for Experiments.
 #[derive(Error, Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub enum TeeBenchWebError {
@@ -39,9 +40,11 @@ pub enum TeeBenchWebError {
     Unknown,
 }
 
-pub type SingleRunResult = HashMap<String, String>;
-
+pub type SingleRunResult = Result<HashMap<String, String>, TeeBenchWebError>;
 pub type ExperimentChartResult = Vec<(TeebenchArgs, SingleRunResult)>;
+
+pub type UnwrapedSingleRunResult = HashMap<String, String>;
+pub type UnwrapedExperimentResult = Vec<(TeebenchArgs, UnwrapedSingleRunResult)>;
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 // TODO To make ProfilingConfiguration an enum depending on ExperimentType is a bad idea maybe, because then we'd have to match in every dispatch callback modifying the config. So instead we now use the JobConfig enum to accertain which kind of job created this report. That is actually not a problem, because I want to switch the yew form to another struct (that would also be local to the frontend). Only after sending the form off it would become a ProfilingConfiguration.
@@ -66,36 +69,55 @@ impl ExperimentChart {
         platform: Platform,
         dataset: Dataset,
         algorithm: Algorithm,
-    ) -> Vec<T>
+        threads: Option<u8>,
+        x: Option<u32>,
+        y: Option<u32>,
+    ) -> anyhow::Result<Vec<T>>
     where
         <T as FromStr>::Err: std::fmt::Debug,
     {
-        return self
+        let filtered_and_parsed = self
             .results
             .iter()
             .filter(|t| {
-                t.0.app_name == platform && t.0.dataset == dataset && t.0.algorithm == algorithm
+                t.0.app_name == platform
+                    && t.0.dataset == dataset
+                    && t.0.algorithm == algorithm
+                    && (threads.is_none() || (threads.is_some() && t.0.threads == threads.unwrap()))
+                    && (x.is_none() || (x.is_some() && t.0.x == x))
+                    && (y.is_none() || (y.is_some() && t.0.y == y))
             })
-            .map(|t| t.1.get(field).unwrap())
-            .map(|t| t.parse::<T>().unwrap())
-            .collect::<Vec<T>>();
+            .map(|t| {
+                t.1.as_ref()
+                    .map_err(|e| anyhow::anyhow!("{e}"))
+                    .and_then(|m| {
+                        m.get(field)
+                            .ok_or_else(|| anyhow::anyhow!("No field {field}"))
+                    })
+                    .and_then(|t| {
+                        t.parse::<T>()
+                            .map_err(|_| anyhow::anyhow!("Failed to parse value as number"))
+                    })
+            })
+            .collect::<anyhow::Result<Vec<T>>>();
+        filtered_and_parsed
     }
 
-    pub fn get_results(
-        &mut self,
-        platform: Platform,
-        dataset: Dataset,
-        algorithm: Algorithm,
-    ) -> ExperimentChartResult {
-        return self
-            .results
-            .iter()
-            .filter(|t| {
-                t.0.app_name == platform && t.0.dataset == dataset && t.0.algorithm == algorithm
-            })
-            .cloned()
-            .collect();
-    }
+    // pub fn get_results(
+    //     &mut self,
+    //     platform: Platform,
+    //     dataset: Dataset,
+    //     algorithm: Algorithm,
+    // ) -> ExperimentChartResult {
+    //     return self
+    //         .results
+    //         .iter()
+    //         .filter(|t| {
+    //             t.0.app_name == platform && t.0.dataset == dataset && t.0.algorithm == algorithm
+    //         })
+    //         .cloned()
+    //         .collect();
+    // }
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -392,6 +414,9 @@ impl Dataset {
             "cache-exceed" | "Cache Exceed" | "CacheExceed" => Ok(Dataset::CacheExceed),
             _ => Err("Dataset can only be Cache Fit or Cache Exceed!"), //panic!("Dataset can only be Cache Fit or Cache Exceed!"),
         }
+    }
+    pub fn new_custom(x: u32, y: u32) -> Self {
+        Self::CustomSize { x, y }
     }
 }
 
@@ -1093,7 +1118,7 @@ mod tests {
         };
         report_struct.charts.push(ExperimentChart::new(
             JobConfig::default(),
-            vec![(TeebenchArgs::default(), HashMap::new())],
+            vec![(TeebenchArgs::default(), Ok(HashMap::new()))],
             vec![],
         ));
         let _report_json = serde_json::to_string(&report_struct).unwrap();

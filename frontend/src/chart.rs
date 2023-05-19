@@ -1,3 +1,4 @@
+use anyhow::{bail, Result};
 use gloo_console::log;
 use rand::seq::SliceRandom;
 use serde_json::json;
@@ -11,7 +12,7 @@ use std::collections::HashMap;
 use common::commit::CommitState;
 use common::data_types::{
     Algorithm, Dataset, ExperimentChart, ExperimentChartResult, ExperimentType, JobConfig,
-    Measurement, Parameter, Platform, SingleRunResult, TeebenchArgs,
+    Measurement, Parameter, PerfReportConfig, Platform, SingleRunResult, TeebenchArgs,
 };
 
 use crate::js_bindings::MyChart;
@@ -55,22 +56,58 @@ fn get_measurement_from_single_result(
     measurement: &Measurement,
 ) -> String {
     match measurement {
-        Measurement::TotalEpcPaging => single_run["totalEWB"].clone(),
-        Measurement::Throughput => single_run["throughput"].clone(),
+        Measurement::TotalEpcPaging => single_run.as_ref().map(|m| m["totalEWB"].clone()).unwrap(),
+        Measurement::Throughput => single_run
+            .as_ref()
+            .map(|m| m["throughput"].clone())
+            .unwrap(),
         Measurement::ThroughputAndTotalEPCPaging => panic!("Should not ask for a single value"),
-        Measurement::Phase1Cycles => single_run["phase1Cycles"].clone(),
-        Measurement::Phase2Cycles => single_run["phase2Cycles"].clone(),
-        Measurement::TotalCycles => single_run["cyclesPerTuple"].clone(),
-        Measurement::TotalL2HitRatio => single_run["totalL2HitRatio"].clone(),
-        Measurement::TotalL3HitRatio => single_run["totalL3HitRatio"].clone(),
-        Measurement::TotalL2CacheMisses => single_run["totalL2CacheMisses"].clone(),
-        Measurement::TotalL3CacheMisses => single_run["totalL3CacheMisses"].clone(),
-        Measurement::IPC => single_run["totalIPC"].clone(),
-        Measurement::IR => single_run["totalIR"].clone(),
-        Measurement::TotalVoluntaryCS => single_run["totalVoluntaryCS"].clone(),
-        Measurement::TotalInvoluntaryCS => single_run["totalInvoluntaryCS"].clone(),
-        Measurement::TotalUserCpuTime => single_run["totalUserCpuTime"].clone(),
-        Measurement::TotalSystemCpuTime => single_run["totalSystemCpuTime"].clone(),
+        Measurement::Phase1Cycles => single_run
+            .as_ref()
+            .map(|m| m["phase1Cycles"].clone())
+            .unwrap(),
+        Measurement::Phase2Cycles => single_run
+            .as_ref()
+            .map(|m| m["phase2Cycles"].clone())
+            .unwrap(),
+        Measurement::TotalCycles => single_run
+            .as_ref()
+            .map(|m| m["cyclesPerTuple"].clone())
+            .unwrap(),
+        Measurement::TotalL2HitRatio => single_run
+            .as_ref()
+            .map(|m| m["totalL2HitRatio"].clone())
+            .unwrap(),
+        Measurement::TotalL3HitRatio => single_run
+            .as_ref()
+            .map(|m| m["totalL3HitRatio"].clone())
+            .unwrap(),
+        Measurement::TotalL2CacheMisses => single_run
+            .as_ref()
+            .map(|m| m["totalL2CacheMisses"].clone())
+            .unwrap(),
+        Measurement::TotalL3CacheMisses => single_run
+            .as_ref()
+            .map(|m| m["totalL3CacheMisses"].clone())
+            .unwrap(),
+        Measurement::IPC => single_run.as_ref().map(|m| m["totalIPC"].clone()).unwrap(),
+        Measurement::IR => single_run.as_ref().map(|m| m["totalIR"].clone()).unwrap(),
+        Measurement::TotalVoluntaryCS => single_run
+            .as_ref()
+            .map(|m| m["totalVoluntaryCS"].clone())
+            .unwrap(),
+        Measurement::TotalInvoluntaryCS => single_run
+            .as_ref()
+            .map(|m| m["totalInvoluntaryCS"].clone())
+            .unwrap(),
+        Measurement::TotalUserCpuTime => single_run
+            .as_ref()
+            .map(|m| m["totalUserCpuTime"].clone())
+            .unwrap(),
+        Measurement::TotalSystemCpuTime => single_run
+            .as_ref()
+            .map(|m| m["totalSystemCpuTime"].clone())
+            .unwrap(),
         Measurement::TwoPhasesCycles => panic!("Should not ask for a single value"),
     }
 }
@@ -86,10 +123,10 @@ fn create_data_hashmap(
             .entry((args.algorithm, args.app_name, args.dataset))
             .or_insert(vec![]);
         let p = match parameter {
-            Parameter::Threads => result["threads"].clone(),
+            Parameter::Threads => result.as_ref().map(|m| m["threads"].clone()).unwrap(),
             Parameter::DataSkew => args.threads.to_string(),
             Parameter::JoinSelectivity => args.selectivity.to_string(),
-            Parameter::Algorithms => result["algorithm"].clone(),
+            Parameter::Algorithms => result.as_ref().map(|m| m["algorithm"].clone()).unwrap(),
             Parameter::OuterTableSize => args.x.unwrap().to_string(),
         };
         let m = get_measurement_from_single_result(result, &measurement);
@@ -257,6 +294,227 @@ pub fn predefined_epc_paging_exp(
     (chart_type, labels, datasets, plugins, scales)
 }
 
+fn prepare_perf_report_chart(
+    commit_store: std::rc::Rc<CommitState>,
+    exp_chart: ExperimentChart,
+) -> Result<(
+    &'static str,
+    serde_json::Value,
+    serde_json::Value,
+    serde_json::Value,
+    serde_json::Value,
+)> {
+    let JobConfig::PerfReport(ref pr_conf) = exp_chart.config else {
+        bail!("Wrong JobConfig variant passed to PerfReport function");
+    };
+
+    let chart_type;
+    let labels;
+    let datasets;
+    let plugins;
+    let scales;
+
+    let mut alg_titles = vec![];
+    alg_titles.push(
+        commit_store
+            .get_by_id(&pr_conf.id)
+            .expect("Performance Report Config has a nonexistent commit id!")
+            .title
+            .clone(),
+    );
+    if let common::data_types::Algorithm::Commit(ref id) = pr_conf.baseline {
+        alg_titles.push(
+            commit_store
+                .get_by_id(id)
+                .expect("Performance Report Config has a nonexistent commit id!")
+                .title
+                .clone(),
+        );
+    } else {
+        alg_titles.push(pr_conf.baseline.to_string());
+    }
+    match pr_conf.exp_type {
+        ExperimentType::Throughput => {
+            let mut alg_data = vec![];
+            let native = exp_chart
+                .results
+                .iter()
+                .find(|&tuple| {
+                    tuple.0
+                        == TeebenchArgs::for_throughput(
+                            Algorithm::Commit(pr_conf.id),
+                            Platform::Native,
+                            pr_conf.dataset,
+                        )
+                })
+                .unwrap()
+                .1
+                .clone();
+
+            let native = match native {
+                Ok(map) => map["throughput"].parse().unwrap(),
+                Err(e) => bail!("Error parsing chart: {e}"),
+            };
+            let sgx = exp_chart
+                .results
+                .iter()
+                .find(|&tuple| {
+                    tuple.0
+                        == TeebenchArgs::for_throughput(
+                            Algorithm::Commit(pr_conf.id),
+                            Platform::Sgx,
+                            pr_conf.dataset,
+                        )
+                })
+                .unwrap()
+                .1
+                .clone();
+            let sgx = match sgx {
+                Ok(map) => map["throughput"].parse().unwrap(),
+                Err(e) => bail!("Error parsing chart: {e}"),
+            };
+            alg_data.push(vec![native, sgx]);
+            alg_data.push({
+                let native = exp_chart
+                    .results
+                    .iter()
+                    .find(|&tuple| {
+                        tuple.0
+                            == TeebenchArgs::for_throughput(
+                                pr_conf.baseline,
+                                Platform::Native,
+                                pr_conf.dataset,
+                            )
+                    })
+                    .unwrap()
+                    .1
+                    .clone();
+                let native = match native {
+                    Ok(map) => map["throughput"].parse().unwrap(),
+                    Err(e) => bail!("Error parsing chart: {e}"),
+                };
+                let sgx: f64 = exp_chart
+                    .get_result_values(
+                        "throughput",
+                        Platform::Sgx,
+                        pr_conf.dataset,
+                        pr_conf.baseline,
+                        None,
+                        None,
+                        None,
+                    )
+                    .unwrap()
+                    .into_iter()
+                    .next()
+                    .unwrap();
+                vec![native, sgx]
+            });
+            (chart_type, labels, datasets, plugins, scales) =
+                predefined_throughput_exp(alg_titles, alg_data, pr_conf.dataset);
+        }
+        ExperimentType::Scalability => {
+            let mut alg_data = vec![];
+            alg_data.push({
+                let mut res = vec![];
+                for threads in 1..=8 {
+                    res.push(
+                        exp_chart
+                            .get_result_values(
+                                "throughput",
+                                Platform::Sgx,
+                                pr_conf.dataset,
+                                Algorithm::Commit(pr_conf.id),
+                                Some(threads),
+                                None,
+                                None,
+                            )
+                            .unwrap()
+                            .into_iter()
+                            .next()
+                            .unwrap(),
+                    );
+                }
+                res
+            });
+            alg_data.push({
+                let mut res = vec![];
+                for threads in 1..=8 {
+                    res.push(
+                        exp_chart
+                            .get_result_values(
+                                "throughput",
+                                Platform::Sgx,
+                                pr_conf.dataset,
+                                pr_conf.baseline,
+                                Some(threads),
+                                None,
+                                None,
+                            )
+                            .unwrap()
+                            .into_iter()
+                            .next()
+                            .unwrap(),
+                    );
+                }
+                res
+            });
+            (chart_type, labels, datasets, plugins, scales) =
+                predefined_scalability_exp(alg_titles, alg_data, pr_conf.dataset);
+        }
+        ExperimentType::EpcPaging => {
+            let alg_title = alg_titles[1].clone();
+            let mut alg_data = vec![];
+            let mut alg_data2 = vec![];
+            // 128 MB = 16_777_216
+            let y_range: [u32; 1] = [128];
+            // x (Relation R) starts at 8 MB, stepping each time 8 MB = 1_048_576
+            log!(format!("exp chart results: {:#?}", exp_chart.results));
+            for (x, &y) in (8..128).step_by(8).zip(y_range.iter().cycle()) {
+                log!(format!(
+                    "Searching for data: baseline: {:?} x {}, y {} ",
+                    pr_conf.baseline, x, y
+                ));
+                let d1 = exp_chart
+                    .get_result_values(
+                        "throughput",
+                        Platform::Sgx,
+                        Dataset::new_custom(x, y),
+                        pr_conf.baseline,
+                        None,
+                        Some(x),
+                        Some(y),
+                    )
+                    .unwrap()
+                    .into_iter()
+                    .next()
+                    .unwrap();
+                let d2 = exp_chart
+                    .get_result_values(
+                        "totalEWB",
+                        Platform::Sgx,
+                        Dataset::new_custom(x, y),
+                        pr_conf.baseline,
+                        None,
+                        Some(x),
+                        Some(y),
+                    )
+                    .unwrap()
+                    .into_iter()
+                    .next()
+                    .unwrap();
+                alg_data.push(d1);
+                alg_data2.push(d2);
+            }
+            (chart_type, labels, datasets, plugins, scales) =
+                predefined_epc_paging_exp(alg_title, alg_data, alg_data2);
+        }
+        ExperimentType::Custom => {
+            unreachable!();
+        }
+    }
+    Ok((chart_type, labels, datasets, plugins, scales))
+}
+
 #[derive(Debug, Clone, PartialEq, Properties)]
 pub struct ChartProps {
     pub exp_chart: ExperimentChart,
@@ -294,7 +552,7 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                 chart_type = "bar";
                                 heading = String::from("EPC Paging with varying ");
                                 y_axis_text = "EPC Misses";
-                            } // TODO Not actually supported yet.
+                            }
                             Measurement::Throughput => {
                                 chart_type = "line";
                                 heading = String::from("Throughput with varying ");
@@ -769,192 +1027,12 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                         todo!();
                     }
                 },
-                JobConfig::PerfReport(pr_conf) => {
-                    let mut alg_titles = vec![];
-                    alg_titles.push(
-                        commit_store
-                            .get_by_id(&pr_conf.id)
-                            .expect("Performance Report Config has a nonexistent commit id!")
-                            .title
-                            .clone(),
-                    );
-                    if let common::data_types::Algorithm::Commit(ref id) = pr_conf.baseline {
-                        alg_titles.push(
-                            commit_store
-                                .get_by_id(id)
-                                .expect("Performance Report Config has a nonexistent commit id!")
-                                .title
-                                .clone(),
-                        );
-                    } else {
-                        alg_titles.push(pr_conf.baseline.to_string());
-                    }
-                    match pr_conf.exp_type {
-                        ExperimentType::Throughput => {
-                            let mut alg_data = vec![];
-                            alg_data.push({
-                                let native = exp_chart
-                                    .results
-                                    .iter()
-                                    .find(|&tuple| {
-                                        tuple.0
-                                            == TeebenchArgs::for_throughput(
-                                                Algorithm::Commit(pr_conf.id),
-                                                Platform::Native,
-                                                pr_conf.dataset,
-                                            )
-                                    })
-                                    .unwrap()
-                                    .1["throughput"]
-                                    .parse()
-                                    .unwrap();
-                                let sgx = exp_chart
-                                    .results
-                                    .iter()
-                                    .find(|&tuple| {
-                                        tuple.0
-                                            == TeebenchArgs::for_throughput(
-                                                Algorithm::Commit(pr_conf.id),
-                                                Platform::Sgx,
-                                                pr_conf.dataset,
-                                            )
-                                    })
-                                    .unwrap()
-                                    .1["throughput"]
-                                    .parse()
-                                    .unwrap();
-                                vec![native, sgx]
-                            });
-                            alg_data.push({
-                                let native = exp_chart
-                                    .results
-                                    .iter()
-                                    .find(|&tuple| {
-                                        tuple.0
-                                            == TeebenchArgs::for_throughput(
-                                                pr_conf.baseline,
-                                                Platform::Native,
-                                                pr_conf.dataset,
-                                            )
-                                    })
-                                    .unwrap()
-                                    .1["throughput"]
-                                    .parse()
-                                    .unwrap();
-                                let sgx = exp_chart
-                                    .results
-                                    .iter()
-                                    .find(|&tuple| {
-                                        tuple.0
-                                            == TeebenchArgs::for_throughput(
-                                                pr_conf.baseline,
-                                                Platform::Sgx,
-                                                pr_conf.dataset,
-                                            )
-                                    })
-                                    .unwrap()
-                                    .1["throughput"]
-                                    .parse()
-                                    .unwrap();
-                                vec![native, sgx]
-                            });
-                            (chart_type, labels, datasets, plugins, scales) =
-                                predefined_throughput_exp(alg_titles, alg_data, pr_conf.dataset);
-                        }
-                        ExperimentType::Scalability => {
-                            let mut alg_data = vec![];
-                            alg_data.push({
-                                let mut res = vec![];
-                                for threads in 1..=8 {
-                                    res.push(
-                                        exp_chart
-                                            .results
-                                            .iter()
-                                            .find(|&tuple| {
-                                                tuple.0
-                                                    == TeebenchArgs::for_scalability(
-                                                        Algorithm::Commit(pr_conf.id),
-                                                        pr_conf.dataset,
-                                                        threads,
-                                                    )
-                                            })
-                                            .unwrap()
-                                            .1["throughput"]
-                                            .parse()
-                                            .unwrap(),
-                                    );
-                                }
-                                res
-                            });
-                            alg_data.push({
-                                let mut res = vec![];
-                                for threads in 1..=8 {
-                                    res.push(
-                                        exp_chart
-                                            .results
-                                            .iter()
-                                            .find(|&tuple| {
-                                                tuple.0
-                                                    == TeebenchArgs::for_scalability(
-                                                        pr_conf.baseline,
-                                                        pr_conf.dataset,
-                                                        threads,
-                                                    )
-                                            })
-                                            .unwrap()
-                                            .1["throughput"]
-                                            .parse()
-                                            .unwrap(),
-                                    );
-                                }
-                                res
-                            });
-                            (chart_type, labels, datasets, plugins, scales) =
-                                predefined_scalability_exp(alg_titles, alg_data, pr_conf.dataset);
-                        }
-                        ExperimentType::EpcPaging => {
-                            let alg_title = alg_titles[1].clone();
-                            let mut alg_data = vec![];
-                            let mut alg_data2 = vec![];
-                            // 128 MB = 16_777_216
-                            let y_range: [u32; 1] = [128];
-                            // x (Relation R) starts at 8 MB, stepping each time 8 MB = 1_048_576
-                            log!(format!("exp chart results: {:#?}", exp_chart.results));
-                            for (x, y) in (8..128).step_by(8).zip(y_range.iter().cycle()) {
-                                log!(format!(
-                                    "Searching for data: baseline: {:?} x {}, y {} ",
-                                    pr_conf.baseline, x, y
-                                ));
-                                let d1_search =
-                                    TeebenchArgs::for_epc_paging(pr_conf.baseline, x, *y);
-                                log!(format!("Comparing tba to {d1_search:#?}"));
-                                let d1 = exp_chart
-                                    .results
-                                    .iter()
-                                    .find(|&tuple| tuple.0 == d1_search)
-                                    .unwrap()
-                                    .1["throughput"]
-                                    .parse()
-                                    .unwrap();
-                                let d2 = exp_chart
-                                    .results
-                                    .iter()
-                                    .find(|&tuple| {
-                                        tuple.0
-                                            == TeebenchArgs::for_epc_paging(pr_conf.baseline, x, *y)
-                                    })
-                                    .unwrap();
-                                let d2 = d2.1["totalEWB"].parse().unwrap();
-                                alg_data.push(d1);
-                                alg_data2.push(d2);
-                            }
-                            (chart_type, labels, datasets, plugins, scales) =
-                                predefined_epc_paging_exp(alg_title, alg_data, alg_data2);
-                        }
-                        ExperimentType::Custom => {
-                            unreachable!();
-                        }
-                    }
+                JobConfig::PerfReport(_) => {
+                    (chart_type, labels, datasets, plugins, scales) =
+                        match prepare_perf_report_chart(commit_store, exp_chart) {
+                            Ok(tuple) => tuple,
+                            Err(e) => panic!("Failed to create perf report chart: {e}"),
+                        };
                 }
                 JobConfig::Compile(_) => panic!("Not allowed here!"),
             }

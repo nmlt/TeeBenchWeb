@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 common = { path="../common" }
 
+anyhow = "1"
 time = { version = "0.3", features = ["serde-human-readable", "macros", "wasm-bindgen"] }
 yew = { git = "https://github.com/yewstack/yew/", features = ["csr"] }
 yew-router = { git = "https://github.com/yewstack/yew.git" }

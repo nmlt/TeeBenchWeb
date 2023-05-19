@@ -1,28 +1,35 @@
+use anyhow::{bail, Result};
 use common::data_types::{
-    Dataset, ExperimentChartResult, ExperimentType, FindingStyle, JobConfig, Measurement,
-    Parameter, Platform, Report, CPU_PHYSICAL_CORES,
+    Dataset, ExperimentType, FindingStyle, JobConfig, Measurement, Parameter, Platform, Report,
+    UnwrapedExperimentResult, CPU_PHYSICAL_CORES,
 };
 use tracing::instrument;
 
 #[instrument]
-pub fn enrich_report_with_findings(jr: &mut Report) {
+pub fn enrich_report_with_findings(jr: &mut Report) -> Result<()> {
     // 1. iterate over each experiment chart and enrich it with findings
     for ex in &mut jr.charts {
+        if ex.results.iter().all(|res| res.1.is_ok()) {
+            bail!("Some results are errors!");
+        };
+        let results: UnwrapedExperimentResult = ex
+            .results
+            .iter()
+            .map(|res| (res.0.clone(), res.1.clone().unwrap()))
+            .collect();
         match &ex.config {
             JobConfig::Profiling(c) => {
                 match c.measurement {
                     Measurement::Throughput => {
                         match c.parameter {
                             Parameter::Threads => {
-                                let max_threads = ex
-                                    .results
+                                let max_threads = results
                                     .iter()
                                     .map(|(_, a)| a.get("threads").unwrap().parse::<u8>().unwrap())
                                     .max()
                                     .unwrap();
 
-                                let max_result = ex
-                                    .results
+                                let max_result = results
                                     .iter()
                                     .filter(|t| {
                                         t.0.app_name == Platform::Sgx
@@ -95,8 +102,7 @@ pub fn enrich_report_with_findings(jr: &mut Report) {
 
                                 for a in c.algorithms.iter() {
                                     // find max throughput
-                                    let ht_results: ExperimentChartResult = ex
-                                        .results
+                                    let ht_results: UnwrapedExperimentResult = results
                                         .iter()
                                         .filter(|t| {
                                             t.0.app_name == Platform::Sgx
@@ -108,10 +114,9 @@ pub fn enrich_report_with_findings(jr: &mut Report) {
                                                 > CPU_PHYSICAL_CORES
                                         })
                                         .map(|a| a.clone())
-                                        .collect::<ExperimentChartResult>();
+                                        .collect();
 
-                                    let non_ht_results: ExperimentChartResult = ex
-                                        .results
+                                    let non_ht_results: UnwrapedExperimentResult = results
                                         .iter()
                                         .filter(|t| {
                                             t.0.app_name == Platform::Sgx
@@ -123,7 +128,7 @@ pub fn enrich_report_with_findings(jr: &mut Report) {
                                                 <= CPU_PHYSICAL_CORES
                                         })
                                         .map(|a| a.clone())
-                                        .collect::<ExperimentChartResult>();
+                                        .collect();
 
                                     let ht_max_throughput = ht_results
                                         .iter()
@@ -204,8 +209,7 @@ pub fn enrich_report_with_findings(jr: &mut Report) {
                     Measurement::TotalSystemCpuTime => {}
                     Measurement::TwoPhasesCycles => {
                         // find the fastest 1 phase
-                        let slowest_1phase = ex
-                            .results
+                        let slowest_1phase = results
                             .iter()
                             .max_by(|(_, r1), (_, r2)| {
                                 r1.get("phase1Cycles")
@@ -220,8 +224,7 @@ pub fn enrich_report_with_findings(jr: &mut Report) {
                             .unwrap()
                             .clone();
 
-                        let slowest_2phase = ex
-                            .results
+                        let slowest_2phase = results
                             .iter()
                             .max_by(|(_, r1), (_, r2)| {
                                 r1.get("phase2Cycles")
@@ -269,8 +272,7 @@ pub fn enrich_report_with_findings(jr: &mut Report) {
                             });
                         }
                         // find the fastest phase
-                        let fastest_1phase = ex
-                            .results
+                        let fastest_1phase = results
                             .iter()
                             .filter(|(_, r)| {
                                 r.get("phase1Cycles")
@@ -292,8 +294,7 @@ pub fn enrich_report_with_findings(jr: &mut Report) {
                             .unwrap()
                             .clone();
 
-                        let fastest_2phase = ex
-                            .results
+                        let fastest_2phase = results
                             .iter()
                             .filter(|(_, r)| {
                                 r.get("phase2Cycles")
@@ -361,4 +362,5 @@ pub fn enrich_report_with_findings(jr: &mut Report) {
         }
     }
     // 2. add top-level findings
+    Ok(())
 }

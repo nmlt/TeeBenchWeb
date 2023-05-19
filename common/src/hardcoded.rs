@@ -406,6 +406,7 @@ pub fn predefined_commit() -> Commit {
         Report, TeebenchArgs,
     };
     use std::collections::HashMap;
+    #[rustfmt::skip]
     let report = Some(Exp(Ok(Report {
         charts: vec![
             ExperimentChart {
@@ -436,7 +437,7 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
+                        Ok(HashMap::from([
                             ("algorithm".to_string(), "RHO".to_string()),
                             ("cyclesPerTuple".to_string(), "16".to_string()),
                             ("phase2Cycles".to_string(), "28499098".to_string()),
@@ -449,7 +450,7 @@ pub fn predefined_commit() -> Commit {
                             ("phase1Cycles".to_string(), "80242162".to_string()),
                             ("phase2Time".to_string(), "0".to_string()),
                             ("matches".to_string(), "5242880".to_string()),
-                        ]),
+                        ])),
                     ),
                     (
                         TeebenchArgs {
@@ -471,11 +472,8 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
-                            (
-                                "algorithm".to_string(),
-                                "SortMergeJoin_QuickSort".to_string(),
-                            ),
+                        Ok(HashMap::from([
+                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
                             ("phase2Cycles".to_string(), "0".to_string()),
                             ("threads".to_string(), "2".to_string()),
                             ("phase2Time".to_string(), "5668".to_string()),
@@ -487,7 +485,7 @@ pub fn predefined_commit() -> Commit {
                             ("relS".to_string(), "5242880".to_string()),
                             ("phase1Cycles".to_string(), "0".to_string()),
                             ("cyclesPerTuple".to_string(), "223".to_string()),
-                        ]),
+                        ])),
                     ),
                     (
                         TeebenchArgs {
@@ -509,7 +507,7 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
+                        Ok(HashMap::from([
                             ("algorithm".to_string(), "RHO".to_string()),
                             ("throughput".to_string(), "38.0344".to_string()),
                             ("relS".to_string(), "5242880".to_string()),
@@ -522,7 +520,7 @@ pub fn predefined_commit() -> Commit {
                             ("relR".to_string(), "1310720".to_string()),
                             ("threads".to_string(), "2".to_string()),
                             ("phase1Time".to_string(), "0".to_string()),
-                        ]),
+                        ])),
                     ),
                     (
                         TeebenchArgs {
@@ -544,7 +542,7 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
+                        Ok(HashMap::from([
                             ("throughput".to_string(), "14.9952".to_string()),
                             ("phase1Cycles".to_string(), "0".to_string()),
                             ("phase2Time".to_string(), "5583".to_string()),
@@ -554,13 +552,10 @@ pub fn predefined_commit() -> Commit {
                             ("relR".to_string(), "1310720".to_string()),
                             ("cyclesPerTuple".to_string(), "227".to_string()),
                             ("phase1Time".to_string(), "431463".to_string()),
-                            (
-                                "algorithm".to_string(),
-                                "SortMergeJoin_QuickSort".to_string(),
-                            ),
+                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
                             ("totalTime".to_string(), "437046".to_string()),
                             ("relS".to_string(), "5242880".to_string()),
-                        ]),
+                        ])),
                     ),
                 ],
                 findings: vec![],
@@ -593,7 +588,7 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
+                        Ok(HashMap::from([
                             ("totalTime".to_string(), "2468680".to_string()),
                             ("threads".to_string(), "2".to_string()),
                             ("matches".to_string(), "52428800".to_string()),
@@ -606,7 +601,7 @@ pub fn predefined_commit() -> Commit {
                             ("phase1Cycles".to_string(), "8226046256".to_string()),
                             ("phase1Time".to_string(), "0".to_string()),
                             ("relS".to_string(), "52428800".to_string()),
-                        ]),
+                        ])),
                     ),
                     (
                         TeebenchArgs {
@@ -628,12 +623,9 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
+                        Ok(HashMap::from([
                             ("phase1Cycles".to_string(), "0".to_string()),
-                            (
-                                "algorithm".to_string(),
-                                "SortMergeJoin_QuickSort".to_string(),
-                            ),
+                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
                             ("phase2Cycles".to_string(), "0".to_string()),
                             ("phase1Time".to_string(), "4957181".to_string()),
                             ("totalTime".to_string(), "5012861".to_string()),
@@ -644,7 +636,7 @@ pub fn predefined_commit() -> Commit {
                             ("matches".to_string(), "52428800".to_string()),
                             ("phase2Time".to_string(), "55680".to_string()),
                             ("cyclesPerTuple".to_string(), "260".to_string()),
-                        ]),
+                        ])),
                     ),
                     (
                         TeebenchArgs {
@@ -666,7 +658,7 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
+                        Ok(HashMap::from([
                             ("throughput".to_string(), "12.9637".to_string()),
                             ("cyclesPerTuple".to_string(), "262".to_string()),
                             ("relS".to_string(), "52428800".to_string()),
@@ -675,14 +667,11 @@ pub fn predefined_commit() -> Commit {
                             ("matches".to_string(), "52428800".to_string()),
                             ("totalTime".to_string(), "5055358".to_string()),
                             ("phase1Cycles".to_string(), "0".to_string()),
-                            (
-                                "algorithm".to_string(),
-                                "SortMergeJoin_QuickSort".to_string(),
-                            ),
+                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
                             ("relR".to_string(), "13107200".to_string()),
                             ("phase1Time".to_string(), "4999898".to_string()),
                             ("threads".to_string(), "2".to_string()),
-                        ]),
+                        ])),
                     ),
                     (
                         TeebenchArgs {
@@ -704,7 +693,7 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
+                        Ok(HashMap::from([
                             ("cyclesPerTuple".to_string(), "14".to_string()),
                             ("phase2Time".to_string(), "0".to_string()),
                             ("relR".to_string(), "13107200".to_string()),
@@ -717,7 +706,7 @@ pub fn predefined_commit() -> Commit {
                             ("throughput".to_string(), "238.2694".to_string()),
                             ("threads".to_string(), "2".to_string()),
                             ("algorithm".to_string(), "RHO".to_string()),
-                        ]),
+                        ])),
                     ),
                 ],
                 findings: vec![],
@@ -750,7 +739,7 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
+                        Ok(HashMap::from([
                             ("throughput".to_string(), "39.6187".to_string()),
                             ("phase2Time".to_string(), "0".to_string()),
                             ("cyclesPerTuple".to_string(), "86".to_string()),
@@ -763,7 +752,7 @@ pub fn predefined_commit() -> Commit {
                             ("phase1Time".to_string(), "0".to_string()),
                             ("matches".to_string(), "5242880".to_string()),
                             ("phase2Cycles".to_string(), "33695012".to_string()),
-                        ]),
+                        ])),
                     ),
                     (
                         TeebenchArgs {
@@ -785,11 +774,8 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
-                            (
-                                "algorithm".to_string(),
-                                "SortMergeJoin_QuickSort".to_string(),
-                            ),
+                        Ok(HashMap::from([
+                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
                             ("threads".to_string(), "2".to_string()),
                             ("throughput".to_string(), "14.9850".to_string()),
                             ("relR".to_string(), "1310720".to_string()),
@@ -801,7 +787,7 @@ pub fn predefined_commit() -> Commit {
                             ("phase2Cycles".to_string(), "0".to_string()),
                             ("cyclesPerTuple".to_string(), "227".to_string()),
                             ("phase1Cycles".to_string(), "0".to_string()),
-                        ]),
+                        ])),
                     ),
                     (
                         TeebenchArgs {
@@ -823,7 +809,7 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
+                        Ok(HashMap::from([
                             ("phase2Cycles".to_string(), "0".to_string()),
                             ("cyclesPerTuple".to_string(), "227".to_string()),
                             ("phase1Time".to_string(), "431258".to_string()),
@@ -832,14 +818,11 @@ pub fn predefined_commit() -> Commit {
                             ("threads".to_string(), "3".to_string()),
                             ("phase2Time".to_string(), "5459".to_string()),
                             ("relR".to_string(), "1310720".to_string()),
-                            (
-                                "algorithm".to_string(),
-                                "SortMergeJoin_QuickSort".to_string(),
-                            ),
+                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
                             ("relS".to_string(), "5242880".to_string()),
                             ("throughput".to_string(), "15.0065".to_string()),
                             ("matches".to_string(), "5242880".to_string()),
-                        ]),
+                        ])),
                     ),
                     (
                         TeebenchArgs {
@@ -861,7 +844,7 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
+                        Ok(HashMap::from([
                             ("algorithm".to_string(), "RHO".to_string()),
                             ("relR".to_string(), "1310720".to_string()),
                             ("totalTime".to_string(), "225796".to_string()),
@@ -874,7 +857,7 @@ pub fn predefined_commit() -> Commit {
                             ("threads".to_string(), "3".to_string()),
                             ("relS".to_string(), "5242880".to_string()),
                             ("phase2Time".to_string(), "0".to_string()),
-                        ]),
+                        ])),
                     ),
                     (
                         TeebenchArgs {
@@ -896,7 +879,7 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
+                        Ok(HashMap::from([
                             ("relS".to_string(), "5242880".to_string()),
                             ("phase2Time".to_string(), "0".to_string()),
                             ("phase2Cycles".to_string(), "285763134".to_string()),
@@ -909,7 +892,7 @@ pub fn predefined_commit() -> Commit {
                             ("totalTime".to_string(), "275417".to_string()),
                             ("throughput".to_string(), "23.7952".to_string()),
                             ("matches".to_string(), "5242880".to_string()),
-                        ]),
+                        ])),
                     ),
                     (
                         TeebenchArgs {
@@ -931,7 +914,7 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
+                        Ok(HashMap::from([
                             ("relS".to_string(), "5242880".to_string()),
                             ("phase1Cycles".to_string(), "784086642".to_string()),
                             ("cyclesPerTuple".to_string(), "164".to_string()),
@@ -944,7 +927,7 @@ pub fn predefined_commit() -> Commit {
                             ("threads".to_string(), "5".to_string()),
                             ("matches".to_string(), "5242880".to_string()),
                             ("phase2Cycles".to_string(), "292418104".to_string()),
-                        ]),
+                        ])),
                     ),
                     (
                         TeebenchArgs {
@@ -966,12 +949,9 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
+                        Ok(HashMap::from([
                             ("phase2Time".to_string(), "5495".to_string()),
-                            (
-                                "algorithm".to_string(),
-                                "SortMergeJoin_QuickSort".to_string(),
-                            ),
+                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
                             ("relS".to_string(), "5242880".to_string()),
                             ("phase2Cycles".to_string(), "0".to_string()),
                             ("totalTime".to_string(), "435847".to_string()),
@@ -982,7 +962,7 @@ pub fn predefined_commit() -> Commit {
                             ("matches".to_string(), "5242880".to_string()),
                             ("relR".to_string(), "1310720".to_string()),
                             ("cyclesPerTuple".to_string(), "226".to_string()),
-                        ]),
+                        ])),
                     ),
                     (
                         TeebenchArgs {
@@ -1004,13 +984,10 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
+                        Ok(HashMap::from([
                             ("relS".to_string(), "5242880".to_string()),
                             ("cyclesPerTuple".to_string(), "227".to_string()),
-                            (
-                                "algorithm".to_string(),
-                                "SortMergeJoin_QuickSort".to_string(),
-                            ),
+                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
                             ("matches".to_string(), "5242880".to_string()),
                             ("phase2Cycles".to_string(), "0".to_string()),
                             ("threads".to_string(), "8".to_string()),
@@ -1020,7 +997,7 @@ pub fn predefined_commit() -> Commit {
                             ("phase2Time".to_string(), "5497".to_string()),
                             ("totalTime".to_string(), "436859".to_string()),
                             ("throughput".to_string(), "15.0016".to_string()),
-                        ]),
+                        ])),
                     ),
                     (
                         TeebenchArgs {
@@ -1042,15 +1019,12 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
+                        Ok(HashMap::from([
                             ("relR".to_string(), "1310720".to_string()),
                             ("throughput".to_string(), "14.9472".to_string()),
                             ("relS".to_string(), "5242880".to_string()),
                             ("matches".to_string(), "5242880".to_string()),
-                            (
-                                "algorithm".to_string(),
-                                "SortMergeJoin_QuickSort".to_string(),
-                            ),
+                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
                             ("threads".to_string(), "5".to_string()),
                             ("phase1Time".to_string(), "433048".to_string()),
                             ("cyclesPerTuple".to_string(), "227".to_string()),
@@ -1058,7 +1032,7 @@ pub fn predefined_commit() -> Commit {
                             ("phase2Time".to_string(), "5402".to_string()),
                             ("phase2Cycles".to_string(), "0".to_string()),
                             ("totalTime".to_string(), "438450".to_string()),
-                        ]),
+                        ])),
                     ),
                     (
                         TeebenchArgs {
@@ -1080,7 +1054,7 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
+                        Ok(HashMap::from([
                             ("cyclesPerTuple".to_string(), "226".to_string()),
                             ("phase2Time".to_string(), "5462".to_string()),
                             ("totalTime".to_string(), "435478".to_string()),
@@ -1089,14 +1063,11 @@ pub fn predefined_commit() -> Commit {
                             ("threads".to_string(), "1".to_string()),
                             ("phase2Cycles".to_string(), "0".to_string()),
                             ("matches".to_string(), "5242880".to_string()),
-                            (
-                                "algorithm".to_string(),
-                                "SortMergeJoin_QuickSort".to_string(),
-                            ),
+                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
                             ("phase1Time".to_string(), "430016".to_string()),
                             ("throughput".to_string(), "15.0492".to_string()),
                             ("phase1Cycles".to_string(), "0".to_string()),
-                        ]),
+                        ])),
                     ),
                     (
                         TeebenchArgs {
@@ -1118,12 +1089,9 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
+                        Ok(HashMap::from([
                             ("cyclesPerTuple".to_string(), "226".to_string()),
-                            (
-                                "algorithm".to_string(),
-                                "SortMergeJoin_QuickSort".to_string(),
-                            ),
+                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
                             ("phase1Time".to_string(), "430985".to_string()),
                             ("phase2Time".to_string(), "5406".to_string()),
                             ("totalTime".to_string(), "436391".to_string()),
@@ -1134,7 +1102,7 @@ pub fn predefined_commit() -> Commit {
                             ("relR".to_string(), "1310720".to_string()),
                             ("relS".to_string(), "5242880".to_string()),
                             ("threads".to_string(), "4".to_string()),
-                        ]),
+                        ])),
                     ),
                     (
                         TeebenchArgs {
@@ -1156,7 +1124,7 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
+                        Ok(HashMap::from([
                             ("cyclesPerTuple".to_string(), "217".to_string()),
                             ("matches".to_string(), "5242880".to_string()),
                             ("relR".to_string(), "1310720".to_string()),
@@ -1169,7 +1137,7 @@ pub fn predefined_commit() -> Commit {
                             ("threads".to_string(), "7".to_string()),
                             ("relS".to_string(), "5242880".to_string()),
                             ("phase1Cycles".to_string(), "1043157714".to_string()),
-                        ]),
+                        ])),
                     ),
                     (
                         TeebenchArgs {
@@ -1191,7 +1159,7 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
+                        Ok(HashMap::from([
                             ("phase1Time".to_string(), "0".to_string()),
                             ("cyclesPerTuple".to_string(), "989".to_string()),
                             ("relS".to_string(), "5242880".to_string()),
@@ -1204,7 +1172,7 @@ pub fn predefined_commit() -> Commit {
                             ("totalTime".to_string(), "1902337".to_string()),
                             ("phase2Cycles".to_string(), "3419103076".to_string()),
                             ("phase1Cycles".to_string(), "3063948414".to_string()),
-                        ]),
+                        ])),
                     ),
                     (
                         TeebenchArgs {
@@ -1226,7 +1194,7 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
+                        Ok(HashMap::from([
                             ("relR".to_string(), "1310720".to_string()),
                             ("phase2Cycles".to_string(), "43284636".to_string()),
                             ("phase1Time".to_string(), "0".to_string()),
@@ -1239,7 +1207,7 @@ pub fn predefined_commit() -> Commit {
                             ("phase2Time".to_string(), "0".to_string()),
                             ("throughput".to_string(), "27.7284".to_string()),
                             ("matches".to_string(), "5242880".to_string()),
-                        ]),
+                        ])),
                     ),
                     (
                         TeebenchArgs {
@@ -1261,14 +1229,11 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
+                        Ok(HashMap::from([
                             ("throughput".to_string(), "14.9652".to_string()),
                             ("phase2Time".to_string(), "5456".to_string()),
                             ("phase1Cycles".to_string(), "0".to_string()),
-                            (
-                                "algorithm".to_string(),
-                                "SortMergeJoin_QuickSort".to_string(),
-                            ),
+                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
                             ("cyclesPerTuple".to_string(), "227".to_string()),
                             ("phase1Time".to_string(), "432467".to_string()),
                             ("relS".to_string(), "5242880".to_string()),
@@ -1277,7 +1242,7 @@ pub fn predefined_commit() -> Commit {
                             ("threads".to_string(), "6".to_string()),
                             ("phase2Cycles".to_string(), "0".to_string()),
                             ("totalTime".to_string(), "437923".to_string()),
-                        ]),
+                        ])),
                     ),
                     (
                         TeebenchArgs {
@@ -1299,7 +1264,7 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
+                        Ok(HashMap::from([
                             ("totalTime".to_string(), "322788".to_string()),
                             ("relS".to_string(), "5242880".to_string()),
                             ("cyclesPerTuple".to_string(), "167".to_string()),
@@ -1312,7 +1277,7 @@ pub fn predefined_commit() -> Commit {
                             ("matches".to_string(), "5242880".to_string()),
                             ("relR".to_string(), "1310720".to_string()),
                             ("threads".to_string(), "6".to_string()),
-                        ]),
+                        ])),
                     ),
                 ],
                 findings: vec![],
@@ -1345,7 +1310,7 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
+                        Ok(HashMap::from([
                             ("algorithm".to_string(), "RHO".to_string()),
                             ("throughput".to_string(), "26.0781".to_string()),
                             ("phase1Cycles".to_string(), "8286369108".to_string()),
@@ -1358,7 +1323,7 @@ pub fn predefined_commit() -> Commit {
                             ("totalTime".to_string(), "2513062".to_string()),
                             ("relR".to_string(), "13107200".to_string()),
                             ("phase1Time".to_string(), "0".to_string()),
-                        ]),
+                        ])),
                     ),
                     (
                         TeebenchArgs {
@@ -1380,7 +1345,7 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
+                        Ok(HashMap::from([
                             ("phase2Cycles".to_string(), "348332420".to_string()),
                             ("relS".to_string(), "52428800".to_string()),
                             ("relR".to_string(), "13107200".to_string()),
@@ -1393,7 +1358,7 @@ pub fn predefined_commit() -> Commit {
                             ("phase1Time".to_string(), "0".to_string()),
                             ("totalTime".to_string(), "2795399".to_string()),
                             ("throughput".to_string(), "23.4442".to_string()),
-                        ]),
+                        ])),
                     ),
                     (
                         TeebenchArgs {
@@ -1415,23 +1380,20 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
+                        Ok(HashMap::from([
                             ("phase1Time".to_string(), "5008557".to_string()),
                             ("phase2Time".to_string(), "55516".to_string()),
                             ("matches".to_string(), "52428800".to_string()),
                             ("phase2Cycles".to_string(), "0".to_string()),
                             ("relS".to_string(), "52428800".to_string()),
-                            (
-                                "algorithm".to_string(),
-                                "SortMergeJoin_QuickSort".to_string(),
-                            ),
+                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
                             ("phase1Cycles".to_string(), "0".to_string()),
                             ("cyclesPerTuple".to_string(), "263".to_string()),
                             ("threads".to_string(), "2".to_string()),
                             ("relR".to_string(), "13107200".to_string()),
                             ("totalTime".to_string(), "5064073".to_string()),
                             ("throughput".to_string(), "12.9414".to_string()),
-                        ]),
+                        ])),
                     ),
                     (
                         TeebenchArgs {
@@ -1453,11 +1415,8 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
-                            (
-                                "algorithm".to_string(),
-                                "SortMergeJoin_QuickSort".to_string(),
-                            ),
+                        Ok(HashMap::from([
+                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
                             ("phase1Time".to_string(), "5006090".to_string()),
                             ("relR".to_string(), "13107200".to_string()),
                             ("phase2Time".to_string(), "55276".to_string()),
@@ -1469,7 +1428,7 @@ pub fn predefined_commit() -> Commit {
                             ("threads".to_string(), "8".to_string()),
                             ("cyclesPerTuple".to_string(), "263".to_string()),
                             ("phase1Cycles".to_string(), "0".to_string()),
-                        ]),
+                        ])),
                     ),
                     (
                         TeebenchArgs {
@@ -1491,23 +1450,20 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
+                        Ok(HashMap::from([
                             ("threads".to_string(), "1".to_string()),
                             ("matches".to_string(), "52428800".to_string()),
                             ("totalTime".to_string(), "5121168".to_string()),
                             ("throughput".to_string(), "12.7971".to_string()),
                             ("relS".to_string(), "52428800".to_string()),
-                            (
-                                "algorithm".to_string(),
-                                "SortMergeJoin_QuickSort".to_string(),
-                            ),
+                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
                             ("relR".to_string(), "13107200".to_string()),
                             ("phase1Time".to_string(), "5065499".to_string()),
                             ("phase2Time".to_string(), "55669".to_string()),
                             ("phase2Cycles".to_string(), "0".to_string()),
                             ("phase1Cycles".to_string(), "0".to_string()),
                             ("cyclesPerTuple".to_string(), "266".to_string()),
-                        ]),
+                        ])),
                     ),
                     (
                         TeebenchArgs {
@@ -1529,7 +1485,7 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
+                        Ok(HashMap::from([
                             ("relR".to_string(), "13107200".to_string()),
                             ("phase2Time".to_string(), "55399".to_string()),
                             ("throughput".to_string(), "12.9485".to_string()),
@@ -1538,14 +1494,11 @@ pub fn predefined_commit() -> Commit {
                             ("cyclesPerTuple".to_string(), "263".to_string()),
                             ("phase1Time".to_string(), "5005885".to_string()),
                             ("totalTime".to_string(), "5061284".to_string()),
-                            (
-                                "algorithm".to_string(),
-                                "SortMergeJoin_QuickSort".to_string(),
-                            ),
+                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
                             ("threads".to_string(), "4".to_string()),
                             ("phase2Cycles".to_string(), "0".to_string()),
                             ("phase1Cycles".to_string(), "0".to_string()),
-                        ]),
+                        ])),
                     ),
                     (
                         TeebenchArgs {
@@ -1567,7 +1520,7 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
+                        Ok(HashMap::from([
                             ("relS".to_string(), "52428800".to_string()),
                             ("phase2Cycles".to_string(), "0".to_string()),
                             ("matches".to_string(), "52428800".to_string()),
@@ -1575,15 +1528,12 @@ pub fn predefined_commit() -> Commit {
                             ("phase1Time".to_string(), "5002025".to_string()),
                             ("phase1Cycles".to_string(), "0".to_string()),
                             ("threads".to_string(), "6".to_string()),
-                            (
-                                "algorithm".to_string(),
-                                "SortMergeJoin_QuickSort".to_string(),
-                            ),
+                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
                             ("phase2Time".to_string(), "55275".to_string()),
                             ("relR".to_string(), "13107200".to_string()),
                             ("totalTime".to_string(), "5057300".to_string()),
                             ("throughput".to_string(), "12.9587".to_string()),
-                        ]),
+                        ])),
                     ),
                     (
                         TeebenchArgs {
@@ -1605,7 +1555,7 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
+                        Ok(HashMap::from([
                             ("relS".to_string(), "52428800".to_string()),
                             ("threads".to_string(), "5".to_string()),
                             ("totalTime".to_string(), "2667828".to_string()),
@@ -1618,7 +1568,7 @@ pub fn predefined_commit() -> Commit {
                             ("algorithm".to_string(), "RHO".to_string()),
                             ("matches".to_string(), "52428800".to_string()),
                             ("cyclesPerTuple".to_string(), "138".to_string()),
-                        ]),
+                        ])),
                     ),
                     (
                         TeebenchArgs {
@@ -1640,7 +1590,7 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
+                        Ok(HashMap::from([
                             ("relS".to_string(), "52428800".to_string()),
                             ("algorithm".to_string(), "RHO".to_string()),
                             ("matches".to_string(), "52428800".to_string()),
@@ -1653,7 +1603,7 @@ pub fn predefined_commit() -> Commit {
                             ("throughput".to_string(), "17.8528".to_string()),
                             ("totalTime".to_string(), "3670906".to_string()),
                             ("phase2Cycles".to_string(), "3085984936".to_string()),
-                        ]),
+                        ])),
                     ),
                     (
                         TeebenchArgs {
@@ -1675,7 +1625,7 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
+                        Ok(HashMap::from([
                             ("relS".to_string(), "52428800".to_string()),
                             ("totalTime".to_string(), "3416459".to_string()),
                             ("algorithm".to_string(), "RHO".to_string()),
@@ -1688,7 +1638,7 @@ pub fn predefined_commit() -> Commit {
                             ("cyclesPerTuple".to_string(), "177".to_string()),
                             ("phase1Time".to_string(), "0".to_string()),
                             ("throughput".to_string(), "19.1824".to_string()),
-                        ]),
+                        ])),
                     ),
                     (
                         TeebenchArgs {
@@ -1710,7 +1660,7 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
+                        Ok(HashMap::from([
                             ("phase2Time".to_string(), "55665".to_string()),
                             ("phase1Time".to_string(), "4998130".to_string()),
                             ("cyclesPerTuple".to_string(), "262".to_string()),
@@ -1721,12 +1671,9 @@ pub fn predefined_commit() -> Commit {
                             ("threads".to_string(), "7".to_string()),
                             ("totalTime".to_string(), "5053795".to_string()),
                             ("throughput".to_string(), "12.9677".to_string()),
-                            (
-                                "algorithm".to_string(),
-                                "SortMergeJoin_QuickSort".to_string(),
-                            ),
+                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
                             ("phase1Cycles".to_string(), "0".to_string()),
-                        ]),
+                        ])),
                     ),
                     (
                         TeebenchArgs {
@@ -1748,15 +1695,12 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
+                        Ok(HashMap::from([
                             ("matches".to_string(), "52428800".to_string()),
                             ("threads".to_string(), "3".to_string()),
                             ("relR".to_string(), "13107200".to_string()),
                             ("cyclesPerTuple".to_string(), "263".to_string()),
-                            (
-                                "algorithm".to_string(),
-                                "SortMergeJoin_QuickSort".to_string(),
-                            ),
+                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
                             ("phase1Cycles".to_string(), "0".to_string()),
                             ("phase2Cycles".to_string(), "0".to_string()),
                             ("relS".to_string(), "52428800".to_string()),
@@ -1764,7 +1708,7 @@ pub fn predefined_commit() -> Commit {
                             ("phase2Time".to_string(), "56036".to_string()),
                             ("totalTime".to_string(), "5072145".to_string()),
                             ("throughput".to_string(), "12.9208".to_string()),
-                        ]),
+                        ])),
                     ),
                     (
                         TeebenchArgs {
@@ -1786,7 +1730,7 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
+                        Ok(HashMap::from([
                             ("throughput".to_string(), "17.9746".to_string()),
                             ("matches".to_string(), "52428800".to_string()),
                             ("phase1Time".to_string(), "0".to_string()),
@@ -1799,7 +1743,7 @@ pub fn predefined_commit() -> Commit {
                             ("phase2Time".to_string(), "0".to_string()),
                             ("phase2Cycles".to_string(), "2763660838".to_string()),
                             ("relR".to_string(), "13107200".to_string()),
-                        ]),
+                        ])),
                     ),
                     (
                         TeebenchArgs {
@@ -1821,7 +1765,7 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
+                        Ok(HashMap::from([
                             ("threads".to_string(), "2".to_string()),
                             ("phase2Cycles".to_string(), "187494972".to_string()),
                             ("phase1Time".to_string(), "0".to_string()),
@@ -1834,7 +1778,7 @@ pub fn predefined_commit() -> Commit {
                             ("relS".to_string(), "52428800".to_string()),
                             ("cyclesPerTuple".to_string(), "127".to_string()),
                             ("phase1Cycles".to_string(), "8135700342".to_string()),
-                        ]),
+                        ])),
                     ),
                     (
                         TeebenchArgs {
@@ -1856,14 +1800,11 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
+                        Ok(HashMap::from([
                             ("relS".to_string(), "52428800".to_string()),
                             ("phase1Time".to_string(), "4996703".to_string()),
                             ("phase2Cycles".to_string(), "0".to_string()),
-                            (
-                                "algorithm".to_string(),
-                                "SortMergeJoin_QuickSort".to_string(),
-                            ),
+                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
                             ("relR".to_string(), "13107200".to_string()),
                             ("phase1Cycles".to_string(), "0".to_string()),
                             ("cyclesPerTuple".to_string(), "262".to_string()),
@@ -1872,7 +1813,7 @@ pub fn predefined_commit() -> Commit {
                             ("phase2Time".to_string(), "55275".to_string()),
                             ("throughput".to_string(), "12.9723".to_string()),
                             ("threads".to_string(), "5".to_string()),
-                        ]),
+                        ])),
                     ),
                     (
                         TeebenchArgs {
@@ -1894,7 +1835,7 @@ pub fn predefined_commit() -> Commit {
                             sort_s: false,
                             csv: true,
                         },
-                        HashMap::from([
+                        Ok(HashMap::from([
                             ("cyclesPerTuple".to_string(), "122".to_string()),
                             ("throughput".to_string(), "27.7553".to_string()),
                             ("phase1Time".to_string(), "0".to_string()),
@@ -1907,7 +1848,7 @@ pub fn predefined_commit() -> Commit {
                             ("matches".to_string(), "52428800".to_string()),
                             ("phase2Time".to_string(), "0".to_string()),
                             ("phase2Cycles".to_string(), "140443000".to_string()),
-                        ]),
+                        ])),
                     ),
                 ],
                 findings: vec![],

@@ -13,7 +13,7 @@ use std::sync::Mutex;
 use time::Instant;
 use tokio::process::Command as TokioCommand;
 use tokio::sync::mpsc;
-use tracing::{debug, error, info, instrument, warn};
+use tracing::{debug, error, info, instrument, trace, warn};
 
 use common::commandline::Commandline;
 use common::commit::{CommitState, CompilationStatus, PerfReportStatus};
@@ -207,21 +207,78 @@ fn parse_output(out: Vec<u8>) -> Result<HashMap<String, String>> {
     Ok(exp_result)
 }
 
-// Showing `currently_switched_in` with tracing seems to be wrong. It is always shown as empty, but the code doesn't run like it is.
-#[instrument(skip(
-    tee_bench_dir,
-    configs,
-    cmds,
-    code_hashmap,
-    currently_switched_in,
-    conn
-))]
+async fn run_teebench(
+    cmd: &Commandline,
+    switched_in: SwitchedInType,
+    mut tee_bench_dir: PathBuf,
+    code_hashmap: HashMap<Algorithm, String>,
+    cmd_string: String,
+    cmd_tasks: &mut HashMap<
+        common::data_types::TeebenchArgs,
+        Result<HashMap<String, String>, TeeBenchWebError>,
+    >,
+    args_key: common::data_types::TeebenchArgs,
+    errors: &mut bool,
+    conn: Arc<Mutex<Connection>>,
+) -> Result<()> {
+    let mut switched_in = switched_in.lock().await;
+    if cmd.algorithm.is_commit()
+        && (switched_in.is_none()
+            || (switched_in.is_some() && switched_in.unwrap() != cmd.algorithm))
+    {
+        info!("Compiling: {cmd:?}, switched in : {switched_in:?}");
+        match compile(&cmd.algorithm, &tee_bench_dir, code_hashmap).await {
+            Ok(o) => trace!("Compiler output: {o}"),
+            Err(e) => {
+                error!("Error while switching in code and compiling commit for experiment:\n{e:#}");
+                bail!("Failed to compile");
+            }
+        }
+        switched_in.replace(cmd.algorithm);
+    }
+    tee_bench_dir.push(BIN_FOLDER);
+    info!("Running `{cmd_string}` (alg: {:?})", cmd.algorithm);
+    let output = to_command(cmd)
+        .current_dir(tee_bench_dir)
+        .output()
+        .await
+        .expect("Failed to run TeeBench");
+    if !output.status.success() {
+        error!("Command {cmd_string} failed with {output:#?}");
+        cmd_tasks.insert(
+            args_key,
+            Err(TeeBenchWebError::TeeBenchCrash(format!(
+                "Command `{cmd_string}` failed with:\n{output:#?}"
+            ))),
+        );
+        *errors = true;
+        bail!("Failed to run teebench!");
+    } else {
+        let human_readable = String::from_utf8(output.stdout.clone()).unwrap();
+        trace!("Task output:\n```\n{human_readable}\n```");
+        let data = parse_output(output.stdout);
+        match data {
+            Ok(results) => {
+                insert_experiment(conn.clone(), args_key.clone(), results.clone()).unwrap();
+                cmd_tasks.insert(args_key, Ok(results));
+            }
+            Err(e) => {
+                warn!("Failed to parse output: {e}");
+                cmd_tasks.insert(args_key, Err(TeeBenchWebError::Unknown));
+            }
+        }
+    }
+    Ok(())
+}
+
+// Showing `switched_in` with tracing seems to be wrong. It is always shown as empty, but the code doesn't run like it is.
+#[instrument(skip(tee_bench_dir, configs, cmds, code_hashmap, switched_in, conn))]
 async fn run_experiment(
     tee_bench_dir: PathBuf,
     configs: Vec<JobConfig>,
     cmds: Vec<Vec<Commandline>>,
     code_hashmap: HashMap<Algorithm, String>,
-    currently_switched_in: SwitchedInType,
+    switched_in: SwitchedInType,
     conn: Arc<Mutex<Connection>>,
 ) -> JobResult {
     let mut all_tasks = vec![];
@@ -235,18 +292,8 @@ async fn run_experiment(
             Result<HashMap<String, String>, _>,
         > = HashMap::new();
         for cmd in chart_cmds {
-            let mut tee_bench_dir = tee_bench_dir.clone();
-            let cmd_moved = cmd.clone();
-            let currently_switched_in_moved = currently_switched_in.clone();
-            let code_hashmap_moved = code_hashmap.clone();
             // Each task should get the full "power" of the machine, so don't run them in parallel (by awaiting the handle).
-            // TODO Clean up clone calls from when we spawned here to not run TB in parallel. That doesn't happen now, right?
             {
-                let switched_in = currently_switched_in_moved;
-                let mut switched_in = switched_in.lock().await;
-                let cmd = cmd_moved.clone();
-                let code_hashmap = code_hashmap_moved.clone();
-                // This assumes that the Makefile of TeeBench has a different app name ("sgx" or "native"). See `common::data_types::Platform::to_app_name()`.
                 let args_key = cmd.to_teebench_args();
                 let cmd_string = format!("{cmd}");
                 if args_key.crkj_mway_wrong_thread_count() {
@@ -261,54 +308,25 @@ async fn run_experiment(
                         cmd_tasks.insert(args_key, Ok(r));
                         continue;
                     }
-                    Ok(None) => (),
+                    Ok(None) => {
+                        match run_teebench(
+                            cmd,
+                            switched_in.clone(),
+                            tee_bench_dir.clone(),
+                            code_hashmap.clone(),
+                            cmd_string,
+                            &mut cmd_tasks,
+                            args_key,
+                            &mut errors,
+                            conn.clone(),
+                        )
+                        .await
+                        {
+                            Ok(()) => (),
+                            Err(e) => warn!("Error running TeeBench: {e}"),
+                        }
+                    }
                     Err(e) => error!("Searching the cache failed with: {e}"),
-                }
-                if cmd.algorithm.is_commit()
-                    && (switched_in.is_none()
-                        || (switched_in.is_some() && switched_in.unwrap() != cmd.algorithm))
-                {
-                    info!("Compiling: {cmd:?}, switched in : {switched_in:?}");
-                    match compile(&cmd.algorithm, &tee_bench_dir, code_hashmap).await {
-                        Ok(o) => debug!("Compiler output: {o}"),
-                        Err(e) => {
-                            error!("Error while switching in code and compiling commit for experiment:\n{e:#}");
-                            return JobResult::Exp(Err(TeeBenchWebError::Compile(format!(
-                                "{e:#}"
-                            ))));
-                        }
-                    }
-                    switched_in.replace(cmd.algorithm);
-                }
-                tee_bench_dir.push(BIN_FOLDER);
-                info!("Running `{cmd_string}` (alg: {:?})", cmd.algorithm);
-                let output = to_command(&cmd)
-                    .current_dir(tee_bench_dir)
-                    .output()
-                    .await
-                    .expect("Failed to run TeeBench");
-                if !output.status.success() {
-                    error!("Command {cmd_string} failed with {output:#?}");
-                    cmd_tasks.insert(
-                        args_key,
-                        Err(TeeBenchWebError::TeeBenchCrash(format!(
-                            "Command `{cmd_string}` failed with:\n{output:#?}"
-                        ))),
-                    );
-                    errors = true;
-                    break;
-                } else {
-                    let human_readable = String::from_utf8(output.stdout.clone()).unwrap();
-                    debug!("Task output:\n```\n{human_readable}\n```");
-                    let data = parse_output(output.stdout);
-                    match data {
-                        Ok(results) => {
-                            insert_experiment(conn.clone(), args_key.clone(), results.clone())
-                                .unwrap();
-                            cmd_tasks.insert(args_key, Ok(results));
-                        }
-                        Err(e) => warn!("Task aborted: {e}"),
-                    }
                 }
             }
         }
@@ -319,18 +337,18 @@ async fn run_experiment(
         findings: vec![],
     };
     for (conf, tasks) in all_tasks {
+        // TODO Maybe change the new function to also take a HashMap (like `tasks` is) instead of just a Vec.
         let mut experiment_chart = ExperimentChart::new(conf, vec![], vec![]);
         for (args, task) in tasks {
-            let res = match task {
-                Ok(res) => res,
-                Err(e) => return JobResult::Exp(Err(e)),
-            };
-            experiment_chart.results.push((args, res));
+            experiment_chart.results.push((args, task));
         }
         report.charts.push(experiment_chart);
     }
 
-    enrich_report_with_findings(&mut report);
+    match enrich_report_with_findings(&mut report) {
+        Ok(()) => (),
+        Err(e) => warn!("enrich_report_with_findings error: {e}"),
+    };
 
     JobResult::Exp(Ok(report))
 }

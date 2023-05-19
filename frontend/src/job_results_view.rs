@@ -131,7 +131,7 @@ pub fn JobResultView(JobResultViewProps { job }: &JobResultViewProps) -> Html {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Store)]
-#[store(storage = "session")]
+//#[store(storage = "session")]
 pub struct FinishedJobState {
     pub jobs: Vec<Job>,
 }
