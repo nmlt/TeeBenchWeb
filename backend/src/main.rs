@@ -156,6 +156,12 @@ async fn handle_socket(
                 }
             }
             Some((job_id, report)) = partial_results_receiver.recv() => {
+                {
+                    let mut queue = queue.lock().unwrap();
+                    if let Some(j) = queue.iter_mut().find(|j| j.id == job_id) {
+                        j.result = Some(common::data_types::JobResult::Exp(Ok(report.clone())));
+                    }
+                }
                 let msg = ServerMessage::PartialReport(job_id, report);
                 let serialized = serde_json::to_vec(&msg).unwrap();
                 if socket.send(Message::Binary(serialized)).await.is_err() {
