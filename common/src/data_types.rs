@@ -62,7 +62,13 @@ impl ExperimentChart {
             findings,
         }
     }
-
+    pub fn info(&self) -> String {
+        format!(
+            "ExperimentChart with {:#?}\n{} Results\n",
+            self.config,
+            self.results.len()
+        )
+    }
     pub fn get_result_values<T: FromStr>(
         &self,
         field: &str,

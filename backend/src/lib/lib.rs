@@ -350,6 +350,20 @@ async fn run_experiment(
                 .send((job_id, report.clone()))
                 .await
                 .unwrap();
+            let infos = report
+                .charts
+                .iter()
+                .map(|c| c.info())
+                .fold(String::new(), |mut a, b| {
+                    a.reserve(b.len());
+                    a.push_str(&b);
+                    a
+                });
+            info!(
+                "Sent partial Report: {} chart(s):\n{}",
+                report.charts.len(),
+                infos
+            );
         }
     }
 

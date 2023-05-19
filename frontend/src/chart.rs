@@ -48,9 +48,6 @@ fn get_color_by_algorithm(alg: &String) -> &str {
     s
 }
 
-#[derive(Clone, PartialEq, Default, Store)]
-pub struct ChartState(MyChart, bool);
-
 fn get_measurement_from_single_result(
     single_run: &SingleRunResult,
     measurement: &Measurement,
@@ -523,14 +520,15 @@ pub struct ChartProps {
 #[function_component]
 pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
     let commit_store = use_store_value::<CommitState>();
+    //let title = format!("{exp_chart:#?}");
     let exp_chart = exp_chart.clone();
+    let move_exp_chart = exp_chart.clone();
     let canvas_ref = NodeRef::default();
     let move_canvas_ref = canvas_ref.clone();
-    //let (store, dispatch) = use_store::<ChartState>();
     use_effect_with_deps(
         move |_| {
             let commit_store = commit_store.clone();
-            let mut exp_chart = exp_chart.clone();
+            let mut exp_chart = move_exp_chart.clone();
             let canvas_ref = move_canvas_ref.clone();
             let mut chart_type;
             // let mut chart2_type;
@@ -1061,7 +1059,7 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
 
             move || my_chart.destroy()
         },
-        (),
+        exp_chart,
     );
     html! {
         <div>

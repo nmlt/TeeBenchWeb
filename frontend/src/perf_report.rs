@@ -1,3 +1,4 @@
+use gloo_console::log;
 use yew::prelude::*;
 use yewdux::prelude::*;
 
@@ -33,6 +34,7 @@ pub struct PerfReportProps {
 #[function_component]
 pub fn PerfReport(PerfReportProps { commit: current }: &PerfReportProps) -> Html {
     let commit_store = use_store_value::<CommitState>();
+    log!("Running PerfReport component!");
     let current = match current {
         Some(title) => match commit_store.get_by_title(&title).first() {
             // TODO If there are multiple commits with the same title, add another route "perf_report/title/<number>" and handle the vector returned here accordingly.
