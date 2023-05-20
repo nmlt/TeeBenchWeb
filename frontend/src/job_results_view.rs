@@ -8,7 +8,7 @@ use common::data_types::{
     Algorithm, Job, JobConfig, JobResult, JobStatus, ProfilingConfiguration, Report,
 };
 
-use crate::chart::CenteredChart;
+use crate::chart::Chart;
 use crate::components::{finding::FindingCardColumn, tag::Tag};
 use crate::modal::ModalContent;
 use crate::queue::Queue;
@@ -80,7 +80,7 @@ pub fn JobResultView(JobResultViewProps { job }: &JobResultViewProps) -> Html {
                         });
                         let charts = report.charts.iter().map(|exp_chart| {
                             html! {
-                                <CenteredChart exp_chart={exp_chart.clone()}/>
+                                <Chart exp_chart={exp_chart.clone()} />
                             }
                         });
                         ModalContent::new(html! {
@@ -90,12 +90,14 @@ pub fn JobResultView(JobResultViewProps { job }: &JobResultViewProps) -> Html {
                                     <button type="button" class="btn-close" onclick={destroy_onclick.clone()} data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body py-0">
-                                    {for charts}
-                                    <div class="modal-header">
-                                        <h5 class="modal-title">{"Analyser Findings"}</h5>
-                                    </div>
-                                    <div class="row" style="padding:20px">
-                                        {for findings}
+                                    <div class="container-fluid">
+                                        {for charts}
+                                        <div class="container-fluid">
+                                            <h5>{"Analyser Findings"}</h5> 
+                                            <div class="row">
+                                                {for findings}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="modal-footer">

@@ -1062,17 +1062,7 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
         exp_chart,
     );
     html! {
-        <div>
-            <canvas ref={canvas_ref}></canvas>
-        </div>
-    }
-}
-
-#[function_component]
-pub fn CenteredChart(ChartProps { exp_chart }: &ChartProps) -> Html {
-    html! {
-        <div style="position: relative; height:80vh; width:90vw; margin: auto; padding: 2px">
-            <Chart exp_chart={exp_chart.clone()} />
-        </div>
+        // Looking at this bootstrap example which is also using chartjs: https://getbootstrap.com/docs/5.3/examples/dashboard/
+        <canvas class="my-4 w-100" ref={canvas_ref}></canvas>
     }
 }
