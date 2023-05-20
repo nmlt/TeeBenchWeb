@@ -169,7 +169,12 @@ pub fn predefined_throughput_exp(
     let scales = json!({
         "y": {
             "text": "Throughput [M rec/s]",
-        }
+            "position": "left",
+            "title": {
+                "display": true,
+                "text": "Throughput [M rec/s]",
+            }
+        },
     });
     (chart_type, labels, datasets, plugins, scales)
 }
@@ -218,7 +223,17 @@ pub fn predefined_scalability_exp(
             "text": "Throughput [M rec/s]",
             "type": "linear",
             "display": true,
-            "position": "left"
+            "position": "left",
+            "title" : {
+                "display": true,
+                "text": "Throughput [M rec/s]",
+            }
+        },
+        "x": {
+            "title": {
+                "display": true,
+                "text": "Threads",
+            }
         }
     });
     (chart_type, labels, datasets, plugins, scales)
@@ -285,6 +300,12 @@ pub fn predefined_epc_paging_exp(
             "title" : {
                 "display": true,
                 "text": "EPC Misses",
+            }
+        },
+        "x": {
+            "title": {
+                "display": true,
+                "text": "Dataset Size [MB]",
             }
         }
     });
@@ -544,6 +565,7 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                     ExperimentType::Custom => {
                         let mut heading;
                         let y_axis_text;
+                        let x_axis_text;
                         // let y2_axis_text;
                         match conf.measurement {
                             Measurement::TotalEpcPaging => {
@@ -640,19 +662,24 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                         match conf.parameter {
                             Parameter::Threads => {
                                 heading.push_str("Threads");
+                                x_axis_text = "Threads";
                             }
                             Parameter::DataSkew => {
                                 heading.push_str("Data Skew");
+                                x_axis_text = "Data Skew [Zipf Factor]";
                             }
                             Parameter::JoinSelectivity => {
                                 heading.push_str("Join Selectivity");
+                                x_axis_text = "Join Selectivity";
                             }
                             Parameter::Algorithms => {
                                 chart_type = "bar";
                                 heading.push_str("Algorithms");
+                                x_axis_text = "Algorithms";
                             }
                             Parameter::OuterTableSize => {
                                 heading.push_str("Outer Table Size");
+                                x_axis_text = "Outer Table Size [MB]";
                             }
                         }
                         match conf.datasets.iter().next().unwrap() {
@@ -660,7 +687,24 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                             Dataset::CacheFit => heading.push_str(" with dataset Cache Fit"),
                             _ => (),
                         }
-                        let steps: Vec<_> = conf.param_value_iter();
+                        let mut steps: Vec<_> = conf.param_value_iter();
+                        if conf.parameter == Parameter::Algorithms {
+                            if let Some(latest_name) =
+                                steps.iter_mut().find(|a| a == &"Latest Operator")
+                            {
+                                if let Some(Algorithm::Commit(id)) = conf
+                                    .algorithms
+                                    .iter()
+                                    .find(|a| matches!(a, Algorithm::Commit(_)))
+                                {
+                                    if let Some(title) = commit_store.get_title(id) {
+                                        *latest_name = title;
+                                    } else {
+                                        log!("Error: Latest Operator in Chart and no matching operator in commit store!");
+                                    }
+                                }
+                            }
+                        }
                         labels = json!(steps);
                         exp_chart // TODO Can this be moved to the top level of the function (do we need to do this always)?
                             .results
@@ -703,7 +747,13 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                             "display": true,
                                             "text": "EPC Misses",
                                         }
-                                    }
+                                    },
+                                    "x": {
+                                        "title": {
+                                            "display": true,
+                                            "text": x_axis_text,
+                                        },
+                                    },
                                 });
                                 // EPC paging
                                 for a in conf.algorithms.iter() {
@@ -726,13 +776,13 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                         }
                                     }
                                     datasets_prep.push(json!({
-                                    "label": format!("{} EPC Paging", a.to_string()),
-                                    "data": values,
-                                    "backgroundColor": alg_color,
-                                    "borderColor": alg_color,
-                                    "yAxisID": "y1",
-                                    "order": 1,
-                                    "type": "bar"
+                                        "label": format!("{} EPC Paging", a.to_string()),
+                                        "data": values,
+                                        "backgroundColor": alg_color,
+                                        "borderColor": alg_color,
+                                        "yAxisID": "y1",
+                                        "order": 1,
+                                        "type": "bar"
                                     }));
                                 }
                                 //Throughput
@@ -779,7 +829,11 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                 );
                                 scales = json!({
                                     "x": {
-                                        "stacked": true
+                                        "stacked": true,
+                                        "title": {
+                                            "display": true,
+                                            "text": x_axis_text,
+                                        },
                                     },
                                     "y": {
                                             "ticks": {
@@ -789,7 +843,11 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                             "type": "linear",
                                             "display": true,
                                             "position": "left",
-                                            "stacked": true
+                                            "stacked": true,
+                                            "title": {
+                                                "display": true,
+                                                "text": y_axis_text,
+                                            },
                                         }
                                 });
                                 for ((alg, platform, _dataset), data_value) in data.iter() {
@@ -849,14 +907,24 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                 );
                                 scales = json!({
                                     "y": {
-                                            "ticks": {
-                                                "min": 0
-                                            },
-                                            "text": y_axis_text,
-                                            "type": "linear",
+                                        "ticks": {
+                                            "min": 0
+                                        },
+                                        "text": y_axis_text,
+                                        "type": "linear",
+                                        "display": true,
+                                        "position": "left",
+                                        "title": {
                                             "display": true,
-                                            "position": "left"
-                                        }
+                                            "text": y_axis_text,
+                                        },
+                                    },
+                                    "x": {
+                                        "title": {
+                                            "display": true,
+                                            "text": x_axis_text,
+                                        },
+                                    }
                                 });
                                 match conf.parameter {
                                     Parameter::Algorithms => {
