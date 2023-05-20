@@ -1,7 +1,8 @@
 use anyhow::{bail, Result};
+use common::data_types::JobConfig::PerfReport;
 use common::data_types::{
-    Dataset, ExperimentType, FindingStyle, JobConfig, Measurement, Parameter, Platform, Report,
-    UnwrapedExperimentResult, CPU_PHYSICAL_CORES,
+    Algorithm, Dataset, ExperimentType, FindingStyle, JobConfig, Measurement, Parameter, Platform,
+    Report, TeebenchArgs, UnwrapedExperimentResult, CPU_PHYSICAL_CORES,
 };
 use tracing::instrument;
 
@@ -188,7 +189,55 @@ pub fn enrich_report_with_findings(jr: &mut Report) -> Result<()> {
                             }
                             Parameter::DataSkew => {}
                             Parameter::JoinSelectivity => {}
-                            Parameter::Algorithms => {}
+                            //Throughput(algorithms)
+                            Parameter::Algorithms => {
+                                // if there are two datasets:
+                                // compare throughput per algorithm - report if throughput goes significantly down
+                                //compare EPC paging for both datasets - report if EPC paging goes significantly up
+                                // if &mut jr.charts.len() == &2 && jr.findings.len() == 0 {
+                                //     let res0: Vec<(Algorithm, Dataset, String, String)> = jr
+                                //         .charts
+                                //         .get(0)
+                                //         .unwrap()
+                                //         .results
+                                //         .iter()
+                                //         .map(|(a, b)| {
+                                //             (
+                                //                 a.algorithm,
+                                //                 a.dataset,
+                                //                 b.clone().unwrap().get("throughput").unwrap().clone(),
+                                //                 b.clone().unwrap().get("totalEWB").unwrap().clone(),
+                                //             )
+                                //         })
+                                //         .collect();
+                                //     let res1: Vec<(Algorithm, Dataset, String, String)> = jr
+                                //         .charts
+                                //         .get(1)
+                                //         .unwrap()
+                                //         .results
+                                //         .iter()
+                                //         .map(|(a, b)| {
+                                //             (
+                                //                 a.algorithm,
+                                //                 a.dataset,
+                                //                 b.clone().unwrap().get("throughput").unwrap().clone(),
+                                //                 b.clone().unwrap().get("totalEWB").unwrap().clone(),
+                                //             )
+                                //         })
+                                //         .collect();
+                                //     for i in &res0 {
+                                //         match res1.iter().find(|(a, d, t, e)| a == &i.0) {
+                                //             None => (),
+                                //             Some(r) => {
+                                //                 let t0 = i.2.parse::<f32>();
+                                //                 let t1 = r.2.parse::<f32>();
+                                //                 let epc0 = i.3.parse::<i32>();
+                                //                 let epc1 = r.3.parse::<i32>();
+                                //             }
+                                //         }
+                                //     }
+                                // }
+                            }
                             Parameter::OuterTableSize => {}
                         }
                     }

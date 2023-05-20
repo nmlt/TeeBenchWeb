@@ -255,6 +255,8 @@ pub const REPLACE_ALG: &str = "OperatorJoin";
 )]
 #[strum(serialize_all = "UPPERCASE")]
 pub enum Algorithm {
+    #[strum(to_string = "Latest Operator")]
+    Commit(CommitIdType),
     #[default]
     #[strum(to_string = "RHO")]
     Rho,
@@ -274,8 +276,17 @@ pub enum Algorithm {
     Inl,
     #[strum(to_string = "CRKJ")]
     Crkj,
-    #[strum(to_string = "Latest Operator")]
-    Commit(CommitIdType),
+
+    #[strum(to_string = "HashJoinV2")]
+    hj_v2,
+    #[strum(to_string = "HashJoinV3")]
+    hj_v3,
+    #[strum(to_string = "HashJoinV4")]
+    hj_v4,
+    #[strum(to_string = "HashJoinV5")]
+    hj_v5,
+    #[strum(to_string = "HashJoinV6")]
+    hj_v6,
 }
 
 use std::str::FromStr;

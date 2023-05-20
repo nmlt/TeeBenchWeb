@@ -236,7 +236,7 @@ pub fn predefined_epc_paging_exp(
     serde_json::Value,
 ) {
     let chart_type = "line";
-    let labels = json!([8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120, 128]);
+    let labels = json!([16, 32, 48, 64, 80, 96, 112, 128, 144, 160, 176, 192, 208, 224, 240, 256]);
     let datasets = json!([
         {
             "label": format!("{alg_title} Throughput"),
@@ -670,16 +670,6 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
 
                         match conf.clone().measurement {
                             Measurement::ThroughputAndTotalEPCPaging => {
-                                // data = create_data_hashmap(
-                                //     &exp_chart.results,
-                                //     Measurement::Throughput,
-                                //     conf.clone().parameter,
-                                // );
-                                // data2 = create_data_hashmap(
-                                //     &exp_chart.results,
-                                //     Measurement::TotalEpcPaging,
-                                //     conf.clone().parameter,
-                                // );
                                 scales = json!({
                                     "y": {
                                         "text": "Throughput [M rec/s]",
