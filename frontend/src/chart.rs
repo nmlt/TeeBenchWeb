@@ -39,6 +39,11 @@ fn get_color_by_algorithm(alg: &String) -> &str {
         ("INL", "#7620b4"),
         ("MWAY", "#fd2455"),
         ("CRKJ", "#B3346C"),
+        ("HashJoinV2","#0fb5ae"),
+        ("HashJoinV3","#4046ca"),
+        ("HashJoinV4","#f68511"),
+        ("HashJoinV5","#de3d82"),
+        ("HashJoinV6","#7e84fa")
     ]);
     let s = match color_alg.get(alg.as_str()) {
         // if not found - return a random color
@@ -58,7 +63,6 @@ fn get_measurement_from_single_result(
             .as_ref()
             .map(|m| m["throughput"].clone())
             .unwrap(),
-        Measurement::ThroughputAndTotalEPCPaging => panic!("Should not ask for a single value"),
         Measurement::Phase1Cycles => single_run
             .as_ref()
             .map(|m| m["phase1Cycles"].clone())
@@ -105,7 +109,7 @@ fn get_measurement_from_single_result(
             .as_ref()
             .map(|m| m["totalSystemCpuTime"].clone())
             .unwrap(),
-        Measurement::TwoPhasesCycles => panic!("Should not ask for a single value"),
+        Measurement::TwoPhasesCycles | Measurement::ThroughputAndTotalEPCPaging | Measurement::ContextSwitches => panic!("Should not ask for a single value"),
     }
 }
 
@@ -658,6 +662,11 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                 heading = String::from("CPU cycles with varying ");
                                 y_axis_text = "CPU Cycles / tuple";
                             }
+                            Measurement::ContextSwitches => {
+                                chart_type = "bar";
+                                heading = String::from("CPU Context Switches  ");
+                                y_axis_text = "CPU Context Switches";
+                            }
                         }
                         match conf.parameter {
                             Parameter::Threads => {
@@ -803,6 +812,91 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                     "borderColor": alg_color,
                                     "yAxisID": "y",
                                     "order": 0
+                                    }));
+                                }
+                            }
+                            Measurement::ContextSwitches => {
+                                data = create_data_hashmap(
+                                    &exp_chart.results,
+                                    Measurement::TotalInvoluntaryCS,
+                                    conf.clone().parameter,
+                                );
+                                data2 = create_data_hashmap(
+                                    &exp_chart.results,
+                                    Measurement::TotalVoluntaryCS,
+                                    conf.clone().parameter,
+                                );
+                                scales = json!({
+                                    "x": {
+                                        "stacked": true,
+                                        "title": {
+                                            "display": true,
+                                            "text": x_axis_text,
+                                        },
+                                    },
+                                    "y": {
+                                            "ticks": {
+                                                "min": 0
+                                            },
+                                            "text": y_axis_text,
+                                            "type": "linear",
+                                            "display": true,
+                                            "position": "left",
+                                            "stacked": true,
+                                            "title": {
+                                                "display": true,
+                                                "text": y_axis_text,
+                                            },
+                                        }
+                                });
+                                for ((alg, platform, _dataset), data_value) in data.iter() {
+                                    let alg = commit_store.get_title_by_algorithm(alg).unwrap();
+                                    let alg_color = get_color_by_algorithm(&alg);
+                                    // compare the global label (steps) with the data_value results
+                                    // fill in with NULL if a data_value is missing, otherwise pass the result
+                                    let mut values: Vec<String> = vec![];
+                                    for s in &steps {
+                                        let v = data_value.iter().find(|(x, _)| s == x);
+                                        match v {
+                                            None => values.push("NULL".to_string()),
+                                            Some(val) => values.push(val.1.clone()),
+                                        }
+                                    }
+                                    datasets_prep.push(json!({
+                                        "label": format!("{alg} involuntary CS"),
+                                        "data": values,
+                                        "backgroundColor": alg_color,
+                                        "borderColor": alg_color,
+                                        "yAxisID": "y",
+                                        "borderWidth":5,
+                                        "order": 0,
+                                        "stack": alg.to_string()
+                                    }));
+                                }
+
+                                for ((alg, platform, _dataset), data_value) in data2.iter() {
+                                    let alg = commit_store.get_title_by_algorithm(alg).unwrap();
+                                    let alg_color = get_color_by_algorithm(&alg).to_string()
+                                        + &"AA".to_string();
+                                    // compare the global label (steps) with the data_value results
+                                    // fill in with NULL if a data_value is missing, otherwise pass the result
+                                    let mut values: Vec<String> = vec![];
+                                    for s in &steps {
+                                        let v = data_value.iter().find(|(x, _)| s == x);
+                                        match v {
+                                            None => values.push("NULL".to_string()),
+                                            Some(val) => values.push(val.1.clone()),
+                                        }
+                                    }
+                                    datasets_prep.push(json!({
+                                        "label": format!("{alg} voluntary CS"),
+                                        "data": values,
+                                        "backgroundColor": alg_color,
+                                        "borderColor": alg_color,
+                                        "yAxisID": "y",
+                                        "borderWidth":5,
+                                        "order": 0,
+                                        "stack": alg.to_string()
                                     }));
                                 }
                             }

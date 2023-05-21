@@ -76,6 +76,13 @@ pub fn enrich_report_with_findings(jr: &mut Report) -> Result<()> {
                                             ),
                                             style: FindingStyle::Bad,
                                         });
+                                        jr.findings.push(common::data_types::Finding {
+                                            title: "Check for excessive OCALLS".to_string(),
+                                            message: format!(
+                                                "You can check for excessive OCALLS by looking up Voluntary Context Switches"
+                                            ),
+                                            style: FindingStyle::Neutral,
+                                        });
                                     } else if max_result.0.threads + 1 < CPU_PHYSICAL_CORES
                                         && max_threads != max_result.0.threads
                                     {
@@ -86,6 +93,13 @@ pub fn enrich_report_with_findings(jr: &mut Report) -> Result<()> {
                                                 max_result.0.threads, CPU_PHYSICAL_CORES
                                             ),
                                             style: FindingStyle::SoSo,
+                                        });
+                                        jr.findings.push(common::data_types::Finding {
+                                            title: "Check for excessive OCALLS".to_string(),
+                                            message: format!(
+                                                "You can check for excessive OCALLS by looking up Voluntary Context Switches"
+                                            ),
+                                            style: FindingStyle::Neutral,
                                         });
                                     } else {
                                         jr.findings.push(common::data_types::Finding {
@@ -191,58 +205,37 @@ pub fn enrich_report_with_findings(jr: &mut Report) -> Result<()> {
                             Parameter::JoinSelectivity => {}
                             //Throughput(algorithms)
                             Parameter::Algorithms => {
-                                // if there are two datasets:
-                                // compare throughput per algorithm - report if throughput goes significantly down
-                                //compare EPC paging for both datasets - report if EPC paging goes significantly up
-                                // if &mut jr.charts.len() == &2 && jr.findings.len() == 0 {
-                                //     let res0: Vec<(Algorithm, Dataset, String, String)> = jr
-                                //         .charts
-                                //         .get(0)
-                                //         .unwrap()
-                                //         .results
-                                //         .iter()
-                                //         .map(|(a, b)| {
-                                //             (
-                                //                 a.algorithm,
-                                //                 a.dataset,
-                                //                 b.clone().unwrap().get("throughput").unwrap().clone(),
-                                //                 b.clone().unwrap().get("totalEWB").unwrap().clone(),
-                                //             )
-                                //         })
-                                //         .collect();
-                                //     let res1: Vec<(Algorithm, Dataset, String, String)> = jr
-                                //         .charts
-                                //         .get(1)
-                                //         .unwrap()
-                                //         .results
-                                //         .iter()
-                                //         .map(|(a, b)| {
-                                //             (
-                                //                 a.algorithm,
-                                //                 a.dataset,
-                                //                 b.clone().unwrap().get("throughput").unwrap().clone(),
-                                //                 b.clone().unwrap().get("totalEWB").unwrap().clone(),
-                                //             )
-                                //         })
-                                //         .collect();
-                                //     for i in &res0 {
-                                //         match res1.iter().find(|(a, d, t, e)| a == &i.0) {
-                                //             None => (),
-                                //             Some(r) => {
-                                //                 let t0 = i.2.parse::<f32>();
-                                //                 let t1 = r.2.parse::<f32>();
-                                //                 let epc0 = i.3.parse::<i32>();
-                                //                 let epc1 = r.3.parse::<i32>();
-                                //             }
-                                //         }
-                                //     }
-                                // }
                             }
                             Parameter::OuterTableSize => {}
                         }
                     }
                     Measurement::TotalEpcPaging => {}
                     Measurement::ThroughputAndTotalEPCPaging => {}
+                    Measurement::ContextSwitches => {
+                        // do it only once
+                        if jr.findings.len() == 0 {
+                            match results.iter().find(|(_,r)| r.get("totalVoluntaryCS").unwrap().parse::<i32>().unwrap() > 1000) {
+                                None => {},
+                                Some(_) => {
+                                    jr.findings.push(common::data_types::Finding {
+                                        title: "Detected excessive voluntary CPU context switches".to_string(),
+                                        message: format!(
+                                            ""
+                                        ),
+                                        style: FindingStyle::Bad,
+                                    });
+                                    jr.findings.push(common::data_types::Finding {
+                                        title: "Try mutex-free data structures".to_string(),
+                                        message: format!(
+                                            ""
+                                        ),
+                                        style: FindingStyle::Neutral,
+                                    });
+                                }
+                            }
+                        }
+
+                    }
                     Measurement::Phase1Cycles => {}
                     Measurement::Phase2Cycles => {}
                     Measurement::TotalCycles => {}
@@ -408,6 +401,75 @@ pub fn enrich_report_with_findings(jr: &mut Report) -> Result<()> {
                 ExperimentType::Custom => {}
             },
             JobConfig::Compile(_) => {}
+        }
+    }
+    if jr.charts.len() == 2 {
+        match (jr.charts[0].clone().config, jr.charts[1].clone().config) {
+            (JobConfig::Profiling(c0), JobConfig::Profiling(c1)) => {
+                match (c0.parameter, c0.measurement, c1.parameter, c1.measurement) {
+                    (Parameter::Algorithms, Measurement::Throughput, Parameter::Algorithms, Measurement::Throughput) => {
+                        // if there are two datasets:
+                        // compare throughput per algorithm - report if throughput goes significantly down
+                        //compare EPC paging for both datasets - report if EPC paging goes significantly up
+                        let res0: Vec<(Algorithm, Dataset, String, String)> = jr
+                            .charts
+                            .get(0)
+                            .unwrap()
+                            .results
+                            .iter()
+                            .map(|(a, b)| {
+                                (
+                                    a.algorithm,
+                                    a.dataset,
+                                    b.clone().unwrap().get("throughput").unwrap().clone(),
+                                    b.clone().unwrap().get("totalEWB").unwrap().clone(),
+                                )
+                            })
+                            .collect();
+                            let res1: Vec<(Algorithm, Dataset, String, String)> = jr
+                                .charts
+                                .get(1)
+                                .unwrap()
+                                .results
+                                .iter()
+                                .map(|(a, b)| {
+                                    (
+                                        a.algorithm,
+                                        a.dataset,
+                                        b.clone().unwrap().get("throughput").unwrap().clone(),
+                                        b.clone().unwrap().get("totalEWB").unwrap().clone(),
+                                    )
+                                })
+                                .collect();
+                            for i in &res0 {
+                                match res1.iter().find(|(a, d, t, e)| a == &i.0) {
+                                    None => (),
+                                    Some(r) => {
+                                        let t0 = i.2.parse::<f32>().unwrap();
+                                        let t1 = r.2.parse::<f32>().unwrap();
+                                        let epc0 = i.3.parse::<i32>().unwrap();
+                                        let epc1 = r.3.parse::<i32>().unwrap();
+
+                                        if (epc1 / epc0) > 1000 {
+                                            jr.findings.push(common::data_types::Finding {
+                                                title: "Excessive EPC Paging".to_string(),
+                                                message: format!(
+                                                    "Increase by {}x for {}",
+                                                    (epc1/epc0),
+                                                    r.0.to_string(),
+                                                ),
+                                                style: FindingStyle::Bad,
+                                            });
+                                        }
+
+                                    }
+                                }
+                            }
+                    }
+                    _ => {}
+                }
+            }
+            _ => {}
         }
     }
     // 2. add top-level findings

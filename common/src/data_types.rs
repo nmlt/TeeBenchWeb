@@ -15,7 +15,7 @@ use crate::commit::CommitIdType;
 use crate::hardcoded::MAX_THREADS;
 
 // Machine-dependent variables
-pub const CPU_PHYSICAL_CORES: u8 = 4;
+pub const CPU_PHYSICAL_CORES: u8 = 8;
 // pub const CPU_LOGICAL_CORES: i32  = 16;
 // pub const L1_SIZE_KB: i32        = 256;
 // pub const L2_SIZE_KB: i32        = 2048;
@@ -388,6 +388,7 @@ pub enum Measurement {
     IR,
     TotalVoluntaryCS,
     TotalInvoluntaryCS,
+    ContextSwitches,
     TotalUserCpuTime,
     TotalSystemCpuTime,
 }
