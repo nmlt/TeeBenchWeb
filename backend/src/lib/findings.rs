@@ -460,6 +460,11 @@ pub fn enrich_report_with_findings(jr: &mut Report) -> Result<()> {
                                                 ),
                                                 style: FindingStyle::Bad,
                                             });
+                                            jr.findings.push(common::data_types::Finding {
+                                                title: "Reduce memory consumption and avoid random access".to_string(),
+                                                message: "".to_string(),
+                                                style: FindingStyle::Neutral,
+                                            });
                                         }
 
                                     }
