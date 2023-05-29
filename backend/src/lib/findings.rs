@@ -204,8 +204,7 @@ pub fn enrich_report_with_findings(jr: &mut Report) -> Result<()> {
                             Parameter::DataSkew => {}
                             Parameter::JoinSelectivity => {}
                             //Throughput(algorithms)
-                            Parameter::Algorithms => {
-                            }
+                            Parameter::Algorithms => {}
                             Parameter::OuterTableSize => {}
                         }
                     }
@@ -214,27 +213,25 @@ pub fn enrich_report_with_findings(jr: &mut Report) -> Result<()> {
                     Measurement::ContextSwitches => {
                         // do it only once
                         if jr.findings.len() == 0 {
-                            match results.iter().find(|(_,r)| r.get("totalVoluntaryCS").unwrap().parse::<i32>().unwrap() > 1000) {
-                                None => {},
+                            match results.iter().find(|(_, r)| {
+                                r.get("totalVoluntaryCS").unwrap().parse::<i32>().unwrap() > 1000
+                            }) {
+                                None => {}
                                 Some(_) => {
                                     jr.findings.push(common::data_types::Finding {
-                                        title: "Detected excessive voluntary CPU context switches".to_string(),
-                                        message: format!(
-                                            ""
-                                        ),
+                                        title: "Detected excessive voluntary CPU context switches"
+                                            .to_string(),
+                                        message: format!(""),
                                         style: FindingStyle::Bad,
                                     });
                                     jr.findings.push(common::data_types::Finding {
                                         title: "Try mutex-free data structures".to_string(),
-                                        message: format!(
-                                            ""
-                                        ),
+                                        message: format!(""),
                                         style: FindingStyle::Neutral,
                                     });
                                 }
                             }
                         }
-
                     }
                     Measurement::Phase1Cycles => {}
                     Measurement::Phase2Cycles => {}
@@ -407,7 +404,12 @@ pub fn enrich_report_with_findings(jr: &mut Report) -> Result<()> {
         match (jr.charts[0].clone().config, jr.charts[1].clone().config) {
             (JobConfig::Profiling(c0), JobConfig::Profiling(c1)) => {
                 match (c0.parameter, c0.measurement, c1.parameter, c1.measurement) {
-                    (Parameter::Algorithms, Measurement::Throughput, Parameter::Algorithms, Measurement::Throughput) => {
+                    (
+                        Parameter::Algorithms,
+                        Measurement::Throughput,
+                        Parameter::Algorithms,
+                        Measurement::Throughput,
+                    ) => {
                         // if there are two datasets:
                         // compare throughput per algorithm - report if throughput goes significantly down
                         //compare EPC paging for both datasets - report if EPC paging goes significantly up
@@ -426,50 +428,51 @@ pub fn enrich_report_with_findings(jr: &mut Report) -> Result<()> {
                                 )
                             })
                             .collect();
-                            let res1: Vec<(Algorithm, Dataset, String, String)> = jr
-                                .charts
-                                .get(1)
-                                .unwrap()
-                                .results
-                                .iter()
-                                .map(|(a, b)| {
-                                    (
-                                        a.algorithm,
-                                        a.dataset,
-                                        b.clone().unwrap().get("throughput").unwrap().clone(),
-                                        b.clone().unwrap().get("totalEWB").unwrap().clone(),
-                                    )
-                                })
-                                .collect();
-                            for i in &res0 {
-                                match res1.iter().find(|(a, d, t, e)| a == &i.0) {
-                                    None => (),
-                                    Some(r) => {
-                                        let t0 = i.2.parse::<f32>().unwrap();
-                                        let t1 = r.2.parse::<f32>().unwrap();
-                                        let epc0 = i.3.parse::<i32>().unwrap();
-                                        let epc1 = r.3.parse::<i32>().unwrap();
+                        let res1: Vec<(Algorithm, Dataset, String, String)> = jr
+                            .charts
+                            .get(1)
+                            .unwrap()
+                            .results
+                            .iter()
+                            .map(|(a, b)| {
+                                (
+                                    a.algorithm,
+                                    a.dataset,
+                                    b.clone().unwrap().get("throughput").unwrap().clone(),
+                                    b.clone().unwrap().get("totalEWB").unwrap().clone(),
+                                )
+                            })
+                            .collect();
+                        for i in &res0 {
+                            match res1.iter().find(|(a, d, t, e)| a == &i.0) {
+                                None => (),
+                                Some(r) => {
+                                    let t0 = i.2.parse::<f32>().unwrap();
+                                    let t1 = r.2.parse::<f32>().unwrap();
+                                    let epc0 = i.3.parse::<i32>().unwrap();
+                                    let epc1 = r.3.parse::<i32>().unwrap();
 
-                                        if (epc1 / epc0) > 1000 {
-                                            jr.findings.push(common::data_types::Finding {
-                                                title: "Excessive EPC Paging".to_string(),
-                                                message: format!(
-                                                    "Increase by {}x for {}",
-                                                    (epc1/epc0),
-                                                    r.0.to_string(),
-                                                ),
-                                                style: FindingStyle::Bad,
-                                            });
-                                            jr.findings.push(common::data_types::Finding {
-                                                title: "Reduce memory consumption and avoid random access".to_string(),
-                                                message: "".to_string(),
-                                                style: FindingStyle::Neutral,
-                                            });
-                                        }
-
+                                    if (epc1 / epc0) > 1000 {
+                                        jr.findings.push(common::data_types::Finding {
+                                            title: "Excessive EPC Paging".to_string(),
+                                            message: format!(
+                                                "Increase by {}x for {}",
+                                                (epc1 / epc0),
+                                                r.0.to_string(),
+                                            ),
+                                            style: FindingStyle::Bad,
+                                        });
+                                        jr.findings.push(common::data_types::Finding {
+                                            title:
+                                                "Reduce memory consumption and avoid random access"
+                                                    .to_string(),
+                                            message: "".to_string(),
+                                            style: FindingStyle::Neutral,
+                                        });
                                     }
                                 }
                             }
+                        }
                     }
                     _ => {}
                 }

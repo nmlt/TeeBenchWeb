@@ -39,11 +39,11 @@ fn get_color_by_algorithm(alg: &String) -> &str {
         ("INL", "#7620b4"),
         ("MWAY", "#fd2455"),
         ("CRKJ", "#B3346C"),
-        ("HashJoinV2","#0fb5ae"),
-        ("HashJoinV3","#4046ca"),
-        ("HashJoinV4","#f68511"),
-        ("HashJoinV5","#de3d82"),
-        ("HashJoinV6","#7e84fa")
+        ("HashJoinV2", "#0fb5ae"),
+        ("HashJoinV3", "#4046ca"),
+        ("HashJoinV4", "#f68511"),
+        ("HashJoinV5", "#de3d82"),
+        ("HashJoinV6", "#7e84fa"),
     ]);
     let s = match color_alg.get(alg.as_str()) {
         // if not found - return a random color
@@ -109,7 +109,9 @@ fn get_measurement_from_single_result(
             .as_ref()
             .map(|m| m["totalSystemCpuTime"].clone())
             .unwrap(),
-        Measurement::TwoPhasesCycles | Measurement::ThroughputAndTotalEPCPaging | Measurement::ContextSwitches => panic!("Should not ask for a single value"),
+        Measurement::TwoPhasesCycles
+        | Measurement::ThroughputAndTotalEPCPaging
+        | Measurement::ContextSwitches => panic!("Should not ask for a single value"),
     }
 }
 
