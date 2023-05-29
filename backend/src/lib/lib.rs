@@ -275,6 +275,7 @@ async fn run_teebench(
 // Showing `switched_in` with tracing seems to be wrong. It is always shown as empty, but the code doesn't run like it is.
 #[instrument(skip(
     tee_bench_dir,
+    commits,
     configs,
     cmds,
     code_hashmap,
@@ -285,6 +286,7 @@ async fn run_teebench(
 ))]
 async fn run_experiment(
     tee_bench_dir: PathBuf,
+    commits: Arc<Mutex<CommitState>>,
     configs: Vec<JobConfig>,
     cmds: Vec<Vec<Commandline>>,
     code_hashmap: HashMap<Algorithm, String>,
@@ -342,7 +344,7 @@ async fn run_experiment(
                 Err(e) => error!("Searching the cache failed with: {e}"),
             }
         }
-        let experiment_chart = ExperimentChart::new(conf, cmd_tasks, vec![]);
+        let experiment_chart = ExperimentChart::new(conf.clone(), cmd_tasks, vec![]);
         report.charts.push(experiment_chart);
         {
             let partial_results_sender = partial_results_sender.lock().await;
@@ -364,6 +366,14 @@ async fn run_experiment(
                 report.charts.len(),
                 infos
             );
+        }
+        {
+            let mut commits = commits.lock().unwrap();
+            if let JobConfig::PerfReport(common::data_types::PerfReportConfig { id, .. }) = conf {
+                if let Some(c) = commits.get_by_id_mut(&id) {
+                    c.report = Some(JobResult::Exp(Ok(report.clone())));
+                }
+            }
         }
     }
 
@@ -418,6 +428,7 @@ async fn runner(
                 .collect();
             run_experiment(
                 tee_bench_dir,
+                commits,
                 configs,
                 cmds,
                 code_hashmap,
@@ -442,6 +453,7 @@ async fn runner(
             let configs = hardcoded_perf_report_configs(pr_conf.id, baseline);
             let results = run_experiment(
                 tee_bench_dir,
+                commits.clone(),
                 configs,
                 cmds,
                 code_hashmap,

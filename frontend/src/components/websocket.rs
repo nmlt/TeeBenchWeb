@@ -5,7 +5,7 @@ use yewdux::prelude::*;
 
 use common::commit::CompilationStatus;
 use common::data_types::{
-    ClientMessage, JobConfig, JobResult, JobStatus, PerfReportConfig, ServerMessage,
+    ClientMessage, Job, JobConfig, JobResult, JobStatus, PerfReportConfig, ServerMessage,
 };
 use futures::{SinkExt, StreamExt};
 use gloo_console::log;
@@ -75,6 +75,22 @@ pub fn Websocket() -> Html {
                         commit_dispatch.set(commit_store);
                     }
                     Err(e) => log!("Error getting commit json: ", e.to_string()),
+                }
+                let queue_dispatch = Dispatch::<QueueState>::new();
+                let resp: Result<Vec<Job>, _> = Request::get("/api/queue")
+                    .method(Method::GET)
+                    .send()
+                    .await
+                    .expect("Server didn't respond. Is it running?")
+                    .json()
+                    .await;
+                match resp {
+                    Ok(json) => {
+                        log!(format!("Got queue: {json:?}"));
+                        let queue_state = QueueState::new(json);
+                        queue_dispatch.set(queue_state);
+                    }
+                    Err(e) => log!("Error getting queue json: ", e.to_string()),
                 }
             });
             // TODO Find a way for the frontend to get the websites actual address (not localhost)
