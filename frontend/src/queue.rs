@@ -1,8 +1,5 @@
-use gloo_console::log;
-use gloo_net::http::{Method, Request};
 use std::collections::VecDeque;
 use time::macros::format_description;
-use yew::platform::spawn_local;
 use yew::prelude::*;
 use yewdux::prelude::*;
 
@@ -93,28 +90,6 @@ pub struct QueueProps {
 #[function_component]
 pub fn Queue(QueueProps { filter_by }: &QueueProps) -> Html {
     let (queue_store, queue_dispatch) = use_store::<QueueState>();
-    use_effect_with_deps(
-        move |_| {
-            let queue_dispatch = queue_dispatch.clone();
-            spawn_local(async move {
-                let resp: Result<Vec<Job>, _> = Request::get("/api/queue")
-                    .method(Method::GET)
-                    .send()
-                    .await
-                    .expect("Server didn't respond. Is it running?")
-                    .json()
-                    .await;
-                match resp {
-                    Ok(json) => {
-                        log!(format!("got queue items: {json:?}"));
-                        queue_dispatch.set(QueueState::new(json));
-                    }
-                    Err(e) => log!("Error getting queue json: ", e.to_string()),
-                }
-            });
-        },
-        (),
-    );
     let queue: Vec<Html> = queue_store
         .queue
         .iter()
