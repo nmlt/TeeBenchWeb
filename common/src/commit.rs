@@ -132,6 +132,23 @@ impl CommitState {
     pub fn push_commit(&mut self, c: Commit) {
         self.0.push(c);
     }
+    pub fn get_diffs(&self) -> Vec<Option<String>> {
+        use imara_diff::intern::InternedInput;
+        use imara_diff::{diff, Algorithm, UnifiedDiffBuilder};
+        let mut res = vec![None];
+        for window in self.0.windows(2) {
+            let old = window[0].code.as_str();
+            let new = window[1].code.as_str();
+            let input = InternedInput::new(old, new);
+            let diff = diff(
+                Algorithm::Histogram,
+                &input,
+                UnifiedDiffBuilder::new(&input),
+            );
+            res.push(Some(diff));
+        }
+        res
+    }
 }
 
 use std::collections::{HashMap, HashSet};

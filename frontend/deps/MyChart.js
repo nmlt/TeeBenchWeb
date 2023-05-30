@@ -33,3 +33,11 @@ export class MyChart {
 export function hljs_highlight(code) {
     return hljs.highlight(code, { language: "cpp", ignoreIllegals: true}).value;
 }
+
+export function diff2html_html(diffInput) {
+    return Diff2Html.html(diffInput, {"drawFileList": false, rawTemplates: {
+        "tag-file-renamed": "",
+        "generic-file-path": "" // Removes the header bar that has file names and dates.
+    }, });
+}
+

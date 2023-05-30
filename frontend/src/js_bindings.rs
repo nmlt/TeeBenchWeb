@@ -17,4 +17,5 @@ extern "C" {
     pub fn destroy(this: &MyChart);
 
     pub fn hljs_highlight(code: String) -> String;
+    pub fn diff2html_html(diffInput: String) -> String;
 }

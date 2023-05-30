@@ -11,7 +11,7 @@ use std::str::FromStr;
 
 use crate::components::select::{InputSelect, SelectDataOption};
 use crate::components::tag::Tag;
-use crate::js_bindings::hljs_highlight;
+use crate::js_bindings::{diff2html_html, hljs_highlight};
 use crate::modal::Modal;
 use crate::modal::ModalContent;
 use crate::navigation::Navigation;
@@ -275,8 +275,10 @@ fn CommitsList() -> Html {
     let (commit_store, commit_dispatch) = use_store::<CommitState>();
     let queue_dispatch = Dispatch::<QueueState>::new();
 
+    let diffs = commit_store.get_diffs();
+
     let current_date = commit_store.get_latest().map(|c| c.get_date());
-    let list_items_html = commit_store.0.iter().rev().map(|commit| {
+    let list_items_html = commit_store.0.iter().rev().zip(diffs.iter().rev()).map(|(commit, diff)| {
         let commit = commit.clone();
 
         let onclick_code = {
@@ -411,6 +413,27 @@ fn CommitsList() -> Html {
                 alg => alg.to_string(),
             }
         };
+        let diff_button = {
+            if let Some(diff) = diff {
+                let diff = diff.clone();
+                let diff_onclick = content_dispatch.set_callback(move |_| {
+                    let diff = diff.clone();
+                    // This is only so that the highlighter works, the file name and dates are removed in the `MyChart.js` file.
+                    let diff = format!("--- from_file.cpp 2002-02-21 23:30:39\n+++ to_file.cpp 2022-02-21 23:30:39\n{diff}");
+                    let diff = diff2html_html(diff);
+                    let parsed = Html::from_html_unchecked(AttrValue::from(diff));
+                    // TODO Add a header to the modal with operator titles.
+                    ModalContent::with_modal_skeleton(html! {
+                        {parsed}
+                    }, html!{ "Diff" })
+                });
+                html! {
+                    <button class="btn btn-info" onclick={diff_onclick} data-bs-toggle="modal" data-bs-target="#mainModal">{"View Diff"}</button> 
+                }
+           } else {
+                html! {}
+            }
+        };
         (commit.get_date(), html! {
             <li class="list-group-item">
                 <b>{commit.get_title()}</b>
@@ -427,6 +450,9 @@ fn CommitsList() -> Html {
                     </div>
                     <div class="p-2">
                         {report_button}
+                    </div>
+                    <div class="p-2">
+                        {diff_button}
                     </div>
                     <div class="p-2">
                         {"Baseline: "}
