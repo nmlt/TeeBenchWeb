@@ -2,7 +2,6 @@ use gloo_console::log;
 use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
 use yew_router::prelude::*;
-use yewdux::prelude::use_store_value;
 
 mod chart;
 mod commits;
@@ -86,9 +85,18 @@ fn main() {
         let default_commits = vec![predefined_commit()];
         Dispatch::<CommitState>::new().set(CommitState::new(default_commits));
 
-        let default_job_results = vec![];
-
-        finished_job_dispatch.set(FinishedJobState::new(default_job_results));
+        // Path is apparently relative to `frontend/src/`
+        // include_str! cannot take a variable, only literals! So no chance moving this to a variable somewhere...
+        let job_results_str = include_str!("../../cached/job_results.json");
+        // Yew pretty prints panics. As yew hasn't started yet, we have to pretty print them (at least a bit).
+        let default_job_results: FinishedJobState = match serde_json::from_str(job_results_str) {
+            Ok(parsed) => parsed,
+            Err(e) => {
+                log!(format!("Error parsing json: {e:#?}"));
+                FinishedJobState::new(vec![])
+            }
+        };
+        finished_job_dispatch.set(default_job_results);
     } else {
         use crate::queue::QueueState;
         if finished_job_dispatch.get().jobs.is_empty() {
