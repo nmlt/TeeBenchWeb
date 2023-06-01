@@ -238,13 +238,13 @@ fn UploadCommit() -> Html {
                 <div class="row g-3">
                     <div class="col-md">
                         <div>
-                            <label for="uploadFormFile" class="form-label">{"Source code file"}</label>
+                            <label for="uploadFormFile" class="form-label">{"Source code"}</label>
                             <input id="uploadFormFile" class="form-control" type="file" onchange={onchange_file} />
                         </div>
                     </div>
                     <div class="col-md">
                         <div>
-                            <label for="titleFormInput" class="form-label">{"Commit message"}</label>
+                            <label for="titleFormInput" class="form-label">{"Title"}</label>
                             <input id="titleFormInput" class="form-control" type="text" onchange={onchange_title} />
                         </div>
                     </div>

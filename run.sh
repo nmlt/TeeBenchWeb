@@ -7,6 +7,12 @@ set -a # automatically export all variables
 source .env
 set +a
 
+if [ "$1" == "static" ]; then
+    BUILD_STATIC=1
+else
+    BUILD_STATIC=0
+fi
+
 # source: https://stackoverflow.com/a/21188136/15282333
 get_abs_filename() {
     # $1 : relative filename
@@ -48,11 +54,15 @@ run_backend() (
 
 build_frontend() (
     trap - INT # Enables Ctrl+C in here
-    trunk build
+    if [ $1 == 1 ]; then
+        trunk build --features static
+    else
+        trunk build
+    fi
 )
 
 pushd frontend
-build_frontend
+build_frontend $BUILD_STATIC
 popd
 
 pushd backend

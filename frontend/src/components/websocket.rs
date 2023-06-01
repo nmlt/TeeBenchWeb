@@ -40,7 +40,11 @@ impl WebsocketState {
         if let Some(tx) = &self.transmitter {
             tx.send_now(msg).unwrap();
         } else {
-            panic!();
+            if cfg!(feature = "static") {
+                log!("Websocket was asked to send something. But as a static page, this doesn't make sense. NOP");
+            } else {
+                panic!("No channel in WebsocketState! Was it not initialized?");
+            }
         }
     }
 }
