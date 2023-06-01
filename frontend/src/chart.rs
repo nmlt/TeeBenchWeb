@@ -9,10 +9,11 @@ use yewdux::prelude::*;
 use core::panic;
 use std::collections::HashMap;
 
-use common::commit::CommitState;
+use common::commit::{CommitIdType, CommitState};
+use common::data_types::Algorithm::Commit;
 use common::data_types::{
     Algorithm, Dataset, ExperimentChart, ExperimentChartResult, ExperimentType, JobConfig,
-    Measurement, Parameter, Platform, SingleRunResult, TeebenchArgs,
+    Measurement, Parameter, PerfReportConfig, Platform, SingleRunResult, TeebenchArgs,
 };
 
 use crate::js_bindings::MyChart;
@@ -321,6 +322,29 @@ pub fn predefined_epc_paging_exp(
     (chart_type, labels, datasets, plugins, scales)
 }
 
+fn get_algorithm_by_title(title: &str, version: &str, id: CommitIdType) -> Algorithm {
+    match title {
+        "RHO" => (Algorithm::Rho),
+        "PHT" => (Algorithm::Pht),
+        "PSM" => (Algorithm::Psm),
+        "MWAY" => (Algorithm::Mway),
+        "RHT" => (Algorithm::Rht),
+        "CHT" => (Algorithm::Cht),
+        "RSM" => (Algorithm::Rsm),
+        "INL" => (Algorithm::Inl),
+        "CRKJ" => (Algorithm::Crkj),
+        "HashJoin" => match version {
+            "2" => (Algorithm::hj_v2),
+            "3" => (Algorithm::hj_v3),
+            "4" => (Algorithm::hj_v4),
+            "5" => (Algorithm::hj_v5),
+            "6" => (Algorithm::hj_v6),
+            _ => (Algorithm::Commit(id)),
+        },
+        _ => (Algorithm::Commit(id)),
+    }
+}
+
 fn prepare_perf_report_chart(
     commit_store: std::rc::Rc<CommitState>,
     exp_chart: ExperimentChart,
@@ -360,6 +384,11 @@ fn prepare_perf_report_chart(
     } else {
         alg_titles.push(pr_conf.baseline.to_string());
     }
+    let (title, version) = match commit_store.get_by_id(&pr_conf.id) {
+        None => panic!("Commit not found!"),
+        Some(c) => (c.title.clone(), c.version.clone()),
+    };
+    let algorithm: Algorithm = get_algorithm_by_title(title.as_str(), version.as_str(), pr_conf.id);
     match pr_conf.exp_type {
         ExperimentType::Throughput => {
             let mut alg_data = vec![];
@@ -369,7 +398,7 @@ fn prepare_perf_report_chart(
                 .find(|&tuple| {
                     tuple.0
                         == TeebenchArgs::for_throughput(
-                            Algorithm::Commit(pr_conf.id),
+                            algorithm,
                             Platform::Native,
                             pr_conf.dataset,
                         )
@@ -387,11 +416,7 @@ fn prepare_perf_report_chart(
                 .iter()
                 .find(|&tuple| {
                     tuple.0
-                        == TeebenchArgs::for_throughput(
-                            Algorithm::Commit(pr_conf.id),
-                            Platform::Sgx,
-                            pr_conf.dataset,
-                        )
+                        == TeebenchArgs::for_throughput(algorithm, Platform::Sgx, pr_conf.dataset)
                 })
                 .unwrap()
                 .1
@@ -450,7 +475,7 @@ fn prepare_perf_report_chart(
                                 "throughput",
                                 Platform::Sgx,
                                 pr_conf.dataset,
-                                Algorithm::Commit(pr_conf.id),
+                                algorithm,
                                 Some(threads),
                                 None,
                                 None,
@@ -497,16 +522,20 @@ fn prepare_perf_report_chart(
             // x (Relation R) starts at 8 MB, stepping each time 8 MB = 1_048_576
             log!(format!("exp chart results: {:#?}", exp_chart.results));
             for (x, &y) in (16..257).step_by(16).zip(y_range.iter().cycle()) {
+                let alg = match pr_conf.baseline {
+                    Commit(_) => algorithm,
+                    _ => pr_conf.baseline,
+                };
                 log!(format!(
                     "Searching for data: baseline: {:?} x {}, y {} ",
-                    pr_conf.baseline, x, y
+                    alg, x, y
                 ));
                 let d1 = exp_chart
                     .get_result_values(
                         "throughput",
                         Platform::Sgx,
                         Dataset::new_custom(x, y),
-                        pr_conf.baseline,
+                        alg,
                         None,
                         Some(x),
                         Some(y),
@@ -520,7 +549,7 @@ fn prepare_perf_report_chart(
                         "totalEWB",
                         Platform::Sgx,
                         Dataset::new_custom(x, y),
-                        pr_conf.baseline,
+                        alg,
                         None,
                         Some(x),
                         Some(y),
