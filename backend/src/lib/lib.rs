@@ -449,7 +449,12 @@ async fn runner(
                 panic!("Could not find the commit!");
             };
             let (baseline, commit_title, commit_version) = baseline();
-            let cmds = hardcoded_perf_report_commands(pr_conf.id, &baseline, &commit_title, &commit_version);
+            let cmds = hardcoded_perf_report_commands(
+                pr_conf.id,
+                &baseline,
+                &commit_title,
+                &commit_version,
+            );
             let configs = hardcoded_perf_report_configs(pr_conf.id, baseline);
             let results = run_experiment(
                 tee_bench_dir,

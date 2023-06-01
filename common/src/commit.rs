@@ -116,6 +116,13 @@ impl CommitState {
     pub fn get_by_title(&self, title: &str) -> Vec<&Commit> {
         self.0.iter().filter(|c| c.title == title).collect()
     }
+    pub fn get_by_name(&self, name: &str) -> Vec<&Commit> {
+        let (title, version) = name.split_once("_v").unwrap();
+        self.0
+            .iter()
+            .filter(|c| c.title == title && c.version == version)
+            .collect()
+    }
     pub fn get_latest(&self) -> Option<&Commit> {
         self.0.iter().max_by(|a, b| a.id.cmp(&b.id))
     }

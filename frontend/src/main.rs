@@ -29,11 +29,19 @@ pub enum Route {
     Profiling,
     #[at("/performance_report")]
     PerfReportLatest,
-    #[at("/performance_report/:commit")]
-    PerfReport { commit: String },
+    #[at("/performance_report/:name")]
+    PerfReport { name: String },
+    #[at("/performance_report/:name/:instance")]
+    PerfReportDouble { name: String, instance: usize },
     #[not_found]
     #[at("/404")]
     NotFound,
+}
+
+impl Route {
+    pub fn perf_report_double(name: String, instance: usize) -> Self {
+        Self::PerfReportDouble { name, instance }
+    }
 }
 
 fn switch(routes: Route) -> Html {
@@ -46,10 +54,13 @@ fn switch(routes: Route) -> Html {
             <Profiling />
         },
         Route::PerfReportLatest => html! {
-            <PerfReport commit={None::<String>} />
+            <PerfReport name={None::<String>} instance={None::<usize>} />
         },
-        Route::PerfReport { commit } => html! {
-            <PerfReport commit={Some(commit)} />
+        Route::PerfReport { name } => html! {
+            <PerfReport name={Some(name)} instance={None::<usize>} />
+        },
+        Route::PerfReportDouble { name, instance } => html! {
+            <PerfReport name={Some(name)} instance={Some(instance)} />
         },
         Route::NotFound => html! { <main><h1>{"404"}</h1><p>{"not found in yew app"}</p></main> },
     }

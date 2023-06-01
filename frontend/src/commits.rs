@@ -396,7 +396,7 @@ fn CommitsList() -> Html {
             }
             PerfReportStatus::Running(id) => html! {
                 <>
-                <Link<Route> classes={classes!("btn", "btn-info")} to={Route::PerfReport { commit: commit.title.clone() }}>
+                <Link<Route> classes={classes!("btn", "btn-info")} to={Route::PerfReport { name: commit.get_title() }}>
                     {"Report"}
                     <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                 </Link<Route>>
@@ -404,7 +404,7 @@ fn CommitsList() -> Html {
                 </>
             },
             PerfReportStatus::Successful => html! {
-                <Link<Route> classes={classes!("btn", "btn-info")} to={Route::PerfReport { commit: commit.title.clone() }}>
+                <Link<Route> classes={classes!("btn", "btn-info")} to={Route::PerfReport { name: commit.get_title() }}>
                     {"View Report"}
                 </Link<Route>>
             },

@@ -129,7 +129,7 @@ pub fn hardcoded_perf_report_commands(
     id: CommitIdType,
     baseline_t: &Algorithm,
     commit_title: &str,
-    commit_version: &str
+    commit_version: &str,
 ) -> Vec<Vec<Commandline>> {
     let baseline = &baseline_t.to_cmd_arg();
     let commit_id;
@@ -138,65 +138,63 @@ pub fn hardcoded_perf_report_commands(
         "RHO" => {
             operator = "RHO";
             commit_id = Algorithm::Rho;
-        },
+        }
         "PHT" => {
             operator = "PHT";
             commit_id = Algorithm::Pht;
-        },
+        }
         "PSM" => {
             operator = "PSM";
             commit_id = Algorithm::Psm;
-        },
+        }
         "MWAY" => {
             operator = "MWAY";
             commit_id = Algorithm::Mway;
-        },
+        }
         "RHT" => {
             operator = "RHT";
             commit_id = Algorithm::Rht;
-        },
+        }
         "CHT" => {
             operator = "CHT";
             commit_id = Algorithm::Cht;
-        },
+        }
         "RSM" => {
             operator = "RSM";
             commit_id = Algorithm::Rsm;
-        },
+        }
         "INL" => {
             operator = "INL";
             commit_id = Algorithm::Inl;
-        },
+        }
         "CRKJ" => {
             operator = "CRKJ";
             commit_id = Algorithm::Crkj;
-        },
-        "HashJoin" => {
-            match commit_version {
-                "2" => {
-                    operator = "HashJoinV2";
-                    commit_id = Algorithm::hj_v2;
-                },
-                "3" => {
-                    operator = "HashJoinV3";
-                    commit_id = Algorithm::hj_v3;
-                },
-                "4" => {
-                    operator = "HashJoinV4";
-                    commit_id = Algorithm::hj_v4;
-                },
-                "5" => {
-                    operator = "HashJoinV5";
-                    commit_id = Algorithm::hj_v5;
-                },
-                "6" => {
-                    operator = "HashJoinV6";
-                    commit_id = Algorithm::hj_v6;
-                },
-                _ => {
-                    operator = REPLACE_ALG;
-                    commit_id = Algorithm::Commit(id);
-                }
+        }
+        "HashJoin" => match commit_version {
+            "2" => {
+                operator = "HashJoinV2";
+                commit_id = Algorithm::hj_v2;
+            }
+            "3" => {
+                operator = "HashJoinV3";
+                commit_id = Algorithm::hj_v3;
+            }
+            "4" => {
+                operator = "HashJoinV4";
+                commit_id = Algorithm::hj_v4;
+            }
+            "5" => {
+                operator = "HashJoinV5";
+                commit_id = Algorithm::hj_v5;
+            }
+            "6" => {
+                operator = "HashJoinV6";
+                commit_id = Algorithm::hj_v6;
+            }
+            _ => {
+                operator = REPLACE_ALG;
+                commit_id = Algorithm::Commit(id);
             }
         },
         _ => {

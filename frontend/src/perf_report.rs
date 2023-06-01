@@ -1,9 +1,11 @@
 use gloo_console::log;
 use yew::prelude::*;
+use yew_router::prelude::Redirect;
 use yewdux::prelude::*;
 
 use crate::{
     chart::Chart, components::finding::FindingCardColumn, modal::Modal, navigation::Navigation,
+    Route,
 };
 use common::commit::{CommitState, PerfReportStatus};
 use common::data_types::JobResult;
@@ -28,23 +30,33 @@ pub fn CardChartColumn(CardChartColumnProps { chart }: &CardChartColumnProps) ->
 
 #[derive(Debug, PartialEq, Properties)]
 pub struct PerfReportProps {
-    pub commit: Option<String>,
+    pub name: Option<String>,
+    pub instance: Option<usize>,
 }
 
 #[function_component]
-pub fn PerfReport(PerfReportProps { commit: current }: &PerfReportProps) -> Html {
+pub fn PerfReport(PerfReportProps { name, instance }: &PerfReportProps) -> Html {
     let commit_store = use_store_value::<CommitState>();
     log!("Running PerfReport component!");
-    let current = match current {
-        Some(title) => match commit_store.get_by_title(&title).first() {
-            // TODO If there are multiple commits with the same title, add another route "perf_report/title/<number>" and handle the vector returned here accordingly.
-            Some(c) => c.id,
-            None => {
-                return html! {
-                    <h1>{format!("Error getting commit with title {title:?}!")}</h1>
+    let current = match name {
+        Some(name) => {
+            let candidates = commit_store.get_by_name(name);
+            if candidates.len() > 1 {
+                if let Some(instance) = instance {
+                    candidates[*instance].id
+                } else {
+                    return html! {
+                        <Redirect<Route> to={Route::perf_report_double(name.clone(), 0)} />
+                    };
                 }
+            } else if candidates.len() == 1 {
+                candidates.first().unwrap().id
+            } else {
+                return html! {
+                    <h1>{format!("Error getting commit with name {name:?}!")}</h1>
+                };
             }
-        },
+        }
         None => match commit_store.get_latest() {
             Some(c) => c.id,
             None => {
