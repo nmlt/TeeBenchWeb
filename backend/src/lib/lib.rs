@@ -444,12 +444,12 @@ async fn runner(
                 let mut guard = commits.lock().unwrap();
                 if let Some(mut c) = guard.get_by_id_mut(&pr_conf.id) {
                     c.perf_report_running = PerfReportStatus::Running(job_id);
-                    return c.baseline;
+                    return (c.baseline, c.title.clone(), c.version.clone());
                 }
                 panic!("Could not find the commit!");
             };
-            let baseline = baseline();
-            let cmds = hardcoded_perf_report_commands(pr_conf.id, &baseline);
+            let (baseline, commit_title, commit_version) = baseline();
+            let cmds = hardcoded_perf_report_commands(pr_conf.id, &baseline, &commit_title, &commit_version);
             let configs = hardcoded_perf_report_configs(pr_conf.id, baseline);
             let results = run_experiment(
                 tee_bench_dir,
