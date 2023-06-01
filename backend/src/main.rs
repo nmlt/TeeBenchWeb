@@ -19,7 +19,6 @@ use tracing::{debug, error, info, instrument, warn};
 use backend_lib::{profiling_task, CancelNotifierType, PartialReportType};
 use common::commit::{Commit, CommitState};
 use common::data_types::{ClientMessage, Job, JobStatus, ServerMessage};
-use common::hardcoded::hardcoded_profiling_jobs;
 
 const DEFAULT_TASK_CHANNEL_SIZE: usize = 5;
 

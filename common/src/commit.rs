@@ -35,7 +35,7 @@ pub enum PerfReportStatus {
     Failed,
 }
 
-pub type CommitIdType = usize;
+pub type CommitIdType = i64;
 
 /// A commit represents an algorithm/operator and its performance report.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -70,7 +70,7 @@ impl Commit {
         datetime: OffsetDateTime,
         code: String,
         reports: Option<JobResult>,
-        id: usize,
+        id: CommitIdType,
         baseline: Algorithm,
     ) -> Self {
         Commit {
@@ -171,5 +171,71 @@ impl CommitState {
             }
         }
         map
+    }
+}
+
+/// Holds the data from the upload form.
+#[derive(Debug, Clone, PartialEq, Store)]
+pub struct UploadCommitFormState {
+    // TODO Strings might not need Options around them, just put an empty string there? The web also doesn't differentiate between nothing inputed yet and empty string, I think.
+    pub title: Option<String>,
+    // TODO If you feel fancy, you can add form validation for this field with the crate `lenient_semver`.
+    pub version: Option<String>,
+    pub operator: Option<Operator>,
+    pub code: Option<String>,
+    pub baseline: Option<Algorithm>,
+}
+
+impl Default for UploadCommitFormState {
+    fn default() -> Self {
+        Self {
+            title: None,
+            version: None,
+            operator: Some(Operator::Join),
+            code: None,
+            baseline: Some(Algorithm::Rho),
+        }
+    }
+}
+
+impl UploadCommitFormState {
+    // TODO Can this be converted to some From<Commit> implementation and use the automatic into?
+    /// Only call after you verified that the form has been filled in correctly. Otherwise this panics
+    pub fn to_commit(&self) -> Commit {
+        let c;
+        // let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).expect("Failed to get current time").as_secs();
+        let now = OffsetDateTime::now_utc();
+        let timestamp = format!(
+            "{}{}{}{}",
+            now.hour(),
+            now.minute(),
+            now.second(),
+            now.microsecond()
+        )
+        .parse::<CommitIdType>()
+        .unwrap();
+        unsafe {
+            c = Commit::new(
+                self.title.clone().unwrap(),
+                self.version.clone().unwrap(),
+                self.operator.clone().unwrap(),
+                OffsetDateTime::now_utc(),
+                self.code.clone().unwrap(),
+                None,
+                timestamp,
+                self.baseline.clone().unwrap(),
+            );
+        }
+        c
+    }
+    pub fn verify(&self) -> bool {
+        self.title.is_some()
+            && self.version.is_some()
+            && self.operator.is_some()
+            && self.code.is_some()
+            && self.baseline.is_some()
+    }
+    pub fn reset(&mut self) {
+        *self = Self::default();
     }
 }

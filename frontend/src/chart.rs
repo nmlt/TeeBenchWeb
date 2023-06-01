@@ -13,7 +13,7 @@ use common::commit::{CommitIdType, CommitState};
 use common::data_types::Algorithm::Commit;
 use common::data_types::{
     Algorithm, Dataset, ExperimentChart, ExperimentChartResult, ExperimentType, JobConfig,
-    Measurement, Parameter, PerfReportConfig, Platform, SingleRunResult, TeebenchArgs,
+    Measurement, Parameter, Platform, SingleRunResult, TeebenchArgs,
 };
 
 use crate::js_bindings::MyChart;
@@ -324,24 +324,24 @@ pub fn predefined_epc_paging_exp(
 
 fn get_algorithm_by_title(title: &str, version: &str, id: CommitIdType) -> Algorithm {
     match title {
-        "RHO" => (Algorithm::Rho),
-        "PHT" => (Algorithm::Pht),
-        "PSM" => (Algorithm::Psm),
-        "MWAY" => (Algorithm::Mway),
-        "RHT" => (Algorithm::Rht),
-        "CHT" => (Algorithm::Cht),
-        "RSM" => (Algorithm::Rsm),
-        "INL" => (Algorithm::Inl),
-        "CRKJ" => (Algorithm::Crkj),
+        "RHO" => Algorithm::Rho,
+        "PHT" => Algorithm::Pht,
+        "PSM" => Algorithm::Psm,
+        "MWAY" => Algorithm::Mway,
+        "RHT" => Algorithm::Rht,
+        "CHT" => Algorithm::Cht,
+        "RSM" => Algorithm::Rsm,
+        "INL" => Algorithm::Inl,
+        "CRKJ" => Algorithm::Crkj,
         "HashJoin" => match version {
-            "2" => (Algorithm::hj_v2),
-            "3" => (Algorithm::hj_v3),
-            "4" => (Algorithm::hj_v4),
-            "5" => (Algorithm::hj_v5),
-            "6" => (Algorithm::hj_v6),
-            _ => (Algorithm::Commit(id)),
+            "2" => Algorithm::hj_v2,
+            "3" => Algorithm::hj_v3,
+            "4" => Algorithm::hj_v4,
+            "5" => Algorithm::hj_v5,
+            "6" => Algorithm::hj_v6,
+            _ => Algorithm::Commit(id),
         },
-        _ => (Algorithm::Commit(id)),
+        _ => Algorithm::Commit(id),
     }
 }
 
@@ -883,7 +883,7 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                             },
                                         }
                                 });
-                                for ((alg, platform, _dataset), data_value) in data.iter() {
+                                for ((alg, _platform, _dataset), data_value) in data.iter() {
                                     let alg = commit_store.get_title_by_algorithm(alg).unwrap();
                                     let alg_color = get_color_by_algorithm(&alg);
                                     // compare the global label (steps) with the data_value results
@@ -908,7 +908,7 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                     }));
                                 }
 
-                                for ((alg, platform, _dataset), data_value) in data2.iter() {
+                                for ((alg, _platform, _dataset), data_value) in data2.iter() {
                                     let alg = commit_store.get_title_by_algorithm(alg).unwrap();
                                     let alg_color = get_color_by_algorithm(&alg).to_string()
                                         + &"AA".to_string();

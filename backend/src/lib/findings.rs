@@ -1,13 +1,18 @@
 use anyhow::{bail, Result};
-use common::data_types::JobConfig::PerfReport;
 use common::data_types::{
     Algorithm, Dataset, ExperimentType, FindingStyle, JobConfig, Measurement, Parameter, Platform,
-    Report, TeebenchArgs, UnwrapedExperimentResult, CPU_PHYSICAL_CORES,
+    Report, UnwrapedExperimentResult, CPU_PHYSICAL_CORES,
 };
+use std::iter::zip;
 use tracing::instrument;
+use tracing::log::info;
 
 #[instrument]
 pub fn enrich_report_with_findings(jr: &mut Report) -> Result<()> {
+    let mut epc_commit_ewb: Vec<i32> = vec![];
+    let mut epc_baseline_ewb: Vec<i32> = vec![];
+    let mut throughput_improvements: Vec<f32> = vec![];
+
     // 1. iterate over each experiment chart and enrich it with findings
     for ex in &mut jr.charts {
         if ex.results.iter().any(|res| res.1.is_err()) {
@@ -392,9 +397,49 @@ pub fn enrich_report_with_findings(jr: &mut Report) -> Result<()> {
                 }
             }
             JobConfig::PerfReport(c) => match c.exp_type {
-                ExperimentType::EpcPaging => {}
+                ExperimentType::EpcPaging => {
+                    let mut res_tmp = results.clone();
+                    res_tmp.sort_by_key(|(t, _)| t.x.unwrap());
+                    let total_ewbs: Vec<i32> = res_tmp
+                        .iter()
+                        .map(|(_, b)| b.get("totalEWB").unwrap().parse::<i32>().unwrap())
+                        .collect();
+                    info!("total_ewbs: {:?}", total_ewbs);
+                    match c.baseline {
+                        Algorithm::Commit(_) => {
+                            epc_commit_ewb = total_ewbs;
+                        }
+                        _ => {
+                            epc_baseline_ewb = total_ewbs;
+                        }
+                    }
+                }
                 ExperimentType::Throughput => {}
-                ExperimentType::Scalability => {}
+                ExperimentType::Scalability => {
+                    info!("perf_config: {:#?}", c);
+                    let mut tmp = results.clone();
+                    tmp.sort_by_key(|(t, _)| t.threads);
+                    let throughput_commit: Vec<f32> = tmp
+                        .iter()
+                        .filter(|(a, _)| match a.algorithm {
+                            Algorithm::Commit(_) => true,
+                            _ => false,
+                        })
+                        .map(|(_, r)| r.get("throughput").unwrap().parse::<f32>().unwrap())
+                        .collect();
+                    let throughput_baseline: Vec<f32> = tmp
+                        .iter()
+                        .filter(|(a, _)| match a.algorithm {
+                            Algorithm::Commit(_) => false,
+                            _ => true,
+                        })
+                        .map(|(_, r)| r.get("throughput").unwrap().parse::<f32>().unwrap())
+                        .collect();
+                    for (a, b) in zip(throughput_commit, throughput_baseline) {
+                        let impr = ((a - b) / b) * 100.0;
+                        throughput_improvements.push(impr);
+                    }
+                }
                 ExperimentType::Custom => {}
             },
             JobConfig::Compile(_) => {}
@@ -444,11 +489,11 @@ pub fn enrich_report_with_findings(jr: &mut Report) -> Result<()> {
                             })
                             .collect();
                         for i in &res0 {
-                            match res1.iter().find(|(a, d, t, e)| a == &i.0) {
+                            match res1.iter().find(|(a, _, _, _)| a == &i.0) {
                                 None => (),
                                 Some(r) => {
-                                    let t0 = i.2.parse::<f32>().unwrap();
-                                    let t1 = r.2.parse::<f32>().unwrap();
+                                    let _t0 = i.2.parse::<f32>().unwrap();
+                                    let _t1 = r.2.parse::<f32>().unwrap();
                                     let epc0 = i.3.parse::<i32>().unwrap();
                                     let epc1 = r.3.parse::<i32>().unwrap();
 
@@ -481,5 +526,53 @@ pub fn enrich_report_with_findings(jr: &mut Report) -> Result<()> {
         }
     }
     // 2. add top-level findings
+
+    // report average throughput change
+    if throughput_improvements.len() > 0 {
+        let sum = throughput_improvements.iter().sum::<f32>();
+        let avg = sum / throughput_improvements.len() as f32;
+        let style;
+        let message;
+        if avg > 0.0 {
+            message = format!("Throughput increased by {}%!", avg as i32);
+            style = FindingStyle::Good;
+        } else {
+            message = format!("Throughput deacresed by {}%.", avg as i32);
+            style = FindingStyle::Bad
+        }
+        jr.findings.push(common::data_types::Finding {
+            title: message,
+            message: "".to_string(),
+            style,
+        });
+    }
+
+    // calculate average EPC paging change
+    if epc_baseline_ewb.len() > 0 && epc_baseline_ewb.len() == epc_commit_ewb.len() {
+        let improvements: Vec<f32> = epc_baseline_ewb
+            .iter()
+            .zip(epc_commit_ewb)
+            .map(|(a, b)| ((*a as f32 - b as f32) / b as f32) * 100.0)
+            .collect();
+
+        let sum = improvements.iter().sum::<f32>();
+        let avg = sum / epc_baseline_ewb.clone().len() as f32;
+        let style;
+        let message;
+        if avg > 0.0 {
+            let max = improvements.iter().max_by(|a, b| a.total_cmp(b)).unwrap();
+            message = format!("Reduced EPC Paging by up to {}%!", *max as i32);
+            style = FindingStyle::Good;
+        } else {
+            message = format!("Increased EPC Paging by {}% on average.", avg as i32);
+            style = FindingStyle::Bad
+        }
+        jr.findings.push(common::data_types::Finding {
+            title: message,
+            message: "".to_string(),
+            style,
+        });
+    }
+
     Ok(())
 }

@@ -18,7 +18,7 @@ use crate::navigation::Navigation;
 use crate::queue::QueueState;
 
 use common::commit::{
-    Commit, CommitIdType, CommitState, CompilationStatus, Operator, PerfReportStatus,
+    CommitState, CompilationStatus, Operator, PerfReportStatus, UploadCommitFormState,
 };
 use common::data_types::{Algorithm, Job, JobConfig, PerfReportConfig, VariantNames};
 
@@ -26,78 +26,20 @@ use yew_router::components::Link;
 
 use crate::Route;
 
-// TODO This is probably a bad idea. Just put the counter in the UploadCommitFormState. Then I have to update that state after HTTP GET'ting the already present commits from the server.
-static mut COMMIT_ID_COUNTER: CommitIdType = 0;
-
-/// Holds the data from the upload form.
-#[derive(Debug, Clone, PartialEq, Store)]
-pub struct UploadCommitFormState {
-    // TODO Strings might not need Options around them, just put an empty string there? The web also doesn't differentiate between nothing inputed yet and empty string, I think.
-    pub title: Option<String>,
-    // TODO If you feel fancy, you can add form validation for this field with the crate `lenient_semver`.
-    pub version: Option<String>,
-    pub operator: Option<Operator>,
-    pub code: Option<String>,
-    pub baseline: Option<Algorithm>,
-}
-
-impl Default for UploadCommitFormState {
-    fn default() -> Self {
-        Self {
-            title: None,
-            version: None,
-            operator: Some(Operator::Join),
-            code: None,
-            baseline: Some(Algorithm::Rho),
-        }
-    }
-}
-
-impl UploadCommitFormState {
-    // TODO Can this be converted to some From<Commit> implementation and use the automatic into?
-    /// Only call after you verified that the form has been filled in correctly. Otherwise this panics
-    pub fn to_commit(&self) -> Commit {
-        let c;
-        unsafe {
-            COMMIT_ID_COUNTER += 1;
-            c = Commit::new(
-                self.title.clone().unwrap(),
-                self.version.clone().unwrap(),
-                self.operator.clone().unwrap(),
-                OffsetDateTime::now_utc(),
-                self.code.clone().unwrap(),
-                None,
-                COMMIT_ID_COUNTER,
-                self.baseline.clone().unwrap(),
-            );
-        }
-        c
-    }
-    pub fn verify(&self) -> bool {
-        self.title.is_some()
-            && self.version.is_some()
-            && self.operator.is_some()
-            && self.code.is_some()
-            && self.baseline.is_some()
-    }
-    pub fn reset(&mut self) {
-        *self = Self::default();
-    }
-}
-
 #[function_component]
 fn UploadCommit() -> Html {
     let commit_store = use_store_value::<CommitState>();
     let commit_store_moved = commit_store.clone();
-    use_effect_with_deps(
-        move |_| {
-            let largest = commit_store_moved.get_latest().map(|c| c.id).unwrap_or(0);
-            unsafe {
-                COMMIT_ID_COUNTER = largest;
-            }
-        },
-        commit_store.clone(),
-    );
+    // TODO: I think this is unnecessary
+    // use_effect_with_deps(
+    //     move |_| {
+    //         let largest = commit_store_moved.get_latest().map(|c| c.id).unwrap_or(0);
+    //         unsafe {
+    //             // COMMIT_ID_COUNTER = largest;
+    //         }
+    //     },
+    //     commit_store.clone(),
+    // );
     let onchange_file = {
         let dispatch = Dispatch::<UploadCommitFormState>::new();
         dispatch.reduce_mut_future_callback_with(|store, e: Event| {

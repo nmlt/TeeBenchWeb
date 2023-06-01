@@ -1,3 +1,4 @@
+use common::hardcoded::hardcoded_commits;
 use gloo_console::log;
 use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
@@ -130,6 +131,23 @@ fn main() {
                 }
             });
         }
+        spawn_local(async {
+            let commits = hardcoded_commits();
+            let queue_dispatch = Dispatch::<CommitState>::new();
+            for commit in commits {
+                let c = commit.to_commit();
+                let mut commit_state = CommitState::clone(&queue_dispatch.get());
+                commit_state.0.push(c.clone());
+                use gloo_net::http::{Method, Request};
+                let _resp = Request::get("/api/commit")
+                    .method(Method::POST)
+                    .json(&c)
+                    .unwrap()
+                    .send()
+                    .await
+                    .expect("Server didn't respond. Is it running?");
+            }
+        })
     }
     yew::Renderer::<App>::new().render();
 }

@@ -7,6 +7,39 @@ use std::collections::HashSet;
 
 pub const MAX_THREADS: u8 = 32;
 
+pub fn hardcoded_commits() -> Vec<UploadCommitFormState> {
+    let empty_code: String = indoc! {r#"
+    #include <stdint.h>
+    #include <pthread.h>
+    #include <JoinCommons.h>
+    #include "data-types.h"
+    #ifdef NATIVE_COMPILATION
+    #include "Logger.h"
+    #include "native_ocalls.h"
+    #include <cstring>
+    #else
+    #include "Enclave_t.h"
+    #include "Enclave.h"
+    #endif
+
+
+    result_t* OperatorJoin (struct table_t* relR, struct table_t* relS, joinconfig_t * config) {
+        (void) (relR);
+        (void) (relS);
+        (void) (config);
+        return nullptr;
+    }"#}
+    .to_string();
+    let commits: Vec<UploadCommitFormState> = Vec::from([UploadCommitFormState {
+        title: Option::from("HashJoin".to_string()),
+        version: Option::from("6".to_string()),
+        operator: Option::from(Operator::Join),
+        code: Option::from(empty_code),
+        baseline: Option::from(Algorithm::hj_v2),
+    }]);
+    commits
+}
+
 pub fn hardcoded_profiling_jobs() -> Vec<Job> {
     let configs: Vec<ProfilingConfiguration> = Vec::from([
         //Throughput(threads)
@@ -298,7 +331,7 @@ pub fn hardcoded_perf_report_commands(
     res
 }
 
-use crate::commit::{Commit, Operator};
+use crate::commit::{Commit, Operator, UploadCommitFormState};
 use crate::data_types::Algorithm::*;
 use crate::data_types::{
     Dataset, ExperimentType, Job, Measurement, Parameter, ProfilingConfiguration,

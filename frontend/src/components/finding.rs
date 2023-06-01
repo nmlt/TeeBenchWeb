@@ -16,11 +16,13 @@ pub fn FindingCardColumn(FindingCardColumnProps { finding }: &FindingCardColumnP
         FindingStyle::Bad => "background-color: #FF6961;",
     };
     html! {
+        // <div class="col-md-auto">
         <div class="col-xl-4 col-lg-4 col-6">
-            <div class="card my-4" style={class_list}>
+            <div class="card my-2 mx-0" style={class_list}>
+            // <div class="card my-4" style={class_list}>
                 <div class="card-body">
-                    <h5 class="card-text">{finding.title.clone()}</h5>
-                    <h5 class="card-title">{finding.message.clone()}</h5>
+                    <h5 class="card-text text-center">{finding.title.clone()}</h5>
+                    <h5 class="card-title text-center">{finding.message.clone()}</h5>
                 </div>
             </div>
         </div>
