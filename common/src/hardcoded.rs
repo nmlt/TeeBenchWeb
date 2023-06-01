@@ -3,11 +3,11 @@ use crate::{
     commit::CommitIdType,
     data_types::{Algorithm, JobConfig, PerfReportConfig, Platform, EPC_SIZE_KB, REPLACE_ALG},
 };
-use std::collections::{HashSet, VecDeque};
+use std::collections::HashSet;
 
 pub const MAX_THREADS: u8 = 32;
 
-pub fn hardcoded_profiling_jobs() -> VecDeque<Job> {
+pub fn hardcoded_profiling_jobs() -> Vec<Job> {
     let configs: Vec<ProfilingConfiguration> = Vec::from([
         //Throughput(threads)
         ProfilingConfiguration {
@@ -74,10 +74,11 @@ pub fn hardcoded_profiling_jobs() -> VecDeque<Job> {
         })
         .collect();
 
-    VecDeque::from(jobs)
+    jobs
 }
 
 // TODO Hardcoded Vecs could become arrays.
+/// These are used to add job config descriptions to the perf report jobs, depending on the algorithm/commit.
 pub fn hardcoded_perf_report_configs(id: CommitIdType, baseline: Algorithm) -> Vec<JobConfig> {
     let (throughput_fit, throughput_exceed) = PerfReportConfig::for_throughput(id, baseline);
     let (scalability_fit, scalability_exceed) = PerfReportConfig::for_scalability(id, baseline);

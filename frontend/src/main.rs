@@ -1,5 +1,8 @@
+use gloo_console::log;
+use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
 use yew_router::prelude::*;
+use yewdux::prelude::use_store_value;
 
 mod chart;
 mod commits;
@@ -55,149 +58,59 @@ fn switch(routes: Route) -> Html {
 
 #[function_component]
 fn App() -> Html {
+    let websocket = if cfg!(feature = "static") {
+        html! {}
+    } else {
+        html! {
+            <Websocket />
+        }
+    };
     html! {
         <>
         <BrowserRouter>
             <Switch<Route> render={switch} />
         </BrowserRouter>
-        <Websocket />
+        {websocket}
         </>
     }
 }
 
 fn main() {
-    // use yewdux::prelude::Dispatch;
+    use crate::job_results_view::FinishedJobState;
+    use common::commit::CommitState;
+    use common::hardcoded::{hardcoded_profiling_jobs, predefined_commit};
+    use yewdux::prelude::Dispatch;
 
-    // use common::data_types::Commit;
-    // use time::OffsetDateTime;
-    // use crate::commits::CommitState;
-    // use common::data_types::Report;
-    // let default_commits = vec![
-    //     Commit::new(
-    //         "RHT".to_owned(),
-    //         "JOIN".to_owned(),
-    //         OffsetDateTime::now_utc(),
-    //         include_str!("../deps/radix_join.c").to_owned(),
-    //         vec![Report::default()],
-    //     ),
-    //     Commit::new(
-    //         "CHT".to_owned(),
-    //         "JOIN".to_owned(),
-    //         OffsetDateTime::now_utc(),
-    //         "blah".to_owned(),
-    //         vec![Report::default()],
-    //     ),
-    //     Commit::new(
-    //         "PHT".to_owned(),
-    //         "JOIN".to_owned(),
-    //         OffsetDateTime::now_utc(),
-    //         "blah".to_owned(),
-    //         vec![Report::default()],
-    //     ),
-    //     Commit::new(
-    //         "MWAY".to_owned(),
-    //         "JOIN".to_owned(),
-    //         OffsetDateTime::now_utc(),
-    //         "blah".to_owned(),
-    //         vec![Report::default()],
-    //     ),
-    // ];
-    // Dispatch::<CommitState>::new().set(CommitState {
-    //     commits: default_commits,
-    // });
+    let finished_job_dispatch = Dispatch::<FinishedJobState>::new();
+    if cfg!(feature = "static") {
+        let default_commits = vec![predefined_commit()];
+        Dispatch::<CommitState>::new().set(CommitState::new(default_commits));
 
-    // use crate::job_results_view::FinishedJobState;
-    // use common::data_types::{
-    //     Algorithm, Dataset, ExperimentType, Finding, FindingStyle, Job, Measurement, Parameter,
-    //     Platform, ProfilingConfiguration, Report, ReportWithFindings,
-    // };
-    // use std::collections::HashSet;
-    // let default_job_results = vec![
-    //     Job::Finished {
-    //         config: ProfilingConfiguration {
-    //             algorithm: HashSet::from([Algorithm::Cht]),
-    //             experiment_type: ExperimentType::EpcPaging,
-    //             parameter: Parameter::Threads,
-    //             measurement: Measurement::Throughput,
-    //             min: 3,
-    //             max: 3,
-    //             step: 3,
-    //             dataset: HashSet::from([Dataset::CacheExceed]),
-    //             platform: HashSet::from([Platform::Sgx]),
-    //             sort_data: true,
-    //         },
-    //         submitted: time::OffsetDateTime::now_utc() - time::Duration::new(4000, 0),
-    //         runtime: time::Duration::new(5, 0),
-    //         result: Ok(ReportWithFindings {
-    //             report: Report::EpcCht { findings: vec![] },
-    //             findings: Vec::from([
-    //                 Finding {
-    //                     title: "MaxThroughput".to_owned(),
-    //                     message: "64.22 M".to_owned(),
-    //                     style: FindingStyle::Neutral,
-    //                 },
-    //                 Finding {
-    //                     title: "Severe EPC Paging".to_owned(),
-    //                     message: "Max EPC misses: 1870652".to_owned(),
-    //                     style: FindingStyle::Bad,
-    //                 },
-    //                 Finding {
-    //                     title: "Low throughput".to_owned(),
-    //                     message: "Lowest throughput [M rec/s]: 0.97".to_owned(),
-    //                     style: FindingStyle::Bad,
-    //                 },
-    //             ]),
-    //         }),
-    //     },
-    //     Job::Finished {
-    //         config: ProfilingConfiguration {
-    //             algorithm: HashSet::from([Algorithm::Rho]),
-    //             experiment_type: ExperimentType::EpcPaging,
-    //             parameter: Parameter::Threads,
-    //             measurement: Measurement::Throughput,
-    //             min: 1,
-    //             max: 8,
-    //             step: 1,
-    //             dataset: HashSet::from([Dataset::CacheFit]),
-    //             platform: HashSet::from([Platform::Sgx]),
-    //             sort_data: false,
-    //         },
-    //         submitted: time::OffsetDateTime::now_utc() - time::Duration::new(3600, 0),
-    //         runtime: time::Duration::new(180, 0),
-    //         result: Ok(ReportWithFindings {
-    //             report: Report::ScalabilityNativeSgxExample { findings: vec![] },
-    //             findings: Vec::from([
-    //                 Finding {
-    //                     title: "Throughput ratio (Native/SGX)".to_owned(),
-    //                     message: "7x - 31x".to_owned(),
-    //                     style: FindingStyle::Neutral,
-    //                 },
-    //                 Finding {
-    //                     title: "Best CPU cores Native".to_owned(),
-    //                     message: "6 / 8".to_owned(),
-    //                     style: FindingStyle::SoSo,
-    //                 },
-    //                 Finding {
-    //                     title: "Best CPU cores SGX".to_owned(),
-    //                     message: "2 / 8".to_owned(),
-    //                     style: FindingStyle::Bad,
-    //                 },
-    //                 Finding {
-    //                     title: "CPU context-switch - High".to_owned(),
-    //                     message: "SGX".to_owned(),
-    //                     style: FindingStyle::Bad,
-    //                 },
-    //                 Finding {
-    //                     title: "EPC Paging - Medium".to_owned(),
-    //                     message: "SGX".to_owned(),
-    //                     style: FindingStyle::SoSo,
-    //                 },
-    //             ]),
-    //         }),
-    //     },
-    // ];
-    // Dispatch::<FinishedJobState>::new().set(FinishedJobState {
-    //     jobs: default_job_results,
-    // });
+        let default_job_results = vec![];
+
+        finished_job_dispatch.set(FinishedJobState::new(default_job_results));
+    } else {
+        use crate::queue::QueueState;
+        if finished_job_dispatch.get().jobs.is_empty() {
+            spawn_local(async {
+                let jobs = hardcoded_profiling_jobs();
+                let queue_dispatch = Dispatch::<QueueState>::new();
+                for job in jobs {
+                    let mut queue = QueueState::clone(&queue_dispatch.get());
+                    queue.queue.push_back(job.clone());
+                    queue_dispatch.set(QueueState::clone(&queue));
+                    use gloo_net::http::{Method, Request};
+                    let resp = Request::get("/api/job")
+                        .method(Method::POST)
+                        .json(&job)
+                        .unwrap() // This should be impossible to fail.
+                        .send()
+                        .await
+                        .expect("Server didn't respond. Is it running?");
+                    log!("Sent request got: ", format!("{resp:?}"));
+                }
+            });
+        }
+    }
     yew::Renderer::<App>::new().render();
 }

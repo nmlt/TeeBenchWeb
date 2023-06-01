@@ -134,6 +134,12 @@ pub struct FinishedJobState {
     pub jobs: Vec<Job>,
 }
 
+impl FinishedJobState {
+    pub fn new(jobs: Vec<Job>) -> Self {
+        Self { jobs }
+    }
+}
+
 #[function_component]
 pub fn JobResultsView() -> Html {
     let (finished_job_store, _dispatch) = use_store::<FinishedJobState>();
