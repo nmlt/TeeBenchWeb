@@ -59,14 +59,16 @@ ssh -i "<path to your ssh key>" -l <your username> -J dima1 -N -L localhost:3000
 ```
 Now you can open `http://0.0.0.0:3000/` in your local webbrowser and use TeeBenchWeb.
 
-Testing the web app
+Testing the static web app
 -------------------
 
-For this the location of static assets needs to change. To prevent this from interfering with the build of the server, we'll also change the dist directory. 
+For this the location of static assets needs to change. To prevent this from interfering with the build of the server, we'll also change the dist directory. `trunk` by default serves the webapp at port 8080. Add `--port 3000` to change it to 3000. 
+
+To get the static files to be served by another server, just take all the files in the created `frontend/dist` folder.
 
 ```
 cd frontend
-trunk serve -d "dist" --public-url "/"
+trunk serve -d "dist" --public-url "/" --features static
 ```
 
 Testing

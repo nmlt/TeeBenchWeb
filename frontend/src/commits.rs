@@ -232,6 +232,11 @@ fn UploadCommit() -> Html {
         vec![]
     };
     let upload_disabled = !upload_commit_store.verify();
+    let entire_form_disabled = if cfg!(feature = "static") {
+        true
+    } else {
+        false
+    };
     html! {
         <form class="row g-3">
             <div class="col-md">
@@ -239,26 +244,26 @@ fn UploadCommit() -> Html {
                     <div class="col-md">
                         <div>
                             <label for="uploadFormFile" class="form-label">{"Source code"}</label>
-                            <input id="uploadFormFile" class="form-control" type="file" onchange={onchange_file} />
+                            <input id="uploadFormFile" class="form-control" type="file" onchange={onchange_file} disabled={entire_form_disabled} />
                         </div>
                     </div>
                     <div class="col-md">
                         <div>
                             <label for="titleFormInput" class="form-label">{"Title"}</label>
-                            <input id="titleFormInput" class="form-control" type="text" onchange={onchange_title} />
+                            <input id="titleFormInput" class="form-control" type="text" onchange={onchange_title} disabled={entire_form_disabled} />
                         </div>
                     </div>
                     <div class="col-md">
                         <div>
                             <label for="versionFormInput" class="form-label">{"Version"}</label>
-                            <input id="versionFormInput" class="form-control" type="text" onchange={onchange_version} />
+                            <input id="versionFormInput" class="form-control" type="text" onchange={onchange_version} disabled={entire_form_disabled} />
                         </div>
                     </div>
                     <div class="col-md">
-                        <InputSelect options={operators} onchange={operators_onchange} label={"Operator"} multiple={false} selected={selected_operator} disabled={false} />
+                        <InputSelect options={operators} onchange={operators_onchange} label={"Operator"} multiple={false} selected={selected_operator} disabled={entire_form_disabled} />
                     </div>
                     <div class="col-md">
-                        <InputSelect options={algs} onchange={algs_onchange} label={"Baseline"} multiple={false} selected={selected_baseline} disabled={false} />
+                        <InputSelect options={algs} onchange={algs_onchange} label={"Baseline"} multiple={false} selected={selected_baseline} disabled={entire_form_disabled} />
                     </div>
                     <div class="col-auto">
                         <input class="btn btn-primary" type="button" onclick={onclick_submit} disabled={upload_disabled} value={"Upload"} />
