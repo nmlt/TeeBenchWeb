@@ -7,44 +7,68 @@ use std::collections::HashSet;
 
 pub const MAX_THREADS: u8 = 32;
 
-pub fn hardcoded_commits() -> Vec<Commit> {
-    let empty_code: String = indoc! {r#"
-    #include <stdint.h>
-    #include <pthread.h>
-    #include <JoinCommons.h>
-    #include "data-types.h"
-    #ifdef NATIVE_COMPILATION
-    #include "Logger.h"
-    #include "native_ocalls.h"
-    #include <cstring>
-    #else
-    #include "Enclave_t.h"
-    #include "Enclave.h"
-    #endif
+pub fn hardcoded_commits() -> (Vec<Commit>, Vec<Job>) {
+    let commit_form_states: Vec<UploadCommitFormState> = Vec::from([
+        UploadCommitFormState {
+            title: Option::from("HashJoin".to_string()),
+            version: Option::from("1".to_string()),
+            operator: Option::from(Operator::Join),
+            code: Option::from(
+                include_str!("../code_files/OperatorJoin_HashJoinVersion1.cpp").to_string(),
+            ),
+            baseline: Option::from(Algorithm::Rho),
+        },
+        UploadCommitFormState {
+            title: Option::from("HashJoin".to_string()),
+            version: Option::from("6".to_string()),
+            operator: Option::from(Operator::Join),
+            code: Option::from(
+                include_str!("../code_files/OperatorJoin_HashJoinVersion6.cpp").to_string(),
+            ),
+            baseline: Option::from(Algorithm::hj_v2),
+        },
+    ]);
 
-
-    result_t* OperatorJoin (struct table_t* relR, struct table_t* relS, joinconfig_t * config) {
-        (void) (relR);
-        (void) (relS);
-        (void) (config);
-        return nullptr;
-    }"#}
-    .to_string();
-    let commits: Vec<Commit> = Vec::from([UploadCommitFormState {
-        title: Option::from("HashJoin".to_string()),
-        version: Option::from("6".to_string()),
-        operator: Option::from(Operator::Join),
-        code: Option::from(empty_code),
-        baseline: Option::from(Algorithm::hj_v2),
-    }])
-    .iter()
-    .map(|c| {
-        let mut cc = c.to_commit().clone();
-        cc.compilation = CompilationStatus::Successful("SUCCESS!".to_string());
-        cc
-    })
-    .collect::<Vec<Commit>>();
-    commits
+    let commits: Vec<Commit> = commit_form_states
+        .iter()
+        .map(|c| {
+            let mut cc = c.to_commit().clone();
+            match cc.title.as_str() {
+                "HashJoin" => match cc.version.as_str() {
+                    "1" => {
+                        cc.compilation = CompilationStatus::Failed(
+                            include_str!(
+                                "../code_files/OperatorJoin_HashJoinVersion1_Compiler_Output.txt"
+                            )
+                            .to_string(),
+                        );
+                    }
+                    "6" => {
+                        cc.compilation = CompilationStatus::Successful(
+                            include_str!(
+                                "../code_files/OperatorJoin_HashJoinVersion6_Compiler_Output.txt"
+                            )
+                            .to_string(),
+                        );
+                    }
+                    _ => {}
+                },
+                _ => {}
+            }
+            cc
+        })
+        .collect::<Vec<Commit>>();
+    let jobs = commits
+        .iter()
+        .filter(|c| c.version.as_str() != "1")
+        .map(|c| {
+            Job::new(
+                JobConfig::PerfReport(PerfReportConfig::for_throughput(c.id, c.baseline).0),
+                OffsetDateTime::now_utc(),
+            )
+        })
+        .collect::<Vec<Job>>();
+    (commits, jobs)
 }
 
 pub fn hardcoded_profiling_jobs() -> Vec<Job> {
@@ -341,7 +365,7 @@ pub fn hardcoded_perf_report_commands(
 use crate::commit::{Commit, CompilationStatus, Operator, UploadCommitFormState};
 use crate::data_types::Algorithm::*;
 use crate::data_types::{
-    Dataset, ExperimentType, Job, Measurement, Parameter, ProfilingConfiguration,
+    Dataset, ExperimentType, Job, JobStatus, Measurement, Parameter, ProfilingConfiguration,
 };
 use indoc::indoc;
 use time::OffsetDateTime;

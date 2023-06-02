@@ -1,0 +1,480 @@
+Command `make native CFLAGS=-DNATIVE_COMPILATION` succeeded with:
+---STDOUT---
+---STDERR---
+---END---
+Command `./native -a OperatorJoin` succeeded with:
+---STDOUT---
+[32m[  0.0000][ INFO] Welcome from native![0m
+[32m[  0.0001][ INFO] Build relation R with size = 16.00 MB (2097152 tuples)[0m
+[32m[  0.0598][ INFO] Build relation S with size = 16.00 MB (2097152 tuples)[0m
+[32m[  0.1138][ INFO] Running algorithm OperatorJoin[0m
+[35m[  0.1239][ ENCL] Pass-2: # partitioning tasks = 128[0m
+[35m[  0.1311][ ENCL] Number of join tasks = 16384[0m
+[34m[  0.1371][  CSV] algorithm,threads,relR,relS,matches,phase1Cycles,phase2Cycles,cyclesPerTuple,phase1Time,phase2Time,totalTime,throughput[0m
+[34m[  0.1371][  CSV] HashJoinVersion6,2,2097152,2097152,2097152,34130711,9168763,10,0,0,21737,192.9569[0m
+[34m[  0.1372][  PCM] ************************** RUSAGE **************************[0m
+[34m[  0.1372][  PCM] user CPU time used               : 0.36944s[0m
+[34m[  0.1372][  PCM] system CPU time used             : 0.7718s[0m
+[34m[  0.1372][  PCM] page reclaims (soft page faults) : 10398[0m
+[34m[  0.1372][  PCM] page faults (hard page faults)   : 0[0m
+[34m[  0.1372][  PCM] voluntary context switches       : 7[0m
+[34m[  0.1372][  PCM] involuntary context switches     : 4[0m
+[34m[  0.1372][  PCM] ************************** RUSAGE **************************[0m
+[32m[  0.1372][ INFO] Total join runtime: 0.04s[0m
+[32m[  0.1372][ INFO] Matches = 2097152[0m
+---STDERR---
+---END---
+Command `make sgx SGX_DEBUG=1 SGX_PRERELEASE=0 SGX_MODE=HW CFLAGS=-DPCM_COUNT -DSGX_COUNTERS` succeeded with:
+---STDOUT---
+<EnclaveConfiguration>
+    <ProdID>0</ProdID>
+    <ISVSVN>0</ISVSVN>
+    <StackMaxSize>0x20000</StackMaxSize>
+    <!--   600 MB-->
+    <HeapMaxSize>0x25800000</HeapMaxSize>
+    <TCSNum>17</TCSNum>
+    <TCSMinPool>17</TCSMinPool>
+    <TCSPolicy>1</TCSPolicy>
+    <!-- Recommend changing 'DisableDebug' to 1 to make the enclave undebuggable for enclave release -->
+    <DisableDebug>0</DisableDebug>
+    <MiscSelect>0</MiscSelect>
+    <MiscMask>0xFFFFFFFF</MiscMask>
+</EnclaveConfiguration>
+The project has been built in debug hardware mode.
+---STDERR---
+In file included from lib/pcm/cpucounters.h:34,
+                 from App/Lib/pcm_commons.h:5,
+                 from App/App.cpp:52:
+lib/pcm/msr.h:29:7: warning: "__APPLE__" is not defined, evaluates to 0 [-Wundef]
+   29 | #elif __APPLE__
+      |       ^~~~~~~~~
+In file included from lib/pcm/cpucounters.h:34,
+                 from App/Lib/pcm_commons.h:5,
+                 from App/App.cpp:52:
+lib/pcm/msr.h:40:7: warning: "__APPLE__" is not defined, evaluates to 0 [-Wundef]
+   40 | #elif __APPLE__
+      |       ^~~~~~~~~
+In file included from lib/pcm/cpucounters.h:35,
+                 from App/Lib/pcm_commons.h:5,
+                 from App/App.cpp:52:
+lib/pcm/pci.h:80:7: warning: "__APPLE__" is not defined, evaluates to 0 [-Wundef]
+   80 | #elif __APPLE__
+      |       ^~~~~~~~~
+In file included from lib/pcm/cpucounters.h:33,
+                 from App/Lib/pcm_commons.h:5,
+                 from App/App.cpp:52:
+lib/pcm/types.h: In member function ‘unsigned int MCFGHeader::nrecords() const’:
+lib/pcm/types.h:1019:46: warning: conversion from ‘long unsigned int’ to ‘unsigned int’ may change value [-Wconversion]
+ 1019 |         return (length - sizeof(MCFGHeader)) / sizeof(MCFGRecord);
+      |                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~
+In file included from App/Lib/pcm_commons.h:5,
+                 from App/App.cpp:52:
+lib/pcm/cpucounters.h: In function ‘double getIncomingQPILinkUtilization(uint32, uint32, const SystemCounterState&, const SystemCounterState&)’:
+lib/pcm/cpucounters.h:3246:81: warning: conversion from ‘uint64’ {aka ‘long long unsigned int’} to ‘double’ may change value [-Wconversion]
+ 3246 |     const double max_bytes = (double)(double(max_speed) * double(getInvariantTSC(before, after) / double(m->getNumCores())) / double(m->getNominalFrequency()));
+      |                                                                  ~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~
+lib/pcm/cpucounters.h: In function ‘uint64 getOutgoingQPILinkBytes(uint32, uint32, const SystemCounterState&, const SystemCounterState&)’:
+lib/pcm/cpucounters.h:3312:100: warning: conversion from ‘uint64’ {aka ‘long long unsigned int’} to ‘double’ may change value [-Wconversion]
+ 3312 |     const double max_bytes = (double(m->getQPILinkSpeed(socketNr, linkNr)) * double(getInvariantTSC(before, after) / double(m->getNumCores())) / double(m->getNominalFrequency()));
+      |                                                                                     ~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~
+In file included from lib/pcm/cpucounters.h:34,
+                 from App/Lib/pcm_commons.h:5,
+                 from App/Lib/pcm_commons.cpp:1:
+lib/pcm/msr.h:29:7: warning: "__APPLE__" is not defined, evaluates to 0 [-Wundef]
+   29 | #elif __APPLE__
+      |       ^~~~~~~~~
+In file included from lib/pcm/cpucounters.h:34,
+                 from App/Lib/pcm_commons.h:5,
+                 from App/Lib/pcm_commons.cpp:1:
+lib/pcm/msr.h:40:7: warning: "__APPLE__" is not defined, evaluates to 0 [-Wundef]
+   40 | #elif __APPLE__
+      |       ^~~~~~~~~
+In file included from lib/pcm/cpucounters.h:35,
+                 from App/Lib/pcm_commons.h:5,
+                 from App/Lib/pcm_commons.cpp:1:
+lib/pcm/pci.h:80:7: warning: "__APPLE__" is not defined, evaluates to 0 [-Wundef]
+   80 | #elif __APPLE__
+      |       ^~~~~~~~~
+In file included from lib/pcm/cpucounters.h:33,
+                 from App/Lib/pcm_commons.h:5,
+                 from App/Lib/pcm_commons.cpp:1:
+lib/pcm/types.h: In member function ‘unsigned int MCFGHeader::nrecords() const’:
+lib/pcm/types.h:1019:46: warning: conversion from ‘long unsigned int’ to ‘unsigned int’ may change value [-Wconversion]
+ 1019 |         return (length - sizeof(MCFGHeader)) / sizeof(MCFGRecord);
+      |                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~
+In file included from App/Lib/pcm_commons.h:5,
+                 from App/Lib/pcm_commons.cpp:1:
+lib/pcm/cpucounters.h: In function ‘double getIncomingQPILinkUtilization(uint32, uint32, const SystemCounterState&, const SystemCounterState&)’:
+lib/pcm/cpucounters.h:3246:81: warning: conversion from ‘uint64’ {aka ‘long long unsigned int’} to ‘double’ may change value [-Wconversion]
+ 3246 |     const double max_bytes = (double)(double(max_speed) * double(getInvariantTSC(before, after) / double(m->getNumCores())) / double(m->getNominalFrequency()));
+      |                                                                  ~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~
+lib/pcm/cpucounters.h: In function ‘uint64 getOutgoingQPILinkBytes(uint32, uint32, const SystemCounterState&, const SystemCounterState&)’:
+lib/pcm/cpucounters.h:3312:100: warning: conversion from ‘uint64’ {aka ‘long long unsigned int’} to ‘double’ may change value [-Wconversion]
+ 3312 |     const double max_bytes = (double(m->getQPILinkSpeed(socketNr, linkNr)) * double(getInvariantTSC(before, after) / double(m->getNumCores())) / double(m->getNominalFrequency()));
+      |                                                                                     ~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~
+App/Lib/pcm_commons.cpp: In function ‘void ocall_get_system_counter_state2(int, hw_counters_t*)’:
+App/Lib/pcm_commons.cpp:177:43: warning: conversion from ‘u_int64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  177 |         hw_results->ewb = get_total_ewb() - ewbStart;
+      |                           ~~~~~~~~~~~~~~~~^~~~~~~~~~
+App/Lib/pcm_commons.cpp:186:27: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  186 |         hw_results->ewb = ewbTmp;
+      |                           ^~~~~~
+App/Lib/pcm_commons.cpp:199:59: warning: conversion from ‘long int’ to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  199 |     hw_results->voluntaryContextSwitches = usage.ru_nvcsw - rusageOld->ru_nvcsw;
+      |                                            ~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~
+App/Lib/pcm_commons.cpp:200:62: warning: conversion from ‘long int’ to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  200 |     hw_results->involuntaryContextSwitches = usage.ru_nivcsw - rusageOld->ru_nivcsw;
+      |                                              ~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~
+Joins/BlockNestedHashJoin/no_partitioning_join.cpp: In function ‘result_t* NPO_st(table_t*, table_t*, joinconfig_t*)’:
+Joins/BlockNestedHashJoin/no_partitioning_join.cpp:579:43: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  579 |     uint32_t nbuckets = (relR->num_tuples / BUCKET_SIZE);
+      |                         ~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~
+Joins/TBW/OperatorJoin.cpp: In function ‘int64_t bucket_chaining_join_atomic(const table_t*, const table_t*, table_t*, output_list_t**)’:
+Joins/TBW/OperatorJoin.cpp:137:18: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  137 |     uint32_t N = numR;
+      |                  ^~~~
+Joins/TBW/OperatorJoin.cpp: In function ‘void radix_cluster_atomic(table_t*, table_t*, int64_t*, int, int)’:
+Joins/TBW/OperatorJoin.cpp:231:16: warning: conversion from ‘int64_t’ {aka ‘long int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  231 |         offset += hist[i];
+      |         ~~~~~~~^~~~~~~~~~
+Joins/TBW/OperatorJoin.cpp: In function ‘void* prj_thread_atomic(void*)’:
+Joins/TBW/OperatorJoin.cpp:410:101: warning: type qualifiers ignored on cast result type [-Wignored-qualifiers]
+  410 |     const int thresh1 = (const int) (MAX((1<<D), (1<<R)) * THRESHOLD1((unsigned long)args->nthreads));
+      |                                                                                                     ^
+Joins/TBW/OperatorJoin.cpp:476:31: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  476 |     part.num_tuples   = args->numR;
+      |                         ~~~~~~^~~~
+Joins/TBW/OperatorJoin.cpp:477:31: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  477 |     part.total_tuples = args->totalR;
+      |                         ~~~~~~^~~~~~
+Joins/TBW/OperatorJoin.cpp:492:31: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  492 |     part.num_tuples   = args->numS;
+      |                         ~~~~~~^~~~
+Joins/TBW/OperatorJoin.cpp:493:31: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  493 |     part.total_tuples = args->totalS;
+      |                         ~~~~~~^~~~~~
+Joins/TBW/OperatorJoin_HashJoinVersion2.cpp: In function ‘result_t* HashJoinV2(table_t*, table_t*, joinconfig_t*)’:
+Joins/TBW/OperatorJoin_HashJoinVersion2.cpp:189:43: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  189 |     uint32_t nbuckets = (relR->num_tuples / BUCKET_SIZE);
+      |                         ~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~
+Joins/TBW/OperatorJoin_HashJoinVersion3.cpp: In function ‘int64_t bucket_chaining_join(const table_t*, const table_t*, table_t*, output_list_t**, bool, int)’:
+Joins/TBW/OperatorJoin_HashJoinVersion3.cpp:114:27: warning: unused parameter ‘materialize’ [-Wunused-parameter]
+  114 |                      bool materialize,
+Joins/TBW/OperatorJoin_HashJoinVersion3.cpp: In function ‘result_t* HashJoinV3(table_t*, table_t*, joinconfig_t*)’:
+Joins/TBW/OperatorJoin_HashJoinVersion3.cpp:177:52: warning: conversion from ‘long unsigned int’ to ‘int’ may change value [-Wconversion]
+  177 |     int small_padding_tuples = (3 * cache_line_size/sizeof(struct row_t));
+      |                                ~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~
+Joins/TBW/OperatorJoin_HashJoinVersion3.cpp:179:59: warning: conversion from ‘long unsigned int’ to ‘int’ may change value [-Wconversion]
+  179 |     int relation_padding = (padding_tuples * fanout_pass1 * sizeof(struct row_t));
+      |                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~
+Joins/TBW/OperatorJoin_HashJoinVersion3.cpp:267:17: warning: comparison of integer expressions of different signedness: ‘uint64_t’ {aka ‘long unsigned int’} and ‘int’ [-Wsign-compare]
+  267 |     for( i=0; i < (1<<num_radix_bits); i++ ){
+      |               ~~^~~~~~~~~~~~~~~~~~~~~
+Joins/TBW/OperatorJoin_HashJoinVersion4.cpp: In function ‘int64_t bucket_chaining_join(const table_t*, const table_t*, table_t*, output_list_t**, bool, int)’:
+Joins/TBW/OperatorJoin_HashJoinVersion4.cpp:114:27: warning: unused parameter ‘materialize’ [-Wunused-parameter]
+  114 |                      bool materialize,
+Joins/TBW/OperatorJoin_HashJoinVersion4.cpp: In function ‘result_t* HashJoinV4(table_t*, table_t*, joinconfig_t*)’:
+Joins/TBW/OperatorJoin_HashJoinVersion4.cpp:177:52: warning: conversion from ‘long unsigned int’ to ‘int’ may change value [-Wconversion]
+  177 |     int small_padding_tuples = (3 * cache_line_size/sizeof(struct row_t));
+      |                                ~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~
+Joins/TBW/OperatorJoin_HashJoinVersion4.cpp:179:59: warning: conversion from ‘long unsigned int’ to ‘int’ may change value [-Wconversion]
+  179 |     int relation_padding = (padding_tuples * fanout_pass1 * sizeof(struct row_t));
+      |                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~
+Joins/TBW/OperatorJoin_HashJoinVersion4.cpp:267:17: warning: comparison of integer expressions of different signedness: ‘uint64_t’ {aka ‘long unsigned int’} and ‘int’ [-Wsign-compare]
+  267 |     for( i=0; i < (1<<num_radix_bits); i++ ){
+      |               ~~^~~~~~~~~~~~~~~~~~~~~
+Joins/TBW/OperatorJoin_HashJoinVersion5.cpp: In function ‘int64_t bucket_chaining_join(const table_t*, const table_t*, table_t*, output_list_t**, bool)’:
+Joins/TBW/OperatorJoin_HashJoinVersion5.cpp:43:27: warning: unused parameter ‘materialize’ [-Wunused-parameter]
+   43 |                      bool materialize)
+Joins/TBW/OperatorJoin_HashJoinVersion6.cpp: In function ‘int64_t bucket_chaining_join_atomic(const table_t*, const table_t*, table_t*, output_list_t**)’:
+Joins/TBW/OperatorJoin_HashJoinVersion6.cpp:189:18: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  189 |     uint32_t N = numR;
+      |                  ^~~~
+Joins/TBW/OperatorJoin_HashJoinVersion6.cpp: In function ‘void radix_cluster_atomic(table_t*, table_t*, int64_t*, int, int)’:
+Joins/TBW/OperatorJoin_HashJoinVersion6.cpp:283:16: warning: conversion from ‘int64_t’ {aka ‘long int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  283 |         offset += hist[i];
+      |         ~~~~~~~^~~~~~~~~~
+Joins/TBW/OperatorJoin_HashJoinVersion6.cpp: In function ‘void* prj_thread_atomic(void*)’:
+Joins/TBW/OperatorJoin_HashJoinVersion6.cpp:462:101: warning: type qualifiers ignored on cast result type [-Wignored-qualifiers]
+  462 |     const int thresh1 = (const int) (MAX((1<<D), (1<<R)) * THRESHOLD1((unsigned long)args->nthreads));
+      |                                                                                                     ^
+Joins/TBW/OperatorJoin_HashJoinVersion6.cpp:528:31: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  528 |     part.num_tuples   = args->numR;
+      |                         ~~~~~~^~~~
+Joins/TBW/OperatorJoin_HashJoinVersion6.cpp:529:31: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  529 |     part.total_tuples = args->totalR;
+      |                         ~~~~~~^~~~~~
+Joins/TBW/OperatorJoin_HashJoinVersion6.cpp:544:31: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  544 |     part.num_tuples   = args->numS;
+      |                         ~~~~~~^~~~
+Joins/TBW/OperatorJoin_HashJoinVersion6.cpp:545:31: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  545 |     part.total_tuples = args->totalS;
+      |                         ~~~~~~^~~~~~
+In file included from Joins/cht/CHTJoin.hpp:6,
+                 from Joins/cht/CHTJoinWrapper.cpp:2:
+Joins/cht/CHT.hpp: In member function ‘tuple_t* CHT::findTuplePlace(intkey_t)’:
+Joins/cht/CHT.hpp:170:54: warning: left shift of negative value [-Wshift-negative-value]
+  170 |                     ~((~0)<<((hash&(bitsPerBucket-1)))));
+      |                                                      ^
+Joins/RadixJoin/radix_join.c: In function ‘result_t* RJ(table_t*, table_t*, joinconfig_t*)’:
+Joins/RadixJoin/radix_join.c:1485:17: warning: comparison of integer expressions of different signedness: ‘uint64_t’ {aka ‘long unsigned int’} and ‘int’ [-Wsign-compare]
+ 1485 |     for( i=0; i < (1<<num_radix_bits); i++ ){
+      |               ~~^~~~~~~~~~~~~~~~~~~~~
+Joins/mway/joincommon.c: In function ‘result_t* sortmergejoin_initrun(relation_t*, relation_t*, joinconfig_t*, void* (*)(void*))’:
+Joins/mway/joincommon.c:115:18: warning: comparison of integer expressions of different signedness: ‘uint64_t’ {aka ‘long unsigned int’} and ‘int’ [-Wsign-compare]
+  115 |     for(i = 0; i < nthreads; i++){
+      |                ~~^~~~~~~~~~
+Joins/mway/joincommon.c:127:27: warning: comparison of integer expressions of different signedness: ‘uint64_t’ {aka ‘long unsigned int’} and ‘int’ [-Wsign-compare]
+  127 |         args[i].numR = (i == (nthreads-1)) ?
+      |                         ~~^~~~~~~~~~~~~~~
+Joins/mway/joincommon.c:129:27: warning: comparison of integer expressions of different signedness: ‘uint64_t’ {aka ‘long unsigned int’} and ‘int’ [-Wsign-compare]
+  129 |         args[i].numS = (i == (nthreads-1)) ?
+      |                         ~~^~~~~~~~~~~~~~~
+Joins/mway/joincommon.c:132:33: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘int32_t’ {aka ‘int’} may change value [-Wconversion]
+  132 |         args[i].my_tid        = i;/* this is the logical CPU-ID */
+      |                                 ^
+Joins/mway/joincommon.c:116:13: warning: unused variable ‘cpu_idx’ [-Wunused-variable]
+  116 |         int cpu_idx = i % CORES; /* this is the physical CPU-ID */
+      |             ^~~~~~~
+Joins/mway/joincommon.c:155:18: warning: comparison of integer expressions of different signedness: ‘uint64_t’ {aka ‘long unsigned int’} and ‘int’ [-Wsign-compare]
+  155 |     for(i = 0; i < nthreads; i++){
+      |                ~~^~~~~~~~~~
+Joins/mway/joincommon.c:98:21: warning: unused variable ‘err’ [-Wunused-variable]
+   98 |     int             err = 0;
+      |                     ^~~
+Joins/mway/joincommon.c:99:21: warning: unused variable ‘stackSize’ [-Wunused-variable]
+   99 |     size_t          stackSize = 0;
+      |                     ^~~~~~~~~
+Joins/mway/joincommon.c: In function ‘uint64_t merge_join(tuple_t*, tuple_t*, uint64_t, uint64_t, void*)’:
+Joins/mway/joincommon.c:264:61: warning: unused parameter ‘output’ [-Wunused-parameter]
+  264 |            const uint64_t numR, const uint64_t numS, void * output)
+      |                                                      ~~~~~~~^~~~~~
+Joins/mway/joincommon.c: In function ‘uint64_t merge_join_interpolation(tuple_t*, tuple_t*, uint64_t, uint64_t, void*)’:
+Joins/mway/joincommon.c:369:19: warning: conversion from ‘long unsigned int’ to ‘double’ may change value [-Wconversion]
+  369 |         k = (numS - 1) * (r0 - s0) / (sN - s0) + 1;
+      |             ~~~~~~^~~~
+Joins/mway/joincommon.c:369:48: warning: conversion from ‘double’ to ‘uint64_t’ {aka ‘long unsigned int’} may change value [-Wfloat-conversion]
+  369 |         k = (numS - 1) * (r0 - s0) / (sN - s0) + 1;
+      |             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~
+Joins/mway/joincommon.c:373:16: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘double’ may change value [-Wconversion]
+  373 |         k = (k - 1) * (r0 - s0) / (sK - s0) + 1;
+      |             ~~~^~~~
+Joins/mway/joincommon.c:373:45: warning: conversion from ‘double’ to ‘uint64_t’ {aka ‘long unsigned int’} may change value [-Wfloat-conversion]
+  373 |         k = (k - 1) * (r0 - s0) / (sK - s0) + 1;
+      |             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~
+Joins/mway/joincommon.c:387:19: warning: conversion from ‘long unsigned int’ to ‘double’ may change value [-Wconversion]
+  387 |         k = (numR - 1) * (s0 - r0) / (rN - r0) + 1;
+      |             ~~~~~~^~~~
+Joins/mway/joincommon.c:387:48: warning: conversion from ‘double’ to ‘uint64_t’ {aka ‘long unsigned int’} may change value [-Wfloat-conversion]
+  387 |         k = (numR - 1) * (s0 - r0) / (rN - r0) + 1;
+      |             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~
+Joins/mway/joincommon.c:391:16: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘double’ may change value [-Wconversion]
+  391 |         k = (k - 1) * (s0 - r0) / (rK - r0) + 1;
+      |             ~~~^~~~
+Joins/mway/joincommon.c:391:45: warning: conversion from ‘double’ to ‘uint64_t’ {aka ‘long unsigned int’} may change value [-Wfloat-conversion]
+  391 |         k = (k - 1) * (s0 - r0) / (rK - r0) + 1;
+      |             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~
+Joins/mway/joincommon.c:353:33: warning: unused parameter ‘output’ [-Wunused-parameter]
+  353 |                          void * output)
+      |                          ~~~~~~~^~~~~~
+In file included from Joins/mway/joincommon.h:22,
+                 from Joins/mway/joincommon.c:15:
+Include/barrier.h: At global scope:
+Include/barrier.h:97:6: warning: ‘void barrier_arrive(barrier_t*, int)’ defined but not used [-Wunused-function]
+   97 | void barrier_arrive(pthread_barrier_t* b, int rv) {
+      |      ^~~~~~~~~~~~~~
+Joins/mway/partition.c: In function ‘void radix_cluster_optimized(relation_t*, relation_t*, int64_t*, int, int)’:
+Joins/mway/partition.c:157:18: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  157 |         dst[i] = offset;
+      |                  ^~~~~~
+Joins/mway/partition.c:176:22: warning: conversion from ‘long unsigned int’ to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  176 |             dst[idx] += TUPLESPERCACHELINE;
+      |                      ^
+Joins/mway/partition.c: In function ‘void radix_cluster_optimized_V2(relation_t*, relation_t*, int64_t*, int, int)’:
+Joins/mway/partition.c:224:16: warning: conversion from ‘long unsigned int’ to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  224 |         offset += ALIGN_NUMTUPLES(hist[i]);
+      |                ^
+Joins/mway/partition.c: In function ‘void partition_relation_optimized(relation_t**, relation_t*, relation_t*, uint32_t, uint32_t)’:
+Joins/mway/partition.c:324:20: warning: conversion from ‘long unsigned int’ to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  324 |             offset += ALIGN_NUMTUPLES(histAligned[i]);
+      |                    ^
+Joins/mway/partition.c: In function ‘void partition_relation_optimized_V2(relation_t**, relation_t*, relation_t*, uint32_t, uint32_t)’:
+Joins/mway/partition.c:354:20: warning: conversion from ‘long unsigned int’ to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  354 |             offset += ALIGN_NUMTUPLES(histAligned[i]);
+      |                    ^
+Joins/mway/partition.c: In function ‘void histogram_memcpy_bench(relation_t**, relation_t*, relation_t*, uint32_t)’:
+Joins/mway/partition.c:396:38: warning: unused parameter ‘partitions’ [-Wunused-parameter]
+  396 | histogram_memcpy_bench(relation_t ** partitions,
+      |                        ~~~~~~~~~~~~~~^~~~~~~~~~
+Joins/mway/scalar_multiwaymerge.c: In function ‘uint64_t scalar_multiway_merge(tuple_t*, relation_t**, uint32_t, tuple_t*, uint32_t)’:
+Joins/mway/scalar_multiwaymerge.c:139:50: warning: conversion from ‘long unsigned int’ to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  139 |     uint32_t totalfifosize = bufntuples - nparts -
+      |                              ~~~~~~~~~~~~~~~~~~~~^
+  140 |                              (nfifos * sizeof(mergenode_t)
+      |                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  141 |                               + nfifos * sizeof(uint8_t)
+      |                               ~~~~~~~~~~~~~~~~~~~~~~~~~~
+  142 |                               + nparts * sizeof(relation_t)
+      |                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  143 |                               + sizeof(tuple_t) - 1) / sizeof(tuple_t);
+      |                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Joins/mway/scalar_multiwaymerge.c: In function ‘uint64_t scalar_multiway_merge_modulo(tuple_t*, relation_t**, uint32_t, tuple_t*, uint32_t)’:
+Joins/mway/scalar_multiwaymerge.c:271:50: warning: conversion from ‘long unsigned int’ to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  271 |     uint32_t totalfifosize = bufntuples - nparts -
+      |                              ~~~~~~~~~~~~~~~~~~~~^
+  272 |                              (nfifos * sizeof(mergenode_t)
+      |                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  273 |                               + nfifos * sizeof(uint8_t)
+      |                               ~~~~~~~~~~~~~~~~~~~~~~~~~~
+  274 |                               + nparts * sizeof(relation_t)
+      |                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  275 |                               + sizeof(tuple_t) - 1) / sizeof(tuple_t);
+      |                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Joins/mway/scalar_multiwaymerge.c: In function ‘uint64_t scalar_multiway_merge_bitand(tuple_t*, relation_t**, uint32_t, tuple_t*, uint32_t)’:
+Joins/mway/scalar_multiwaymerge.c:403:50: warning: conversion from ‘long unsigned int’ to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  403 |     uint32_t totalfifosize = bufntuples - nparts -
+      |                              ~~~~~~~~~~~~~~~~~~~~^
+  404 |                              (nfifos * sizeof(mergenode_t)
+      |                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  405 |                               + nfifos * sizeof(uint8_t)
+      |                               ~~~~~~~~~~~~~~~~~~~~~~~~~~
+  406 |                               + nparts * sizeof(relation_t)
+      |                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  407 |                               + sizeof(tuple_t) - 1) / sizeof(tuple_t);
+      |                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Joins/mway/scalar_multiwaymerge.c: In function ‘uint32_t readmerge_scalar_decomposed(mergenode_t*, tuple_t**, tuple_t**, uint64_t, uint64_t, uint64_t)’:
+Joins/mway/scalar_multiwaymerge.c:635:16: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  635 |         oend = fifosize;
+      |                ^~~~~~~~
+Joins/mway/scalar_multiwaymerge.c:696:30: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  696 |         outnslots = fifosize - nodecount;
+      |                     ~~~~~~~~~^~~~~~~~~~~
+Joins/mway/scalar_multiwaymerge.c:700:20: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  700 |             oend = fifosize;
+      |                    ^~~~~~~~
+Joins/mway/scalar_multiwaymerge.c: In function ‘uint32_t readmerge_scalar_modulo(mergenode_t*, tuple_t**, tuple_t**, uint64_t, uint64_t, uint64_t)’:
+Joins/mway/scalar_multiwaymerge.c:1307:52: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+ 1307 |     uint32_t ri = 0, li = 0, outnslots = (fifosize - node->count);
+      |                                          ~~~~~~~~~~^~~~~~~~~~~~~~
+Joins/mway/scalar_multiwaymerge.c:1323:39: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+ 1323 |         node->tail = (node->tail + 1) % fifosize;
+      |                      ~~~~~~~~~~~~~~~~~^~~~~~~~~~
+Joins/mway/scalar_multiwaymerge.c:1331:39: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+ 1331 |         node->tail = (node->tail + 1) % fifosize;
+      |                      ~~~~~~~~~~~~~~~~~^~~~~~~~~~
+Joins/mway/scalar_multiwaymerge.c:1339:39: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+ 1339 |         node->tail = (node->tail + 1) % fifosize;
+      |                      ~~~~~~~~~~~~~~~~~^~~~~~~~~~
+Joins/mway/scalar_multiwaymerge.c:1344:29: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+ 1344 |     node->count  = fifosize - outnslots;
+      |                    ~~~~~~~~~^~~~~~~~~~~
+Joins/mway/scalar_multiwaymerge.c: In function ‘uint32_t readmerge_scalar_bitand(mergenode_t*, tuple_t**, tuple_t**, uint64_t, uint64_t, uint64_t)’:
+Joins/mway/scalar_multiwaymerge.c:1549:52: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+ 1549 |     uint32_t ri = 0, li = 0, outnslots = (fifosize - node->count);
+      |                                          ~~~~~~~~~~^~~~~~~~~~~~~~
+Joins/mway/scalar_multiwaymerge.c:1552:38: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+ 1552 |     uint32_t fifosize_mask = fifosize-1;
+      |                              ~~~~~~~~^~
+Joins/mway/scalar_multiwaymerge.c:1591:29: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+ 1591 |     node->count  = fifosize - outnslots;
+      |                    ~~~~~~~~~^~~~~~~~~~~
+Joins/mway/sortmergejoin_multiway.c: In function ‘void partitioning_phase(relation_t***, relation_t***, arg_t*)’:
+Joins/mway/sortmergejoin_multiway.c:355:32: warning: conversion from ‘double’ to ‘int’ may change value [-Wfloat-conversion]
+  355 |     const int NRADIXBITS = log2(PARTFANOUT);
+      |                            ~~~~^~~~~~~~~~~~
+Joins/mway/sortmergejoin_multiway.c:394:46: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘double’ may change value [-Wconversion]
+  394 |     int bitshift = ceil(log2(relR.num_tuples * args->nthreads)) - 1;
+      |                              ~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~
+Joins/mway/sortmergejoin_multiway.c:394:65: warning: conversion from ‘double’ to ‘int’ may change value [-Wfloat-conversion]
+  394 |     int bitshift = ceil(log2(relR.num_tuples * args->nthreads)) - 1;
+      |                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~
+Joins/mway/sortmergejoin_multiway.c: In function ‘void sorting_phase(relation_t**, relation_t**, arg_t*)’:
+Joins/mway/sortmergejoin_multiway.c:422:15: warning: unused variable ‘scalarsortflag’ [-Wunused-variable]
+  422 |     const int scalarsortflag = args->joincfg->SCALARSORT;
+      |               ^~~~~~~~~~~~~~
+Joins/mway/sortmergejoin_multiway.c: In function ‘void multiwaymerge_phase(int, relation_t**, relation_t**, arg_t*, relation_t*, relation_t*)’:
+Joins/mway/sortmergejoin_multiway.c:561:25: warning: conversion from ‘long unsigned int’ to ‘int’ may change value [-Wconversion]
+  560 |         int bufsz_thr = (args->joincfg->MWAYMERGEBUFFERSIZE/active_nthreads_in_numa)
+      |                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  561 |                         / sizeof(tuple_t);
+      |                         ^~~~~~~~~~~~~~~~~
+Joins/mway/sortmergejoin_multiway.c:493:15: warning: unused variable ‘scalarmergeflag’ [-Wunused-variable]
+  493 |     const int scalarmergeflag = args->joincfg->SCALARMERGE;
+      |               ^~~~~~~~~~~~~~~
+In file included from Joins/mway/joincommon.h:22,
+                 from Joins/mway/sortmergejoin_multiway.c:2:
+Include/barrier.h: At global scope:
+Include/barrier.h:60:1: warning: ‘int barrier_init(barrier_t*, int)’ defined but not used [-Wunused-function]
+   60 | barrier_init(barrier_t *barrier,int needed)
+      | ^~~~~~~~~~~~
+tcs_num 17, tcs_max_num 17, tcs_min_pool 17
+The required memory is 634449920B.
+The required memory is 0x25d0f000, 619580 KB.
+Succeed.
+---END---
+Command `./sgx -a OperatorJoin` succeeded with:
+---STDOUT---
+[32m[  0.0000][ INFO] ************* TEE_BENCH APP *************[0m
+[37m[  0.0039][DEBUG] Number of threads = 2 (N/A for every algorithm)[0m
+[32m[  0.0039][ INFO] Build relation R with size = 16.00 MB (2097152 tuples)[0m
+[37m[  0.0975][DEBUG] DONE[0m
+[32m[  0.0975][ INFO] Build relation S with size = 16.00 MB (2097152 tuples)[0m
+[37m[  0.1749][DEBUG] DONE[0m
+[32m[  0.1749][ INFO] Initialize enclave[0m
+[32m[  3.6582][ INFO] Enclave id = 2[0m
+[35m[  3.6583][ ENCL] Start enclave | EWB_COUNTER = 284,944[0m
+[32m[  3.6583][ INFO] Running algorithm OperatorJoin[0m
+[37m[  3.6720][DEBUG] NUM_PASSES=2, RADIX_BITS=14[0m
+[37m[  3.6720][DEBUG] fanOut = 128, R = 7, D = 7, thresh1 = 1048576[0m
+[34m[  3.6724][  PCM] Init PCM Start State[0m
+[35m[  3.6730][ ENCL] EPC Miss = 0[0m
+[34m[  3.6730][  PCM] Set system counter state: Partition[0m
+[37m[  3.6730][DEBUG] Radix partitioning. R=0, D=7, fanout=128, MASK=127[0m
+[37m[  3.7445][DEBUG] Radix partitioning. R=0, D=7, fanout=128, MASK=127[0m
+[35m[  3.8133][ ENCL] Pass-2: # partitioning tasks = 128[0m
+[35m[  3.8628][ ENCL] Number of join tasks = 16384[0m
+[35m[  3.8633][ ENCL] EPC Miss = 8880[0m
+[35m[  3.8810][ ENCL] EPC Miss = 0[0m
+[32m[  3.8816][ INFO] Total input tuples       :  2097152[0m
+[32m[  3.8816][ INFO] Join matches             : 2097152[0m
+[32m[  3.8816][ INFO] Time total (usec)        : 207510[0m
+[32m[  3.8817][ INFO] Throughput (M rec/sec)   : 20.2125[0m
+[34m[  3.8817][  PCM] ************************** RUSAGE **************************[0m
+[34m[  3.8817][  PCM] user CPU time used               : 0.265511s[0m
+[34m[  3.8817][  PCM] system CPU time used             : 0.146688s[0m
+[34m[  3.8817][  PCM] page reclaims (soft page faults) : 10452[0m
+[34m[  3.8817][  PCM] page faults (hard page faults)   : 0[0m
+[34m[  3.8817][  PCM] voluntary context switches       : 29[0m
+[34m[  3.8817][  PCM] involuntary context switches     : 70[0m
+[34m[  3.8817][  PCM] ************************** RUSAGE **************************[0m
+[32m[  3.8817][ INFO] Total join runtime: 0.22s[0m
+[32m[  3.8817][ INFO] throughput = 18.7749 [M rec / s][0m
+[35m[  3.8817][ ENCL] Destroy enclave | EWB_COUNTER = 294,832[0m
+---STDERR---
+IBRS and IBPB supported  : yes
+STIBP supported          : yes
+Spec arch caps supported : yes
+Number of physical cores: 4
+Number of logical cores: 8
+Number of online logical cores: 8
+Threads (logical cores) per physical core: 2
+Num sockets: 1
+Physical cores per socket: 4
+Core PMU (perfmon) version: 4
+Number of core PMU generic (programmable) counters: 4
+Width of generic (programmable) counters: 48 bits
+Number of core PMU fixed counters: 3
+Width of fixed counters: 48 bits
+Nominal core frequency: 2000000000 Hz
+IBRS enabled in the kernel   : yes
+STIBP enabled in the kernel  : no
+The processor is not susceptible to Rogue Data Cache Load: yes
+The processor supports enhanced IBRS                     : yes
+Package thermal spec power: 15 Watt; Package minimum power: 0 Watt; Package maximum power: 0 Watt;
+ Zeroed PMU registers
+WARNING: Custom counter 0 is in use. MSR_PERF_GLOBAL_INUSE on core 0: 0x70000000b
+WARNING: Custom counter 1 is in use. MSR_PERF_GLOBAL_INUSE on core 0: 0x70000000b
+WARNING: Custom counter 3 is in use. MSR_PERF_GLOBAL_INUSE on core 0: 0x70000000b
+WARNING: Core 0 IA32_PERFEVTSEL0_ADDR is not zeroed 4395171
+ Zeroed PMU registers
+---END---

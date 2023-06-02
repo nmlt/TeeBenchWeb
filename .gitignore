@@ -5,3 +5,4 @@ dist/
 fake_teebench
 .env
 cache.sqlite
+backend/exp_results/

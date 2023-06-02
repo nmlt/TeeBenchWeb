@@ -1,0 +1,126 @@
+Failed to compile SGX version:
+Command `make native CFLAGS=-DNATIVE_COMPILATION` succeeded with:
+---STDOUT---
+---STDERR---
+---END---
+Command `./native -a OperatorJoin` succeeded with:
+---STDOUT---
+[32m[  0.0000][ INFO] Welcome from native![0m
+[32m[  0.0000][ INFO] Build relation R with size = 16.00 MB (2097152 tuples)[0m
+[32m[  0.0586][ INFO] Build relation S with size = 16.00 MB (2097152 tuples)[0m
+[32m[  0.1052][ INFO] Running algorithm OperatorJoin[0m
+[34m[  0.3141][  CSV] algorithm,threads,relR,relS,matches,phase1Cycles,phase2Cycles,cyclesPerTuple,phase1Time,phase2Time,totalTime,throughput[0m
+[34m[  0.3141][  CSV] HashJoinVersion1,1,2097152,2097152,2097152,321233024,74360781,94,0,0,198593,21.1201[0m
+[34m[  0.3141][  PCM] ************************** RUSAGE **************************[0m
+[34m[  0.3141][  PCM] user CPU time used               : 0.203615s[0m
+[34m[  0.3141][  PCM] system CPU time used             : 0.4069s[0m
+[34m[  0.3141][  PCM] page reclaims (soft page faults) : 8194[0m
+[34m[  0.3141][  PCM] page faults (hard page faults)   : 0[0m
+[34m[  0.3141][  PCM] voluntary context switches       : 0[0m
+[34m[  0.3141][  PCM] involuntary context switches     : 37[0m
+[34m[  0.3141][  PCM] ************************** RUSAGE **************************[0m
+[32m[  0.3141][ INFO] Total join runtime: 0.21s[0m
+[32m[  0.3141][ INFO] Matches = 2097152[0m
+---STDERR---
+---END---
+Command `make sgx SGX_DEBUG=1 SGX_PRERELEASE=0 SGX_MODE=HW CFLAGS=-DPCM_COUNT -DSGX_COUNTERS` failed (returned Some(2)) with:
+---STDOUT---
+---STDERR---
+In file included from lib/pcm/cpucounters.h:34,
+                 from App/Lib/pcm_commons.h:5,
+                 from App/App.cpp:52:
+lib/pcm/msr.h:29:7: warning: "__APPLE__" is not defined, evaluates to 0 [-Wundef]
+   29 | #elif __APPLE__
+      |       ^~~~~~~~~
+In file included from lib/pcm/cpucounters.h:34,
+                 from App/Lib/pcm_commons.h:5,
+                 from App/App.cpp:52:
+lib/pcm/msr.h:40:7: warning: "__APPLE__" is not defined, evaluates to 0 [-Wundef]
+   40 | #elif __APPLE__
+      |       ^~~~~~~~~
+In file included from lib/pcm/cpucounters.h:35,
+                 from App/Lib/pcm_commons.h:5,
+                 from App/App.cpp:52:
+lib/pcm/pci.h:80:7: warning: "__APPLE__" is not defined, evaluates to 0 [-Wundef]
+   80 | #elif __APPLE__
+      |       ^~~~~~~~~
+In file included from lib/pcm/cpucounters.h:33,
+                 from App/Lib/pcm_commons.h:5,
+                 from App/App.cpp:52:
+lib/pcm/types.h: In member function ‘unsigned int MCFGHeader::nrecords() const’:
+lib/pcm/types.h:1019:46: warning: conversion from ‘long unsigned int’ to ‘unsigned int’ may change value [-Wconversion]
+ 1019 |         return (length - sizeof(MCFGHeader)) / sizeof(MCFGRecord);
+      |                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~
+In file included from App/Lib/pcm_commons.h:5,
+                 from App/App.cpp:52:
+lib/pcm/cpucounters.h: In function ‘double getIncomingQPILinkUtilization(uint32, uint32, const SystemCounterState&, const SystemCounterState&)’:
+lib/pcm/cpucounters.h:3246:81: warning: conversion from ‘uint64’ {aka ‘long long unsigned int’} to ‘double’ may change value [-Wconversion]
+ 3246 |     const double max_bytes = (double)(double(max_speed) * double(getInvariantTSC(before, after) / double(m->getNumCores())) / double(m->getNominalFrequency()));
+      |                                                                  ~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~
+lib/pcm/cpucounters.h: In function ‘uint64 getOutgoingQPILinkBytes(uint32, uint32, const SystemCounterState&, const SystemCounterState&)’:
+lib/pcm/cpucounters.h:3312:100: warning: conversion from ‘uint64’ {aka ‘long long unsigned int’} to ‘double’ may change value [-Wconversion]
+ 3312 |     const double max_bytes = (double(m->getQPILinkSpeed(socketNr, linkNr)) * double(getInvariantTSC(before, after) / double(m->getNumCores())) / double(m->getNominalFrequency()));
+      |                                                                                     ~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~
+In file included from lib/pcm/cpucounters.h:34,
+                 from App/Lib/pcm_commons.h:5,
+                 from App/Lib/pcm_commons.cpp:1:
+lib/pcm/msr.h:29:7: warning: "__APPLE__" is not defined, evaluates to 0 [-Wundef]
+   29 | #elif __APPLE__
+      |       ^~~~~~~~~
+In file included from lib/pcm/cpucounters.h:34,
+                 from App/Lib/pcm_commons.h:5,
+                 from App/Lib/pcm_commons.cpp:1:
+lib/pcm/msr.h:40:7: warning: "__APPLE__" is not defined, evaluates to 0 [-Wundef]
+   40 | #elif __APPLE__
+      |       ^~~~~~~~~
+In file included from lib/pcm/cpucounters.h:35,
+                 from App/Lib/pcm_commons.h:5,
+                 from App/Lib/pcm_commons.cpp:1:
+lib/pcm/pci.h:80:7: warning: "__APPLE__" is not defined, evaluates to 0 [-Wundef]
+   80 | #elif __APPLE__
+      |       ^~~~~~~~~
+In file included from lib/pcm/cpucounters.h:33,
+                 from App/Lib/pcm_commons.h:5,
+                 from App/Lib/pcm_commons.cpp:1:
+lib/pcm/types.h: In member function ‘unsigned int MCFGHeader::nrecords() const’:
+lib/pcm/types.h:1019:46: warning: conversion from ‘long unsigned int’ to ‘unsigned int’ may change value [-Wconversion]
+ 1019 |         return (length - sizeof(MCFGHeader)) / sizeof(MCFGRecord);
+      |                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~
+In file included from App/Lib/pcm_commons.h:5,
+                 from App/Lib/pcm_commons.cpp:1:
+lib/pcm/cpucounters.h: In function ‘double getIncomingQPILinkUtilization(uint32, uint32, const SystemCounterState&, const SystemCounterState&)’:
+lib/pcm/cpucounters.h:3246:81: warning: conversion from ‘uint64’ {aka ‘long long unsigned int’} to ‘double’ may change value [-Wconversion]
+ 3246 |     const double max_bytes = (double)(double(max_speed) * double(getInvariantTSC(before, after) / double(m->getNumCores())) / double(m->getNominalFrequency()));
+      |                                                                  ~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~
+lib/pcm/cpucounters.h: In function ‘uint64 getOutgoingQPILinkBytes(uint32, uint32, const SystemCounterState&, const SystemCounterState&)’:
+lib/pcm/cpucounters.h:3312:100: warning: conversion from ‘uint64’ {aka ‘long long unsigned int’} to ‘double’ may change value [-Wconversion]
+ 3312 |     const double max_bytes = (double(m->getQPILinkSpeed(socketNr, linkNr)) * double(getInvariantTSC(before, after) / double(m->getNumCores())) / double(m->getNominalFrequency()));
+      |                                                                                     ~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~
+App/Lib/pcm_commons.cpp: In function ‘void ocall_get_system_counter_state2(int, hw_counters_t*)’:
+App/Lib/pcm_commons.cpp:177:43: warning: conversion from ‘u_int64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  177 |         hw_results->ewb = get_total_ewb() - ewbStart;
+      |                           ~~~~~~~~~~~~~~~~^~~~~~~~~~
+App/Lib/pcm_commons.cpp:186:27: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  186 |         hw_results->ewb = ewbTmp;
+      |                           ^~~~~~
+App/Lib/pcm_commons.cpp:199:59: warning: conversion from ‘long int’ to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  199 |     hw_results->voluntaryContextSwitches = usage.ru_nvcsw - rusageOld->ru_nvcsw;
+      |                                            ~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~
+App/Lib/pcm_commons.cpp:200:62: warning: conversion from ‘long int’ to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  200 |     hw_results->involuntaryContextSwitches = usage.ru_nivcsw - rusageOld->ru_nivcsw;
+      |                                              ~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~
+Joins/BlockNestedHashJoin/no_partitioning_join.cpp: In function ‘result_t* NPO_st(table_t*, table_t*, joinconfig_t*)’:
+Joins/BlockNestedHashJoin/no_partitioning_join.cpp:579:43: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  579 |     uint32_t nbuckets = (relR->num_tuples / BUCKET_SIZE);
+      |                         ~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~
+Joins/TBW/OperatorJoin.cpp: In function ‘void allocate_hashtable(hashtable_t**, uint32_t)’:
+Joins/TBW/OperatorJoin.cpp:85:9: error: ‘exit’ was not declared in this scope; did you mean ‘atexit’?
+   85 |         exit(EXIT_FAILURE);
+      |         ^~~~
+      |         atexit
+Joins/TBW/OperatorJoin.cpp: In function ‘result_t* OperatorJoin(table_t*, table_t*, joinconfig_t*)’:
+Joins/TBW/OperatorJoin.cpp:192:43: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  192 |     uint32_t nbuckets = (relR->num_tuples / BUCKET_SIZE);
+      |                         ~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~
+make: *** [Makefile:357: Joins/TBW/OperatorJoin.o] Error 1
+---END---

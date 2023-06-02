@@ -211,10 +211,10 @@ async fn main() {
         .init();
 
     let mut hardcoded_commits = vec![common::hardcoded::predefined_commit()];
-    let mut append_commits = common::hardcoded::hardcoded_commits();
+    let (mut append_commits, mut append_jobs) = common::hardcoded::hardcoded_commits();
     hardcoded_commits.append(&mut append_commits);
     let commits = Arc::new(Mutex::new(CommitState::new(hardcoded_commits)));
-    let queue: Arc<Mutex<VecDeque<Job>>> = Arc::new(Mutex::new(VecDeque::new())); //VecDeque::from(hardcoded_profiling_jobs())));
+    let queue: Arc<Mutex<VecDeque<Job>>> = Arc::new(Mutex::new(VecDeque::from(append_jobs))); //VecDeque::from(hardcoded_profiling_jobs())));
     let (queue_tx, queue_rx) = mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);
     let (profiling_tx, profiling_rx) = mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);
     let (cancel_tx, cancel_rx) = mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);
