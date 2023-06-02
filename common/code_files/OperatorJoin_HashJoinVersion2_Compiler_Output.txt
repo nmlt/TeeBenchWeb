@@ -5,23 +5,21 @@ Command `make native CFLAGS=-DNATIVE_COMPILATION` succeeded with:
 Command `./native -a OperatorJoin` succeeded with:
 ---STDOUT---
 [  0.0000][ INFO] Welcome from native!
-[  0.0001][ INFO] Build relation R with size = 16.00 MB (2097152 tuples)
-[  0.0598][ INFO] Build relation S with size = 16.00 MB (2097152 tuples)
-[  0.1138][ INFO] Running algorithm OperatorJoin
-[  0.1239][ ENCL] Pass-2: # partitioning tasks = 128
-[  0.1311][ ENCL] Number of join tasks = 16384
-[  0.1371][  CSV] algorithm,threads,relR,relS,matches,phase1Cycles,phase2Cycles,cyclesPerTuple,phase1Time,phase2Time,totalTime,throughput
-[  0.1371][  CSV] HashJoinVersion6,2,2097152,2097152,2097152,34130711,9168763,10,0,0,21737,192.9569
-[  0.1372][  PCM] ************************** RUSAGE **************************
-[  0.1372][  PCM] user CPU time used               : 0.36944s
-[  0.1372][  PCM] system CPU time used             : 0.7718s
-[  0.1372][  PCM] page reclaims (soft page faults) : 10398
-[  0.1372][  PCM] page faults (hard page faults)   : 0
-[  0.1372][  PCM] voluntary context switches       : 7
-[  0.1372][  PCM] involuntary context switches     : 4
-[  0.1372][  PCM] ************************** RUSAGE **************************
-[  0.1372][ INFO] Total join runtime: 0.04s
-[  0.1372][ INFO] Matches = 2097152
+[  0.0000][ INFO] Build relation R with size = 16.00 MB (2097152 tuples)
+[  0.0618][ INFO] Build relation S with size = 16.00 MB (2097152 tuples)
+[  0.1273][ INFO] Running algorithm OperatorJoin
+[  0.3509][  CSV] algorithm,threads,relR,relS,matches,phase1Cycles,phase2Cycles,cyclesPerTuple,phase1Time,phase2Time,totalTime,throughput
+[  0.3509][  CSV] HashJoinVersion2,1,2097152,2097152,2097152,341789488,76249164,99,0,0,209859,19.9863
+[  0.3509][  PCM] ************************** RUSAGE **************************
+[  0.3509][  PCM] user CPU time used               : 0.211625s
+[  0.3509][  PCM] system CPU time used             : 0.11963s
+[  0.3509][  PCM] page reclaims (soft page faults) : 8193
+[  0.3509][  PCM] page faults (hard page faults)   : 0
+[  0.3509][  PCM] voluntary context switches       : 0
+[  0.3509][  PCM] involuntary context switches     : 18
+[  0.3509][  PCM] ************************** RUSAGE **************************
+[  0.3509][ INFO] Total join runtime: 0.22s
+[  0.3509][ INFO] Matches = 2097152
 ---STDERR---
 ---END---
 Command `make sgx SGX_DEBUG=1 SGX_PRERELEASE=0 SGX_MODE=HW CFLAGS=-DPCM_COUNT -DSGX_COUNTERS` succeeded with:
@@ -129,30 +127,10 @@ Joins/BlockNestedHashJoin/no_partitioning_join.cpp: In function ‘result_t* NPO
 Joins/BlockNestedHashJoin/no_partitioning_join.cpp:579:43: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
   579 |     uint32_t nbuckets = (relR->num_tuples / BUCKET_SIZE);
       |                         ~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~
-Joins/TBW/OperatorJoin.cpp: In function ‘int64_t bucket_chaining_join_atomic(const table_t*, const table_t*, table_t*, output_list_t**)’:
-Joins/TBW/OperatorJoin.cpp:137:18: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
-  137 |     uint32_t N = numR;
-      |                  ^~~~
-Joins/TBW/OperatorJoin.cpp: In function ‘void radix_cluster_atomic(table_t*, table_t*, int64_t*, int, int)’:
-Joins/TBW/OperatorJoin.cpp:231:16: warning: conversion from ‘int64_t’ {aka ‘long int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
-  231 |         offset += hist[i];
-      |         ~~~~~~~^~~~~~~~~~
-Joins/TBW/OperatorJoin.cpp: In function ‘void* prj_thread_atomic(void*)’:
-Joins/TBW/OperatorJoin.cpp:410:101: warning: type qualifiers ignored on cast result type [-Wignored-qualifiers]
-  410 |     const int thresh1 = (const int) (MAX((1<<D), (1<<R)) * THRESHOLD1((unsigned long)args->nthreads));
-      |                                                                                                     ^
-Joins/TBW/OperatorJoin.cpp:476:31: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
-  476 |     part.num_tuples   = args->numR;
-      |                         ~~~~~~^~~~
-Joins/TBW/OperatorJoin.cpp:477:31: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
-  477 |     part.total_tuples = args->totalR;
-      |                         ~~~~~~^~~~~~
-Joins/TBW/OperatorJoin.cpp:492:31: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
-  492 |     part.num_tuples   = args->numS;
-      |                         ~~~~~~^~~~
-Joins/TBW/OperatorJoin.cpp:493:31: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
-  493 |     part.total_tuples = args->totalS;
-      |                         ~~~~~~^~~~~~
+Joins/TBW/OperatorJoin.cpp: In function ‘result_t* OperatorJoin(table_t*, table_t*, joinconfig_t*)’:
+Joins/TBW/OperatorJoin.cpp:189:43: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
+  189 |     uint32_t nbuckets = (relR->num_tuples / BUCKET_SIZE);
+      |                         ~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~
 Joins/TBW/OperatorJoin_HashJoinVersion2.cpp: In function ‘result_t* HashJoinV2(table_t*, table_t*, joinconfig_t*)’:
 Joins/TBW/OperatorJoin_HashJoinVersion2.cpp:189:43: warning: conversion from ‘uint64_t’ {aka ‘long unsigned int’} to ‘uint32_t’ {aka ‘unsigned int’} may change value [-Wconversion]
   189 |     uint32_t nbuckets = (relR->num_tuples / BUCKET_SIZE);
@@ -408,48 +386,44 @@ Include/barrier.h:60:1: warning: ‘int barrier_init(barrier_t*, int)’ defined
    60 | barrier_init(barrier_t *barrier,int needed)
       | ^~~~~~~~~~~~
 tcs_num 17, tcs_max_num 17, tcs_min_pool 17
-The required memory is 634449920B.
-The required memory is 0x25d0f000, 619580 KB.
+The required memory is 634441728B.
+The required memory is 0x25d0d000, 619572 KB.
 Succeed.
 ---END---
 Command `./sgx -a OperatorJoin` succeeded with:
 ---STDOUT---
 [  0.0000][ INFO] ************* TEE_BENCH APP *************
-[  0.0039][DEBUG] Number of threads = 2 (N/A for every algorithm)
-[  0.0039][ INFO] Build relation R with size = 16.00 MB (2097152 tuples)
-[  0.0975][DEBUG] DONE
-[  0.0975][ INFO] Build relation S with size = 16.00 MB (2097152 tuples)
-[  0.1749][DEBUG] DONE
-[  0.1749][ INFO] Initialize enclave
-[  3.6582][ INFO] Enclave id = 2
-[  3.6583][ ENCL] Start enclave | EWB_COUNTER = 284,944
-[  3.6583][ INFO] Running algorithm OperatorJoin
-[  3.6720][DEBUG] NUM_PASSES=2, RADIX_BITS=14
-[  3.6720][DEBUG] fanOut = 128, R = 7, D = 7, thresh1 = 1048576
-[  3.6724][  PCM] Init PCM Start State
-[  3.6730][ ENCL] EPC Miss = 0
-[  3.6730][  PCM] Set system counter state: Partition
-[  3.6730][DEBUG] Radix partitioning. R=0, D=7, fanout=128, MASK=127
-[  3.7445][DEBUG] Radix partitioning. R=0, D=7, fanout=128, MASK=127
-[  3.8133][ ENCL] Pass-2: # partitioning tasks = 128
-[  3.8628][ ENCL] Number of join tasks = 16384
-[  3.8633][ ENCL] EPC Miss = 8880
-[  3.8810][ ENCL] EPC Miss = 0
-[  3.8816][ INFO] Total input tuples       :  2097152
-[  3.8816][ INFO] Join matches             : 2097152
-[  3.8816][ INFO] Time total (usec)        : 207510
-[  3.8817][ INFO] Throughput (M rec/sec)   : 20.2125
-[  3.8817][  PCM] ************************** RUSAGE **************************
-[  3.8817][  PCM] user CPU time used               : 0.265511s
-[  3.8817][  PCM] system CPU time used             : 0.146688s
-[  3.8817][  PCM] page reclaims (soft page faults) : 10452
-[  3.8817][  PCM] page faults (hard page faults)   : 0
-[  3.8817][  PCM] voluntary context switches       : 29
-[  3.8817][  PCM] involuntary context switches     : 70
-[  3.8817][  PCM] ************************** RUSAGE **************************
-[  3.8817][ INFO] Total join runtime: 0.22s
-[  3.8817][ INFO] throughput = 18.7749 [M rec / s]
-[  3.8817][ ENCL] Destroy enclave | EWB_COUNTER = 294,832
+[  0.0035][DEBUG] Number of threads = 2 (N/A for every algorithm)
+[  0.0035][ INFO] Build relation R with size = 16.00 MB (2097152 tuples)
+[  0.0959][DEBUG] DONE
+[  0.0959][ INFO] Build relation S with size = 16.00 MB (2097152 tuples)
+[  0.2011][DEBUG] DONE
+[  0.2011][ INFO] Initialize enclave
+[  4.3154][ INFO] Enclave id = 2
+[  4.3155][ ENCL] Start enclave | EWB_COUNTER = 284,976
+[  4.3155][ INFO] Running algorithm OperatorJoin
+[  4.4629][  PCM] Init PCM Start State
+[  4.4633][ ENCL] EPC Miss = 0
+[  4.4633][  PCM] Set system counter state: build
+[  4.8908][ ENCL] EPC Miss = 0
+[  4.8913][ ENCL] EPC Miss = 0
+[  4.8913][  PCM] Set system counter state: probe
+[  5.1273][ ENCL] EPC Miss = 0
+[  5.1280][ INFO] Total input tuples       :  2097152
+[  5.1280][ INFO] Join matches             : 2097152
+[  5.1280][ INFO] Time total (usec)        : 665325
+[  5.1281][ INFO] Throughput (M rec/sec)   : 6.3041
+[  5.1281][  PCM] ************************** RUSAGE **************************
+[  5.1281][  PCM] user CPU time used               : 1.-308868s
+[  5.1281][  PCM] system CPU time used             : 0.104064s
+[  5.1281][  PCM] page reclaims (soft page faults) : 9101
+[  5.1281][  PCM] page faults (hard page faults)   : 0
+[  5.1281][  PCM] voluntary context switches       : 7
+[  5.1281][  PCM] involuntary context switches     : 171
+[  5.1281][  PCM] ************************** RUSAGE **************************
+[  5.1281][ INFO] Total join runtime: 0.81s
+[  5.1281][ INFO] throughput = 5.1614 [M rec / s]
+[  5.1281][ ENCL] Destroy enclave | EWB_COUNTER = 294,128
 ---STDERR---
 IBRS and IBPB supported  : yes
 STIBP supported          : yes
