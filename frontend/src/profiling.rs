@@ -50,7 +50,7 @@ pub fn profiling() -> Html {
         if found.is_some() {
             let o: &mut SelectDataOption = found.unwrap(); // Putting &mut in front of the variable does not work. Type just to understand.
             if let Some(c) = commit_store.get_latest() {
-                o.label = format!("Latest Operator ({})", c.title).to_string();
+                o.label = format!("Latest Operator ({})", c.get_title()).to_string();
                 // We could put the id of the commit in the value field to offer not just the latest commit, but all.
             } else {
                 o.enabled = false;
