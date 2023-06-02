@@ -877,19 +877,25 @@ impl ProfilingConfiguration {
             }
         }
         let mut dataset_iter = self.datasets.iter();
-        let ds = dataset_iter.next().unwrap(); // There is always at least one dataset in a ProfilingConfiguration.
-        match ds {
-            Dataset::CustomSize { x, y } => {
+        match dataset_iter.next() {
+            Some(Dataset::CustomSize { x, y }) => {
                 custom_ds_flag = true;
                 for cmd in &mut res {
                     match self.parameter {
                         Parameter::OuterTableSize => (),
-                        _ => cmd.add_args("-x", format!("{x}")),
+                        _ => {
+                            if x != &0 {
+                                cmd.add_args("-x", format!("{x}"));
+                            }
+                        }
                     }
-                    cmd.add_args("-y", format!("{y}"));
+                    if y != &0 {
+                        cmd.add_args("-y", format!("{y}"));
+                    }
                 }
             }
-            _ => {
+            None => return vec![], // Should not be able to select no dataset.
+            Some(ds) => {
                 custom_ds_flag = false;
                 for cmd in &mut res {
                     cmd.add_args("-d", ds.to_cmd_arg());

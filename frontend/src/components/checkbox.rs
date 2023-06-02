@@ -31,12 +31,14 @@ pub fn InputCheckbox(
 pub struct CheckboxData {
     pub label: String,
     pub value: String,
+    pub disabled: bool,
 }
 impl CheckboxData {
-    pub fn new(label: &str, value: &str) -> Self {
+    pub fn new(label: &str, value: &str, disabled: bool) -> Self {
         Self {
             label: String::from(label),
             value: String::from(value),
+            disabled,
         }
     }
 }
@@ -57,13 +59,14 @@ pub fn InputCheckboxes(
         data,
         onchange,
         selected,
-        disabled,
+        disabled: whole_disabled,
     }: &InputCheckboxesProps,
 ) -> Html {
-    let options = data.iter().map(|CheckboxData { label, value}| {
+    let options = data.iter().map(|CheckboxData { label, value, disabled }| {
         let selected = selected.contains(value);
+        let disabled = *whole_disabled || *disabled;
         html! {
-            <InputCheckbox label={label.clone()} onchange={onchange} disabled={*disabled} value={value.clone()} selected={selected} />
+            <InputCheckbox label={label.clone()} onchange={onchange} disabled={disabled} value={value.clone()} selected={selected} />
         }
     });
     html! {

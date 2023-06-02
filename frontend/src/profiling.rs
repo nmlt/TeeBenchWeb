@@ -107,7 +107,14 @@ pub fn profiling() -> Html {
         dispatch.reduce_mut_callback_with(|store, e: Event| {
             let select_elem = e.target_unchecked_into::<HtmlSelectElement>();
             let value = select_elem.value();
-            store.parameter = Parameter::from_str(&value).unwrap();
+            let param = Parameter::from_str(&value).unwrap();
+            store.parameter = param.clone();
+            let custom_size = Dataset::CustomSize { x: 0, y: 0 }; // It's terrible, but I'm using 0 as indicator that this value is a dummy value. to_teebench_cmd checks for zeros.
+            if Parameter::OuterTableSize == param {
+                store.datasets = HashSet::from([custom_size]);
+            } else {
+                store.datasets.remove(&custom_size);
+            }
         })
     };
     let measurements = SelectDataOption::options_vec(&measurements);
@@ -181,8 +188,14 @@ pub fn profiling() -> Html {
     };
     let datasets: Vec<CheckboxData> = datasets
         .iter()
-        .filter(|&d| d != &"Custom Size")
-        .map(|d| CheckboxData::new(&d, &d))
+        //.filter(|&d| d != &"Custom Size")
+        .map(|d| {
+            if d == &"Custom Size" {
+                CheckboxData::new(&d, &d, true)
+            } else {
+                CheckboxData::new(&d, &d, false)
+            }
+        })
         .collect();
     let datasets_onchange = {
         let (_store, dispatch) = use_store::<ProfilingConfiguration>();
@@ -200,7 +213,7 @@ pub fn profiling() -> Html {
     };
     let platforms: Vec<CheckboxData> = platforms
         .iter()
-        .map(|p| CheckboxData::new(&p, &p))
+        .map(|p| CheckboxData::new(&p, &p, false))
         .collect();
     let platforms_onchange = {
         let (_store, dispatch) = use_store::<ProfilingConfiguration>();
@@ -251,6 +264,7 @@ pub fn profiling() -> Html {
     //     s.set_preconfigured_experiment();
     // });
     let disable_controls = store.experiment_type != ExperimentType::Custom;
+    let disable_submit = store.datasets.is_empty();
     html! {
         <div class="container-fluid">
             <div class="row vh-100">
@@ -296,7 +310,7 @@ pub fn profiling() -> Html {
                                             </fieldset>
                                         </div>
                                     </div>
-                                    <button class="btn btn-primary" type="button" onclick={onsubmit}>{"Run experiment"}</button>
+                                    <button class="btn btn-primary" type="button" onclick={onsubmit} disabled={disable_submit} >{"Run experiment"}</button>
                                 </div>
                             </form>
                             <JobResultsView />
