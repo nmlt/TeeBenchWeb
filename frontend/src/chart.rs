@@ -519,16 +519,16 @@ fn prepare_perf_report_chart(
             // 128 MB = 16_777_216
             let y_range: [u32; 1] = [256];
             // x (Relation R) starts at 8 MB, stepping each time 8 MB = 1_048_576
-            log!(format!("exp chart results: {:#?}", exp_chart.results));
+            // log!(format!("exp chart results: {:#?}", exp_chart.results));
             for (x, &y) in (16..257).step_by(16).zip(y_range.iter().cycle()) {
                 let alg = match pr_conf.baseline {
                     Commit(_) => algorithm,
                     _ => pr_conf.baseline,
                 };
-                log!(format!(
-                    "Searching for data: baseline: {:?} x {}, y {} ",
-                    alg, x, y
-                ));
+                // log!(format!(
+                //     "Searching for data: baseline: {:?} x {}, y {} ",
+                //     alg, x, y
+                // ));
                 let d1 = exp_chart
                     .get_result_values(
                         "throughput",

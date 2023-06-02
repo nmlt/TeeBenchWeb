@@ -13,7 +13,7 @@ export class MyChart {
             this.chart.options = options;
             this.chart.update();
         } else {
-            console.log("Creating new chart.");
+            //console.log("Creating new chart.");
             this.chart = new Chart(
                 context,
                 obj_config
@@ -25,7 +25,7 @@ export class MyChart {
     destroy() {
         if (this.chart) {
             this.chart.destroy();
-            console.log("Destroyed chart.");
+            //console.log("Destroyed chart.");
         }
     }
 }
