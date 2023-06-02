@@ -300,7 +300,8 @@ async fn run_experiment(
         charts: vec![],
         findings: vec![],
     };
-    for (chart_cmds, conf) in cmds.iter().zip(configs) {
+    let mut iter = cmds.iter().zip(configs).peekable();
+    while let Some((chart_cmds, conf)) = iter.next() {
         if errors {
             break;
         }
@@ -346,7 +347,7 @@ async fn run_experiment(
         }
         let experiment_chart = ExperimentChart::new(conf.clone(), cmd_tasks, vec![]);
         report.charts.push(experiment_chart);
-        {
+        if iter.peek().is_some() {
             let partial_results_sender = partial_results_sender.lock().await;
             partial_results_sender
                 .send((job_id, report.clone()))
