@@ -17,7 +17,7 @@ use tokio::sync::mpsc;
 use tracing::{debug, error, info, instrument, warn};
 
 use backend_lib::{profiling_task, CancelNotifierType, PartialReportType};
-use common::commit::{Commit, CommitState};
+use common::commit::{Commit, CommitState, CompilationStatus};
 use common::data_types::{ClientMessage, Job, JobStatus, ServerMessage};
 
 const DEFAULT_TASK_CHANNEL_SIZE: usize = 5;
@@ -210,9 +210,10 @@ async fn main() {
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .init();
 
-    let commits = Arc::new(Mutex::new(CommitState::new(vec![
-        common::hardcoded::predefined_commit(),
-    ])));
+    let mut hardcoded_commits = vec![common::hardcoded::predefined_commit()];
+    let mut append_commits = common::hardcoded::hardcoded_commits();
+    hardcoded_commits.append(&mut append_commits);
+    let commits = Arc::new(Mutex::new(CommitState::new(hardcoded_commits)));
     let queue: Arc<Mutex<VecDeque<Job>>> = Arc::new(Mutex::new(VecDeque::new())); //VecDeque::from(hardcoded_profiling_jobs())));
     let (queue_tx, queue_rx) = mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);
     let (profiling_tx, profiling_rx) = mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);
