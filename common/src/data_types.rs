@@ -376,6 +376,7 @@ pub enum Measurement {
     Throughput,
     TotalEpcPaging,
     ThroughputAndTotalEPCPaging,
+    ThroughputAndContextSwitches,
     Phase1Cycles,
     Phase2Cycles,
     TotalCycles,

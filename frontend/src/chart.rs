@@ -48,7 +48,7 @@ fn get_color_by_algorithm(alg: &String) -> &str {
     ]);
     let s = match color_alg.get(alg.as_str()) {
         // if not found - return a random color
-        None => COLORS.choose(&mut rand::thread_rng()).unwrap().clone(),
+        None => COLORS2.choose(&mut rand::thread_rng()).unwrap().clone(),
         Some(c) => c,
     };
     s
@@ -112,6 +112,7 @@ fn get_measurement_from_single_result(
             .unwrap(),
         Measurement::TwoPhasesCycles
         | Measurement::ThroughputAndTotalEPCPaging
+        | Measurement::ThroughputAndContextSwitches
         | Measurement::ContextSwitches => panic!("Should not ask for a single value"),
     }
 }
@@ -623,6 +624,13 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                 y_axis_text = "Throughput [M rec/s]";
                                 // y2_axis_text = "EWB Misses"
                             }
+                            Measurement::ThroughputAndContextSwitches => {
+                                chart_type = "line";
+                                // chart2_type = "bar";
+                                heading = String::from("Throughput and Context Switches with varying ");
+                                y_axis_text = "Throughput [M rec/s]";
+                                // y2_axis_text = "Context Switches"
+                            }
                             Measurement::Phase1Cycles => {
                                 chart_type = "bar";
                                 heading = String::from("Phase 1 CPU cycles with varying ");
@@ -846,6 +854,138 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                     "borderColor": alg_color,
                                     "yAxisID": "y",
                                     "order": 0
+                                    }));
+                                }
+                            }
+                            Measurement::ThroughputAndContextSwitches => {
+                                scales = json!({
+                                    "y": {
+                                        "text": "Throughput [M rec/s]",
+                                        "type": "linear",
+                                        "display": true,
+                                        "position": "left",
+                                        "title" : {
+                                            "display": true,
+                                            "text": "Throughput [M rec/s]",
+                                        }
+                                    },
+                                    "y1": {
+                                        "ticks": {
+                                                "min": 0
+                                            },
+                                        "type": "linear",
+                                        "display": true,
+                                        "position": "right",
+                                        "stacked": true,
+                                        // grid line settings
+                                        "grid": {
+                                            "drawOnChartArea": false, // only want the grid lines for one axis to show up
+                                        },
+                                        "title" : {
+                                            "display": true,
+                                            "text": "Context Switches",
+                                        }
+                                    },
+                                    "x": {
+                                        "title": {
+                                            "display": true,
+                                            "text": x_axis_text,
+                                        },
+                                    },
+                                });
+                                // Context Switches
+                                data = create_data_hashmap(
+                                    &exp_chart.results,
+                                    Measurement::TotalInvoluntaryCS,
+                                    conf.clone().parameter,
+                                );
+                                data2 = create_data_hashmap(
+                                    &exp_chart.results,
+                                    Measurement::TotalVoluntaryCS,
+                                    conf.clone().parameter,
+                                );
+                                for ((alg, _platform, _dataset), data_value) in data.iter() {
+                                    let alg = commit_store.get_title_by_algorithm(alg).unwrap();
+                                    let alg_color = get_color_by_algorithm(&alg);
+                                    // compare the global label (steps) with the data_value results
+                                    // fill in with NULL if a data_value is missing, otherwise pass the result
+                                    let mut values: Vec<String> = vec![];
+                                    for s in &steps {
+                                        let v = data_value.iter().find(|(x, _)| s == x);
+                                        match v {
+                                            None => values.push("NULL".to_string()),
+                                            Some(val) => values.push(val.1.clone()),
+                                        }
+                                    }
+                                    datasets_prep.push(json!({
+                                        "label": format!("{alg} involuntary CS"),
+                                        "data": values,
+                                        "backgroundColor": alg_color,
+                                        "borderColor": alg_color,
+                                        "yAxisID": "y1",
+                                        "borderWidth":5,
+                                        "order": 1,
+                                        "stack": alg.to_string(),
+                                        "type": "bar"
+                                    }));
+                                }
+
+                                for ((alg, _platform, _dataset), data_value) in data2.iter() {
+                                    let alg = commit_store.get_title_by_algorithm(alg).unwrap();
+                                    let alg_color = get_color_by_algorithm(&alg).to_string()
+                                        + &"AA".to_string();
+                                    // compare the global label (steps) with the data_value results
+                                    // fill in with NULL if a data_value is missing, otherwise pass the result
+                                    let mut values: Vec<String> = vec![];
+                                    for s in &steps {
+                                        let v = data_value.iter().find(|(x, _)| s == x);
+                                        match v {
+                                            None => values.push("NULL".to_string()),
+                                            Some(val) => values.push(val.1.clone()),
+                                        }
+                                    }
+                                    datasets_prep.push(json!({
+                                        "label": format!("{alg} voluntary CS"),
+                                        "data": values,
+                                        "backgroundColor": alg_color,
+                                        "borderColor": alg_color,
+                                        "yAxisID": "y1",
+                                        "borderWidth":5,
+                                        "order": 1,
+                                        "stack": alg.to_string(),
+                                        "type": "bar"
+                                    }));
+                                }
+
+                                //Throughput
+                                for a in conf.algorithms.iter() {
+                                    // let alg_color = get_color_by_algorithm(&a.to_string()).to_string().clone();
+                                    let alg_color =
+                                        COLORS.choose(&mut rand::thread_rng()).unwrap().clone();
+                                    let mut values: Vec<String> = vec![];
+                                    for s in &steps {
+                                        match exp_chart.results.iter().find(|(args, _res)| {
+                                            args.algorithm.to_string() == a.to_string()
+                                                && args.threads.to_string() == s.clone()
+                                        }) {
+                                            None => {}
+                                            Some((_, r)) => {
+                                                let val = get_measurement_from_single_result(
+                                                    r,
+                                                    &Measurement::Throughput,
+                                                );
+                                                values.push(val);
+                                            }
+                                        }
+                                    }
+                                    datasets_prep.push(json!({
+                                    "label": format!("Throughput {}", a.to_string()),
+                                    "data": values,
+                                    "backgroundColor": alg_color,
+                                    "borderColor": alg_color,
+                                    "yAxisID": "y",
+                                    "order": 0,
+                                    "borderWidth":5,
                                     }));
                                 }
                             }

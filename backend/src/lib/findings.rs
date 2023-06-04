@@ -215,6 +215,7 @@ pub fn enrich_report_with_findings(jr: &mut Report) -> Result<()> {
                     }
                     Measurement::TotalEpcPaging => {}
                     Measurement::ThroughputAndTotalEPCPaging => {}
+                    Measurement::ThroughputAndContextSwitches => {}
                     Measurement::ContextSwitches => {
                         // do it only once
                         if jr.findings.len() == 0 {
