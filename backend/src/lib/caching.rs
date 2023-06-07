@@ -10,7 +10,7 @@ use tracing::debug;
 use crate::config::{
     EMPTY_CACHE_VAR_NAME, OUTPUT_CSV_PATH, SQLITE_FILE_VAR_NAME, TEEBENCHARGS_CSV_PATH,
 };
-use common::data_types::TeebenchArgs;
+use common::data_types::{Dataset, TeebenchArgs};
 
 /// When SQLite imports csv, empty cells are set to "", because csv does not support NULL.
 fn set_to_null_if_equals_empty_string(table: &str, column: &str) -> String {
@@ -267,7 +267,16 @@ pub fn search_for_exp(
         &args.sort_r,
         &args.sort_s
     ];
-    let id = conn.query_row(&format!("SELECT id FROM teebenchargs WHERE app_name=?1 AND dataset=?2 AND algorithm=?3 AND threads=?4 AND selectivity=?5 AND data_skew=?6 AND seal_chunk_size=?7 AND r_tuples=?8 AND s_tuples=?9 AND {} AND {} AND {} AND {} AND seal=?14 AND sort_r=?15 AND sort_s=?16", query_none(&args.r_path, "r_path", 10), query_none(&args.s_path, "s_path", 11), query_none(&args.x, "r_size", 12), query_none(&args.y, "s_size", 13)), arg_params, |r| r.get::<usize, usize>(0));
+    let sql: &str = &format!("SELECT id FROM teebenchargs WHERE app_name=?1 AND dataset=?2 AND \
+                                algorithm=?3 AND threads=?4 AND selectivity=?5 AND data_skew=?6 AND \
+                                seal_chunk_size=?7 AND r_tuples=?8 AND s_tuples=?9 AND {} AND {} \
+                                AND {} AND {} AND seal=?14 AND sort_r=?15 AND sort_s=?16",
+                             query_none(&args.r_path, "r_path", 10),
+                             query_none(&args.s_path, "s_path", 11),
+                             query_none(&args.x, "r_size", 12),
+                             query_none(&args.y, "s_size", 13));
+
+    let id = conn.query_row(sql, arg_params, |r| r.get::<usize, usize>(0));
     let id = match id {
         Ok(id) => id,
         Err(rusqlite::Error::QueryReturnedNoRows) => {

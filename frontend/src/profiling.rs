@@ -8,7 +8,7 @@ use yewdux_input::{Checkbox, InputDispatch};
 
 use common::data_types::{
     Algorithm, Dataset, ExperimentType, Job, Measurement, Parameter, Platform,
-    ProfilingConfiguration, VariantNames,
+    ProfilingConfiguration, VariantNames, EPC_SIZE_KB,
 };
 use std::collections::HashSet;
 use std::str::FromStr;
@@ -109,7 +109,10 @@ pub fn profiling() -> Html {
             let value = select_elem.value();
             let param = Parameter::from_str(&value).unwrap();
             store.parameter = param.clone();
-            let custom_size = Dataset::CustomSize { x: 0, y: 0 }; // It's terrible, but I'm using 0 as indicator that this value is a dummy value. to_teebench_cmd checks for zeros.
+            let custom_size = Dataset::CustomSize {
+                x: (EPC_SIZE_KB / 1024),
+                y: (EPC_SIZE_KB / 1024),
+            }; // It's terrible, but I'm using 0 as indicator that this value is a dummy value. to_teebench_cmd checks for zeros.
             if Parameter::OuterTableSize == param {
                 store.datasets = HashSet::from([custom_size]);
             } else {

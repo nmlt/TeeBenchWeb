@@ -627,7 +627,8 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                             Measurement::ThroughputAndContextSwitches => {
                                 chart_type = "line";
                                 // chart2_type = "bar";
-                                heading = String::from("Throughput and Context Switches with varying ");
+                                heading =
+                                    String::from("Throughput and Context Switches with varying ");
                                 y_axis_text = "Throughput [M rec/s]";
                                 // y2_axis_text = "Context Switches"
                             }

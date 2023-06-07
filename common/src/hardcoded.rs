@@ -75,7 +75,7 @@ pub fn hardcoded_commits() -> (Vec<Commit>, Vec<Job>) {
                             include_str!(
                                 "../code_files/OperatorJoin_HashJoinVersion2_Compiler_Output.txt"
                             )
-                                .to_string(),
+                            .to_string(),
                         );
                     }
                     "3" => {
@@ -83,7 +83,7 @@ pub fn hardcoded_commits() -> (Vec<Commit>, Vec<Job>) {
                             include_str!(
                                 "../code_files/OperatorJoin_HashJoinVersion3_Compiler_Output.txt"
                             )
-                                .to_string(),
+                            .to_string(),
                         );
                     }
                     "5" => {
@@ -91,7 +91,7 @@ pub fn hardcoded_commits() -> (Vec<Commit>, Vec<Job>) {
                             include_str!(
                                 "../code_files/OperatorJoin_HashJoinVersion5_Compiler_Output.txt"
                             )
-                                .to_string(),
+                            .to_string(),
                         );
                     }
                     "6" => {
@@ -150,7 +150,7 @@ pub fn hardcoded_profiling_jobs() -> Vec<Job> {
             platforms: HashSet::from([Platform::Sgx]),
             sort_data: false,
         },
-        //CHT throughput and EPC paging - FIXME: this doesn't work yet
+        //CHT throughput and EPC paging
         ProfilingConfiguration {
             algorithms: HashSet::from([Cht]),
             experiment_type: ExperimentType::Custom,
