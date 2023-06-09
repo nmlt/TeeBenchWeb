@@ -34,7 +34,16 @@ pub fn hardcoded_commits() -> (Vec<Commit>, Vec<Job>) {
             code: Option::from(
                 include_str!("../code_files/OperatorJoin_HashJoinVersion3.cpp").to_string(),
             ),
-            baseline: Option::from(Algorithm::hj_v2),
+            baseline: Option::from(Algorithm::HjV2),
+        },
+        UploadCommitFormState {
+            title: Option::from("HashJoin".to_string()),
+            version: Option::from("4".to_string()),
+            operator: Option::from(Operator::Join),
+            code: Option::from(
+                include_str!("../code_files/OperatorJoin_HashJoinVersion4.cpp").to_string(),
+            ),
+            baseline: Option::from(Algorithm::HjV3),
         },
         UploadCommitFormState {
             title: Option::from("HashJoin".to_string()),
@@ -43,16 +52,7 @@ pub fn hardcoded_commits() -> (Vec<Commit>, Vec<Job>) {
             code: Option::from(
                 include_str!("../code_files/OperatorJoin_HashJoinVersion5.cpp").to_string(),
             ),
-            baseline: Option::from(Algorithm::hj_v3),
-        },
-        UploadCommitFormState {
-            title: Option::from("HashJoin".to_string()),
-            version: Option::from("6".to_string()),
-            operator: Option::from(Operator::Join),
-            code: Option::from(
-                include_str!("../code_files/OperatorJoin_HashJoinVersion6.cpp").to_string(),
-            ),
-            baseline: Option::from(Algorithm::hj_v2),
+            baseline: Option::from(Algorithm::HjV2),
         },
     ]);
 
@@ -86,18 +86,18 @@ pub fn hardcoded_commits() -> (Vec<Commit>, Vec<Job>) {
                             .to_string(),
                         );
                     }
-                    "5" => {
+                    "4" => {
                         cc.compilation = CompilationStatus::Successful(
                             include_str!(
-                                "../code_files/OperatorJoin_HashJoinVersion5_Compiler_Output.txt"
+                                "../code_files/OperatorJoin_HashJoinVersion4_Compiler_Output.txt"
                             )
                             .to_string(),
                         );
                     }
-                    "6" => {
+                    "5" => {
                         cc.compilation = CompilationStatus::Successful(
                             include_str!(
-                                "../code_files/OperatorJoin_HashJoinVersion6_Compiler_Output.txt"
+                                "../code_files/OperatorJoin_HashJoinVersion5_Compiler_Output.txt"
                             )
                             .to_string(),
                         );
@@ -111,7 +111,7 @@ pub fn hardcoded_commits() -> (Vec<Commit>, Vec<Job>) {
         .collect::<Vec<Commit>>();
     let jobs = commits
         .iter()
-        .filter(|c| c.version.as_str() == "6")
+        .filter(|c| c.version.as_str() != "1")
         .map(|c| {
             Job::new(
                 JobConfig::PerfReport(PerfReportConfig::for_throughput(c.id, c.baseline).0),
@@ -289,23 +289,19 @@ pub fn hardcoded_perf_report_commands(
         "HashJoin" => match commit_version {
             "2" => {
                 operator = "HashJoinV2";
-                commit_id = Algorithm::hj_v2;
+                commit_id = Algorithm::HjV2;
             }
             "3" => {
                 operator = "HashJoinV3";
-                commit_id = Algorithm::hj_v3;
+                commit_id = Algorithm::HjV3;
             }
             "4" => {
                 operator = "HashJoinV4";
-                commit_id = Algorithm::hj_v4;
+                commit_id = Algorithm::HjV4;
             }
             "5" => {
                 operator = "HashJoinV5";
-                commit_id = Algorithm::hj_v5;
-            }
-            "6" => {
-                operator = "HashJoinV6";
-                commit_id = Algorithm::hj_v6;
+                commit_id = Algorithm::HjV5;
             }
             _ => {
                 operator = REPLACE_ALG;
@@ -416,7 +412,7 @@ pub fn hardcoded_perf_report_commands(
 use crate::commit::{Commit, CompilationStatus, Operator, UploadCommitFormState};
 use crate::data_types::Algorithm::*;
 use crate::data_types::{
-    Dataset, ExperimentType, Job, JobStatus, Measurement, Parameter, ProfilingConfiguration,
+    Dataset, ExperimentType, Job, Measurement, Parameter, ProfilingConfiguration,
 };
 use indoc::indoc;
 use time::OffsetDateTime;

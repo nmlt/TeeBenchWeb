@@ -1,5 +1,3 @@
-use common::commit::CompilationStatus;
-use common::hardcoded::hardcoded_commits;
 use gloo_console::log;
 use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;

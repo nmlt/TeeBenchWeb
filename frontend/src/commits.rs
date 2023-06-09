@@ -29,17 +29,6 @@ use crate::Route;
 #[function_component]
 fn UploadCommit() -> Html {
     let commit_store = use_store_value::<CommitState>();
-    let commit_store_moved = commit_store.clone();
-    // TODO: I think this is unnecessary
-    // use_effect_with_deps(
-    //     move |_| {
-    //         let largest = commit_store_moved.get_latest().map(|c| c.id).unwrap_or(0);
-    //         unsafe {
-    //             // COMMIT_ID_COUNTER = largest;
-    //         }
-    //     },
-    //     commit_store.clone(),
-    // );
     let onchange_file = {
         let dispatch = Dispatch::<UploadCommitFormState>::new();
         dispatch.reduce_mut_future_callback_with(|store, e: Event| {

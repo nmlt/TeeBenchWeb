@@ -417,7 +417,6 @@ pub fn enrich_report_with_findings(jr: &mut Report) -> Result<()> {
                 }
                 ExperimentType::Throughput => {}
                 ExperimentType::Scalability => {
-                    info!("perf_config: {:#?}", c);
                     let mut tmp = results.clone();
                     tmp.sort_by_key(|(t, _)| t.threads);
                     let throughput_commit: Vec<f32> = tmp

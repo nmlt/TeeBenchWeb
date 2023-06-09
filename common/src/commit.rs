@@ -214,18 +214,16 @@ impl UploadCommitFormState {
         )
         .parse::<CommitIdType>()
         .unwrap();
-        unsafe {
-            c = Commit::new(
-                self.title.clone().unwrap(),
-                self.version.clone().unwrap(),
-                self.operator.clone().unwrap(),
-                OffsetDateTime::now_utc(),
-                self.code.clone().unwrap(),
-                None,
-                timestamp,
-                self.baseline.clone().unwrap(),
-            );
-        }
+        c = Commit::new(
+            self.title.clone().unwrap(),
+            self.version.clone().unwrap(),
+            self.operator.clone().unwrap(),
+            OffsetDateTime::now_utc(),
+            self.code.clone().unwrap(),
+            None,
+            timestamp,
+            self.baseline.clone().unwrap(),
+        );
         c
     }
     pub fn verify(&self) -> bool {

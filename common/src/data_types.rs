@@ -278,15 +278,13 @@ pub enum Algorithm {
     Crkj,
 
     #[strum(to_string = "HashJoinV2")]
-    hj_v2,
+    HjV2,
     #[strum(to_string = "HashJoinV3")]
-    hj_v3,
+    HjV3,
     #[strum(to_string = "HashJoinV4")]
-    hj_v4,
+    HjV4,
     #[strum(to_string = "HashJoinV5")]
-    hj_v5,
-    #[strum(to_string = "HashJoinV6")]
-    hj_v6,
+    HjV5,
 }
 
 use std::str::FromStr;

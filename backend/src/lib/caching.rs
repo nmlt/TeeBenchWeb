@@ -10,7 +10,7 @@ use tracing::debug;
 use crate::config::{
     EMPTY_CACHE_VAR_NAME, OUTPUT_CSV_PATH, SQLITE_FILE_VAR_NAME, TEEBENCHARGS_CSV_PATH,
 };
-use common::data_types::{Dataset, TeebenchArgs};
+use common::data_types::TeebenchArgs;
 
 /// When SQLite imports csv, empty cells are set to "", because csv does not support NULL.
 fn set_to_null_if_equals_empty_string(table: &str, column: &str) -> String {

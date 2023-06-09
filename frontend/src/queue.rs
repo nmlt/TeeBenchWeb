@@ -89,7 +89,7 @@ pub struct QueueProps {
 
 #[function_component]
 pub fn Queue(QueueProps { filter_by }: &QueueProps) -> Html {
-    let (queue_store, queue_dispatch) = use_store::<QueueState>();
+    let (queue_store, _queue_dispatch) = use_store::<QueueState>();
     let queue: Vec<Html> = queue_store
         .queue
         .iter()

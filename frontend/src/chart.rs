@@ -44,7 +44,6 @@ fn get_color_by_algorithm(alg: &String) -> &str {
         ("HashJoinV3", "#4046ca"),
         ("HashJoinV4", "#f68511"),
         ("HashJoinV5", "#de3d82"),
-        ("HashJoinV6", "#7e84fa"),
     ]);
     let s = match color_alg.get(alg.as_str()) {
         // if not found - return a random color
@@ -335,11 +334,10 @@ fn get_algorithm_by_title(title: &str, version: &str, id: CommitIdType) -> Algor
         "INL" => Algorithm::Inl,
         "CRKJ" => Algorithm::Crkj,
         "HashJoin" => match version {
-            "2" => Algorithm::hj_v2,
-            "3" => Algorithm::hj_v3,
-            "4" => Algorithm::hj_v4,
-            "5" => Algorithm::hj_v5,
-            "6" => Algorithm::hj_v6,
+            "2" => Algorithm::HjV2,
+            "3" => Algorithm::HjV3,
+            "4" => Algorithm::HjV4,
+            "5" => Algorithm::HjV5,
             _ => Algorithm::Commit(id),
         },
         _ => Algorithm::Commit(id),

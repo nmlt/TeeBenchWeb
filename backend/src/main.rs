@@ -17,7 +17,7 @@ use tokio::sync::mpsc;
 use tracing::{debug, error, info, instrument, warn};
 
 use backend_lib::{profiling_task, CancelNotifierType, PartialReportType};
-use common::commit::{Commit, CommitState, CompilationStatus};
+use common::commit::{Commit, CommitState};
 use common::data_types::{ClientMessage, Job, JobStatus, ServerMessage};
 
 const DEFAULT_TASK_CHANNEL_SIZE: usize = 5;
@@ -211,7 +211,7 @@ async fn main() {
         .init();
 
     let mut hardcoded_commits = vec![common::hardcoded::predefined_commit()];
-    let (mut append_commits, mut append_jobs) = common::hardcoded::hardcoded_commits();
+    let (mut append_commits, append_jobs) = common::hardcoded::hardcoded_commits();
     hardcoded_commits.append(&mut append_commits);
     let commits = Arc::new(Mutex::new(CommitState::new(hardcoded_commits)));
     let queue: Arc<Mutex<VecDeque<Job>>> = Arc::new(Mutex::new(VecDeque::from(append_jobs))); //VecDeque::from(hardcoded_profiling_jobs())));
