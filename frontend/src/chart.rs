@@ -701,7 +701,7 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                             Measurement::TwoPhasesCycles => {
                                 chart_type = "line";
                                 heading = String::from("CPU cycles with varying ");
-                                y_axis_text = "CPU Cycles / tuple";
+                                y_axis_text = "CPU Cycles [B] / tuple";
                             }
                             Measurement::ContextSwitches => {
                                 chart_type = "bar";
@@ -852,7 +852,8 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                     "backgroundColor": alg_color,
                                     "borderColor": alg_color,
                                     "yAxisID": "y",
-                                    "order": 0
+                                    "order": 0,
+                                    "borderWidth":5,
                                     }));
                                 }
                             }
@@ -1117,7 +1118,10 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                         let v = data_value.iter().find(|(x, _)| s == x);
                                         match v {
                                             None => values.push("NULL".to_string()),
-                                            Some(val) => values.push(val.1.clone()),
+                                            Some(val) => {
+                                                let val_b = val.1.parse::<f64>().unwrap() / 1000000000.0;
+                                                values.push(val_b.to_string())
+                                            },
                                         }
                                     }
                                     datasets_prep.push(json!({
@@ -1142,7 +1146,10 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                         let v = data_value.iter().find(|(x, _)| s == x);
                                         match v {
                                             None => values.push("NULL".to_string()),
-                                            Some(val) => values.push(val.1.clone()),
+                                            Some(val) => {
+                                                let val_b = val.1.parse::<f64>().unwrap() / 1000000000.0;
+                                                values.push(val_b.to_string())
+                                            },
                                         }
                                     }
                                     datasets_prep.push(json!({
