@@ -7,7 +7,7 @@ use std::iter::zip;
 use tracing::instrument;
 use tracing::log::info;
 
-#[instrument]
+#[instrument(skip(jr))]
 pub fn enrich_report_with_findings(jr: &mut Report) -> Result<()> {
     let mut epc_commit_ewb: Vec<i32> = vec![];
     let mut epc_baseline_ewb: Vec<i32> = vec![];
