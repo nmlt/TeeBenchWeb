@@ -1119,9 +1119,10 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                         match v {
                                             None => values.push("NULL".to_string()),
                                             Some(val) => {
-                                                let val_b = val.1.parse::<f64>().unwrap() / 1000000000.0;
+                                                let val_b =
+                                                    val.1.parse::<f64>().unwrap() / 1000000000.0;
                                                 values.push(val_b.to_string())
-                                            },
+                                            }
                                         }
                                     }
                                     datasets_prep.push(json!({
@@ -1147,9 +1148,10 @@ pub fn Chart(ChartProps { exp_chart }: &ChartProps) -> Html {
                                         match v {
                                             None => values.push("NULL".to_string()),
                                             Some(val) => {
-                                                let val_b = val.1.parse::<f64>().unwrap() / 1000000000.0;
+                                                let val_b =
+                                                    val.1.parse::<f64>().unwrap() / 1000000000.0;
                                                 values.push(val_b.to_string())
-                                            },
+                                            }
                                         }
                                     }
                                     datasets_prep.push(json!({
