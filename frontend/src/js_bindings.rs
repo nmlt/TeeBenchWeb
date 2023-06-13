@@ -18,4 +18,5 @@ extern "C" {
 
     pub fn hljs_highlight(code: String) -> String;
     pub fn diff2html_html(diffInput: String) -> String;
+    pub fn start_intro();
 }

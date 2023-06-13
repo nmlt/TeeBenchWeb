@@ -11,7 +11,7 @@ use std::str::FromStr;
 
 use crate::components::select::{InputSelect, SelectDataOption};
 use crate::components::tag::Tag;
-use crate::js_bindings::{diff2html_html, hljs_highlight};
+use crate::js_bindings::{diff2html_html, hljs_highlight, start_intro};
 use crate::modal::Modal;
 use crate::modal::ModalContent;
 use crate::navigation::Navigation;
@@ -169,7 +169,7 @@ fn UploadCommit() -> Html {
         false
     };
     html! {
-        <form class="row g-3">
+        <form id="tbw-commits-upload-form" class="row g-3">
             <div class="col-md">
                 <div class="row g-3">
                     <div class="col-md">
@@ -190,7 +190,7 @@ fn UploadCommit() -> Html {
                             <input id="versionFormInput" class="form-control" type="text" onchange={onchange_version} disabled={entire_form_disabled} />
                         </div>
                     </div>
-                    <div class="col-md">
+                    <div id="tbw-commits-upload-form-operators" class="col-md">
                         <InputSelect options={operators} onchange={operators_onchange} label={"Operator"} multiple={false} selected={selected_operator} disabled={entire_form_disabled} />
                     </div>
                     <div class="col-md">
@@ -378,16 +378,16 @@ fn CommitsList() -> Html {
 
                 <div class="container d-flex flex-row justify-content-start">
                     <div class="p-2"><div class="btn btn-light">{commit.operator}</div></div>
-                    <div class="p-2">
+                    <div class="p-2 tbw-commits-list-item-code">
                         <button class="btn btn-secondary" onclick={onclick_code} data-bs-toggle="modal" data-bs-target="#mainModal">{"Code"}</button>
                     </div>
-                    <div class="p-2">
+                    <div class="p-2 tbw-commits-list-item-compiler-output">
                         {compile_status_view}
                     </div>
-                    <div class="p-2">
+                    <div class="p-2 tbw-commits-list-item-report">
                         {report_button}
                     </div>
-                    <div class="p-2">
+                    <div class="p-2 tbw-commits-list-item-diff">
                         {diff_button}
                     </div>
                     <div class="p-2">
@@ -424,12 +424,19 @@ fn CommitsList() -> Html {
         }
     });
     html! {
+        <div id="tbw-commits-commit-list">
         {for list_items_html}
+        </div>
     }
 }
 
 #[function_component]
 pub fn Commits() -> Html {
+    let tour_onclick = {
+        Callback::from(move |_| {
+            start_intro();
+        })
+    };
     html! {
         <div class="container-fluid">
             <div class="row vh-100">
@@ -440,6 +447,12 @@ pub fn Commits() -> Html {
                     <main class="row">
                         <div class="col pt-4 col-lg-8">
                             <h2>{"Operators"}</h2>
+                            <div class="alert alert-primary alert-dismissible fade show" role="alert">
+                                {"Welcome to TeeBench! This is a static version of TeeBench, with cached results only and no way to run new experiments. To get an introduction to its features click here:\n"}
+                                <br />
+                                <button class="btn btn-primary" onclick={tour_onclick}>{"Start tour"}</button>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
                             <UploadCommit />
                             <CommitsList />
                         </div>
