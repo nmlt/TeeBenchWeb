@@ -53,10 +53,11 @@ pub fn InputSelect(
             }
             html! { <option value={o.value.clone()} disabled={!o.enabled}>{o.label.clone()}</option> }
         });
+    let id: String = label.chars().filter(|c| c.is_alphanumeric()).collect();
     html! {
         <div>
-            <label class="form-label" for={format!("select-{label}")}>{label.clone()}</label>
-            <select class="form-select" id={format!("select-{label}")} type="select" multiple={*multiple} {onchange} disabled={*disabled} >
+            <label class="form-label" for={format!("select-{id}")}>{label.clone()}</label>
+            <select class="form-select" id={format!("select-{id}")} type="select" multiple={*multiple} {onchange} disabled={*disabled} >
                 {for options}
             </select>
         </div>
