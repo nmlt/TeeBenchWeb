@@ -214,8 +214,47 @@ pub fn enrich_report_with_findings(jr: &mut Report) -> Result<()> {
                         }
                     }
                     Measurement::TotalEpcPaging => {}
-                    Measurement::ThroughputAndTotalEPCPaging => {}
-                    Measurement::ThroughputAndContextSwitches => {}
+                    Measurement::ThroughputAndTotalEPCPaging => {
+                        let res = results.iter()
+                            .map(|(_,r)| r)
+                            .filter(|b| b.get("totalEWB").unwrap().parse::<i32>().unwrap() > 500000)
+                            .collect::<Vec<_>>();
+                        if res.len() > 0 {
+                            jr.findings.push(common::data_types::Finding {
+                                title: "Excessive EPC Paging".to_string(),
+                                message: format!(""),
+                                style: FindingStyle::Bad,
+                            });
+                            jr.findings.push(common::data_types::Finding {
+                                title: "Try reducing memory consumption".to_string(),
+                                message: format!(""),
+                                style: FindingStyle::Neutral,
+                            });
+                        }
+                    }
+                    Measurement::ThroughputAndContextSwitches => {
+                        // do it only once
+                        if jr.findings.len() == 0 {
+                            match results.iter().find(|(_, r)| {
+                                r.get("totalVoluntaryCS").unwrap().parse::<i32>().unwrap() > 1000
+                            }) {
+                                None => {}
+                                Some(_) => {
+                                    jr.findings.push(common::data_types::Finding {
+                                        title: "Detected excessive voluntary CPU context switches"
+                                            .to_string(),
+                                        message: format!(""),
+                                        style: FindingStyle::Bad,
+                                    });
+                                    jr.findings.push(common::data_types::Finding {
+                                        title: "Try mutex-free data structures".to_string(),
+                                        message: format!(""),
+                                        style: FindingStyle::Neutral,
+                                    });
+                                }
+                            }
+                        }
+                    }
                     Measurement::ContextSwitches => {
                         // do it only once
                         if jr.findings.len() == 0 {
