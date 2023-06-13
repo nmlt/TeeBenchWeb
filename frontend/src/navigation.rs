@@ -11,10 +11,11 @@ pub struct NavigationProps {
 #[function_component]
 pub fn Navigation(NavigationProps { active_nav_item }: &NavigationProps) -> Html {
     fn add_active_class(current: &str, active: String) -> yew::html::Classes {
+        let id_class = format!("tbw-link-{current}");
         if current == &active {
-            classes!("active", "nav-link", "text-primary")
+            classes!("active", "nav-link", "text-primary", &id_class)
         } else {
-            classes!("nav-link", "text-reset")
+            classes!("nav-link", "text-reset", &id_class)
         }
     }
     html! {

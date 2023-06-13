@@ -446,13 +446,13 @@ pub fn Commits() -> Html {
                 <div class="col d-flex flex-column h-sm-100">
                     <main class="row">
                         <div class="col pt-4 col-lg-8">
-                            <h2>{"Operators"}</h2>
                             <div class="alert alert-primary alert-dismissible fade show" role="alert">
                                 {"Welcome to TeeBench! This is a static version of TeeBench, with cached results only and no way to run new experiments. To get an introduction to its features click here:\n"}
                                 <br />
                                 <button class="btn btn-primary" onclick={tour_onclick}>{"Start tour"}</button>
                                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                             </div>
+                            <h2>{"Operators"}</h2>
                             <UploadCommit />
                             <CommitsList />
                         </div>

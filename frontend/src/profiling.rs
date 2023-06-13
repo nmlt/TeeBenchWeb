@@ -278,7 +278,7 @@ pub fn profiling() -> Html {
                     <main class="row">
                         <div class="col pt-4 col-lg-8">
                             <h2>{"Profiling"}</h2>
-                            <form class="row g-3" method="get">
+                            <form id="tbw-profiling-form" class="row g-3" method="get">
                                 <div class="col-md">
                                     <div class="row g-3">
                                         <div class="col-md">

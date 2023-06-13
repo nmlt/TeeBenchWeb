@@ -42,8 +42,8 @@ export function diff2html_html(diffInput) {
 }
 
 export function start_intro() {
-    introJs().setOptions({
-        steps: [{
+    var commitsSteps = [
+        {
             element: document.querySelector('#tbw-commits-upload-form'),
             intro: 'This is the upload form for new operators.'
         },
@@ -71,11 +71,40 @@ export function start_intro() {
             element: document.querySelector('.tbw-commits-list-item-diff'),
             intro: 'and the <code>diff</code> between this operator\'s code and the previous.'
         },
-        {
+        { // Currently this is step 7. If you add more before this or remove any, change the number in the if clause below
             // title: 'Farewell!',
-            // element: document.querySelector('.card__image'),
-            intro: 'Select another view in the sidebar to continue the tour there.'
-        }]
+            element: document.querySelector('.tbw-link-Profiling'),
+            intro: 'Now we continue with the Profiling Menu, by changing the view in the sidebar.'
+        }
+    ];
+    var profilingSteps = [
+        {
+            element: document.querySelector('#tbw-profiling-form'),
+            intro: 'This form allows you to create custom experiments. In the static version of the TeeBench, only already cached results can be viewed.'
+        },
+        {
+            element: document.querySelector(".foo"),
+            intro: 'dummy text'
+        }  
+    ];
+    var intro = introJs();
+    var options = {
+        steps: commitsSteps.concat(profilingSteps)
+    };
+    intro.setOptions(options).onbeforechange(function(targetElement) {  
+        console.log(this._currentStep);
+        console.log(targetElement);
+        if (this._currentStep === 7) {
+            // This works, but yew doesn't update.
+            //window.history.pushState("some obj", "Title", "/profiling");
+            targetElement.click();
+            this.refresh();
+            // this.addSteps(profilingSteps);
+            
+        } else if (this._currentStep === 8) {
+            intro._introItems[8].element = document.querySelector('#tbw-profiling-form');
+            intro._introItems[8].position = 'bottom';        }
+        
     }).start();
 }
 
