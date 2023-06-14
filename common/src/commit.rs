@@ -206,7 +206,7 @@ impl UploadCommitFormState {
         // let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).expect("Failed to get current time").as_secs();
         let now = OffsetDateTime::now_utc();
         let timestamp = format!(
-            "{}{}{}{}",
+            "{:02}{:02}{:02}{:06}",
             now.hour(),
             now.minute(),
             now.second(),

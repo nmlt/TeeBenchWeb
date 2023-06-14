@@ -143,7 +143,7 @@ fn main() {
                         fixed_json.push_str(&line);
                     }
                     log!(format!("Fixed json {found} times!"));
-                    let serialized: JobResult = match serde_json::from_str(json) {
+                    let serialized: JobResult = match serde_json::from_str(fixed_json.as_str()) {
                         Ok(s) => s,
                         Err(e) => {
                             log!(format!("Error serializing json for hashjoins: {e}"));
@@ -154,7 +154,12 @@ fn main() {
                 }
                 let report = commit_version_to_report_json_file(&c.version, c.id);
                 c.report = report;
-                c.perf_report_running = PerfReportStatus::Successful;
+                c.perf_report_running = match c.version.as_str() {
+                    "1" => PerfReportStatus::None,
+                    "2" | "3" | "4" | "5" => PerfReportStatus::Successful,
+                    _ => unreachable!(),
+                };
+
                 c
             })
             .collect();
