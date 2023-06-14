@@ -281,7 +281,7 @@ pub fn profiling() -> Html {
                             <form id="tbw-profiling-form" class="row g-3" method="get">
                                 <div class="col-md">
                                     <div class="row g-3">
-                                        <div class="col-md">
+                                        <div id="tbw-profiling-form-algs" class="col-md">
                                             <InputSelect options={algs} onchange={algs_onchange} label={"Algorithm (select multiple)"} multiple={true} selected={store.algorithms.iter().map(|a| a.to_string()).collect::<Vec<_>>()} disabled={false} />
                                         </div>
                                         <div class="col-md">
@@ -289,21 +289,21 @@ pub fn profiling() -> Html {
                                         </div>
                                     </div>
                                     <div class="row g-3">
-                                        <div class="col-md">
+                                        <div id="tbw-profiling-form-measurement" class="col-md">
                                             <InputSelect options={measurements} onchange={measurements_onchange} label={"Measurement (Y-axis)"} multiple={false} selected={vec![store.measurement.to_string()]} disabled={disable_controls} />
                                             <InputSelect options={params} onchange={params_onchange} label={"Parameter (X-axis)"} multiple={false} selected={vec![store.parameter.to_string()]} disabled={disable_controls} />
                                         </div>
-                                        <div class="col-md">
+                                        <div id="tbw-profiling-form-values" class="col-md tbw-profiling-form-values">
                                             <InputNumber label={"min"} onchange={min_onchange} selected={store.min.to_string()} disabled={disable_controls} />
                                             <InputNumber label={"max"} onchange={max_onchange} selected={store.max.to_string()} disabled={disable_controls} />
                                             <InputNumber label={"step"} onchange={step_onchange} selected={store.step.to_string()} disabled={disable_controls} />
                                         </div>
                                     </div>
                                     <div class="row g-3">
-                                        <div class="col-md">
+                                        <div id="tbw-profiling-form-dataset" class="col-md">
                                             <InputCheckboxes title={"Dataset"} data={datasets} onchange={datasets_onchange} selected={store.datasets.iter().map(|ds| ds.to_string()).collect::<Vec<_>>()} disabled={disable_controls} />
                                         </div>
-                                        <div class="col-md">
+                                        <div id="tbw-profiling-form-platform" class="col-md">
                                             <InputCheckboxes title={"Platform"} data={platforms} onchange={platforms_onchange} selected={store.platforms.iter().map(|pl| pl.to_string()).collect::<Vec<_>>()} disabled={disable_controls} />
                                         </div>
                                         <div class="col-md">
@@ -313,7 +313,7 @@ pub fn profiling() -> Html {
                                             </fieldset>
                                         </div>
                                     </div>
-                                    <button class="btn btn-primary" type="button" onclick={onsubmit} disabled={disable_submit} >{"Run experiment"}</button>
+                                    <button id="tbw-profiling-form-run" class="btn btn-primary" type="button" onclick={onsubmit} disabled={disable_submit} >{"Run experiment"}</button>
                                 </div>
                             </form>
                             <JobResultsView />

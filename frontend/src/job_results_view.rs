@@ -148,9 +148,11 @@ pub fn JobResultsView() -> Html {
     });
 
     html! {
-        <ul class="list-group">
-            {for jobs}
-            <Queue filter_by={JobConfig::Profiling(ProfilingConfiguration::default())} />
-        </ul>
+         <form id = "tbw-profiling-form-results">
+            <ul class="list-group">
+                {for jobs}
+                <Queue filter_by={JobConfig::Profiling(ProfilingConfiguration::default())} />
+            </ul>
+        </form>
     }
 }

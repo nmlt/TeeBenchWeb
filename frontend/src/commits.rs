@@ -447,11 +447,24 @@ pub fn Commits() -> Html {
                     <main class="row">
                         <div class="col pt-4 col-lg-8">
                             <div class="alert alert-primary alert-dismissible fade show" role="alert">
-                                {"Welcome to TeeBench! This is a static version of TeeBench, with cached results only and no way to run new experiments. To get an introduction to its features click here:\n"}
+                                {"Welcome to TeeBench! TeeBench is a framework for fair and \
+                                convenient benchmarking of relational operators in TEEs ("}
+                                <a href="https://vldb.org/pvldb/vol15/p659-maliszewski.pdf" target="_blank">
+                                {"VLDB paper"}
+                                </a>
+                                {", "}
+                                <a href="https://github.com/nmlt/TeeBenchWeb" target="_blank">
+                                {"source code"}
+                                </a>
+                                {"). This is a static version of TeeBench that contains only pre-ran experiments. \
+                                To get a full experience visit us during SIGMOD Demo Sessions or \
+                                run a TeeBench instance on your machine. \
+                                To get a guided tour of its features click here:\n"}
                                 <br />
                                 <button class="btn btn-primary" onclick={tour_onclick}>{"Start tour"}</button>
                                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                             </div>
+
                             <h2>{"Operators"}</h2>
                             <UploadCommit />
                             <CommitsList />
