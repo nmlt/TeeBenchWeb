@@ -12,13 +12,15 @@ use common::data_types::JobResult;
 
 #[derive(Debug, PartialEq, Properties)]
 pub struct CardChartColumnProps {
+    id_class: String,
     chart: Html,
 }
 
 #[function_component]
-pub fn CardChartColumn(CardChartColumnProps { chart }: &CardChartColumnProps) -> Html {
+pub fn CardChartColumn(CardChartColumnProps { id_class, chart }: &CardChartColumnProps) -> Html {
+    let classes = classes!("col", id_class);
     html! {
-        <div class="col">
+        <div classes={classes}>
             <div class="card my-4">
                 <div class="card-body ratio ratio-16x9">
                     {chart.clone()}
@@ -83,16 +85,25 @@ pub fn PerfReport(PerfReportProps { name, instance }: &PerfReportProps) -> Html 
                 }
             })
             .collect::<Vec<_>>();
+        let id_classes = vec![
+            "tbw-report-charts-throughput-cache-fit",
+            "tbw-report-charts-throughput-cache-exceed",
+            "tbw-report-charts-scalability-cache-fit",
+            "tbw-report-charts-scalability-cache-exceed",
+            "tbw-report-charts-epc-paging-latest-alg",
+            "tbw-report-charts-epc-paging-baseline",
+        ];
         charts = report
             .charts
             .iter()
-            .map(|exp_chart| {
+            .zip(id_classes.iter())
+            .map(|(exp_chart, id_class)| {
                 let exp_chart = exp_chart.clone();
                 let chart = html! {
                     <Chart exp_chart={exp_chart.clone()} />
                 };
                 html! {
-                    <CardChartColumn chart={chart} />
+                    <CardChartColumn id_class={id_class.to_owned()} chart={chart} />
                 }
             })
             .collect::<Vec<_>>();
@@ -133,7 +144,7 @@ pub fn PerfReport(PerfReportProps { name, instance }: &PerfReportProps) -> Html 
                     <main class="row">
                         <div class="col pt-4">
                             <h2>{format!("Performance Report for {}", commit.get_title())}</h2>
-                            <div class="row">
+                            <div class="row tbw-report-general-findings">
                                 // Top row
                                 {for findings}
                             </div>
