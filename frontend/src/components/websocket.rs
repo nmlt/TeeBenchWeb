@@ -146,7 +146,9 @@ pub fn Websocket() -> Html {
                                                 } else {
                                                     PerfReportStatus::Failed
                                                 };
-                                            commit.report = finished_job.result;
+                                            commit.report = finished_job.result.clone();
+                                            let json = serde_json::json!(finished_job.result);
+                                            log!(format!("{json}"));
                                         } else {
                                             log!("Error: Got an unfinished job in the websocket.");
                                         }

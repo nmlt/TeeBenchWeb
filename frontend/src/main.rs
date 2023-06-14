@@ -1,3 +1,5 @@
+use common::commit::{CommitIdType, PerfReportStatus};
+use common::hardcoded::hardcoded_commits;
 use gloo_console::log;
 use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
@@ -18,6 +20,8 @@ use crate::commits::Commits;
 use crate::components::websocket::Websocket;
 use crate::perf_report::PerfReport;
 use crate::profiling::Profiling;
+
+use common::data_types::JobResult;
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 pub enum Route {
@@ -93,7 +97,61 @@ fn main() {
 
     let finished_job_dispatch = Dispatch::<FinishedJobState>::new();
     if cfg!(feature = "static") {
-        let default_commits = vec![predefined_commit()];
+        let (hashjoin_commits, _) = hardcoded_commits();
+        let mut default_commits = vec![predefined_commit()];
+        let mut hashjoin_commits = hashjoin_commits
+            .into_iter()
+            .map(|mut c| {
+                fn commit_version_to_report_json_file(
+                    title: &str,
+                    id: CommitIdType,
+                ) -> Option<JobResult> {
+                    let json = match title {
+                        "1" => return None,
+                        "2" => include_str!("../../cached/report_hjv2.json"),
+                        "3" => include_str!("../../cached/report_hjv3.json"),
+                        "4" => include_str!("../../cached/report_hjv4.json"),
+                        "5" => include_str!("../../cached/report_hjv5.json"),
+                        // "6" => include_str!("../../cached/report_hjv6.json"),
+                        a => {
+                            log!(format!("Unknown Hashjoin version: {a}"));
+                            panic!();
+                        }
+                    };
+                    let mut found = 0;
+                    let mut fixed_json = String::new();
+                    for line in json.lines() {
+                        let line = if line.contains("\"id\": ") {
+                            if let Some(start) = line.find(": ") {
+                                found += 1;
+                                let mut fixed_line = String::new();
+                                fixed_line.push_str(&line[..start]);
+                                fixed_line.push_str(&id.to_string());
+                                if line.ends_with(",\n") {
+                                    fixed_line.push(',');
+                                }
+                                fixed_line.push('\n');
+                                fixed_line
+                            } else {
+                                log!("Error fixing the json ids!");
+                                panic!();
+                            }
+                        } else {
+                            line.to_owned()
+                        };
+                        fixed_json.push_str(&line);
+                    }
+                    log!(format!("Fixed json {found} times!"));
+                    let serialized: JobResult = serde_json::from_str(json).unwrap();
+                    Some(serialized)
+                }
+                let report = commit_version_to_report_json_file(&c.version, c.id);
+                c.report = report;
+                c.perf_report_running = PerfReportStatus::Successful;
+                c
+            })
+            .collect();
+        default_commits.append(&mut hashjoin_commits);
         Dispatch::<CommitState>::new().set(CommitState::new(default_commits));
 
         // Path is apparently relative to `frontend/src/`
