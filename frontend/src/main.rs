@@ -126,7 +126,9 @@ fn main() {
                                 found += 1;
                                 let mut fixed_line = String::new();
                                 fixed_line.push_str(&line[..start + 2]);
+                                fixed_line.push('"');
                                 fixed_line.push_str(&id.to_string());
+                                fixed_line.push('"');
                                 if line.ends_with(",\n") {
                                     fixed_line.push(',');
                                 }
