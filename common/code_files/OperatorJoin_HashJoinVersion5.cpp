@@ -18,7 +18,7 @@
 #include "Enclave_t.h"
 #endif
 
-#define JOIN_NAME "HashJoinVersion6"
+#define JOIN_NAME "HashJoinVersion5"
 
 #define HASH_BIT_MODULO(K, MASK, NBITS) (((K) & MASK) >> NBITS)
 #define MAX(X, Y) (((X) > (Y)) ? (X) : (Y))

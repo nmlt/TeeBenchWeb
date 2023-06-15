@@ -14,7 +14,7 @@
 #include "Enclave.h"
 #endif
 
-#define JOIN_NAME "HashJoinVersion5"
+#define JOIN_NAME "HashJoinVersion4"
 
 #define HASH_BIT_MODULO(K, MASK, NBITS) (((K) & MASK) >> NBITS)
 #ifndef NEXT_POW_2
