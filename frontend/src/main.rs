@@ -118,12 +118,12 @@ fn main() {
                             panic!();
                         }
                     };
-                    let mut found = 0;
+                    // let mut found = 0;
                     let mut fixed_json = String::new();
                     for line in json.lines() {
                         let line = if line.contains("\"id\": ") || line.contains("\"Commit\": ") {
                             if let Some(start) = line.find(": ") {
-                                found += 1;
+                                // found += 1;
                                 let mut fixed_line = String::new();
                                 fixed_line.push_str(&line[..start + 2]);
                                 fixed_line.push('"');
@@ -133,7 +133,7 @@ fn main() {
                                     fixed_line.push(',');
                                 }
                                 fixed_line.push('\n');
-                                log!(format!("{fixed_line}"));
+                                // log!(format!("{fixed_line}"));
                                 fixed_line
                             } else {
                                 log!("Error fixing the json ids!");
@@ -144,7 +144,7 @@ fn main() {
                         };
                         fixed_json.push_str(&line);
                     }
-                    log!(format!("Fixed json {found} times!"));
+                    // log!(format!("Fixed json {found} times!"));
                     let serialized: JobResult = match serde_json::from_str(fixed_json.as_str()) {
                         Ok(s) => s,
                         Err(e) => {
