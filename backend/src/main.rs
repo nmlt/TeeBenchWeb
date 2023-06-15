@@ -209,12 +209,18 @@ async fn main() {
     tracing_subscriber::fmt()
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .init();
-
-    let mut hardcoded_commits = vec![common::hardcoded::predefined_commit()];
-    let (mut append_commits, append_jobs) = common::hardcoded::hardcoded_commits();
-    hardcoded_commits.append(&mut append_commits);
-    let commits = Arc::new(Mutex::new(CommitState::new(hardcoded_commits)));
-    let queue: Arc<Mutex<VecDeque<Job>>> = Arc::new(Mutex::new(VecDeque::from(append_jobs))); //VecDeque::from(hardcoded_profiling_jobs())));
+    let commits: Arc<Mutex<CommitState>>;
+    let queue: Arc<Mutex<VecDeque<Job>>>;
+    if cfg!(feature = "static") {
+        commits = Arc::new(Mutex::new(CommitState::new(vec![])));
+        queue = Arc::new(Mutex::new(VecDeque::new()));
+    } else {
+        let mut hardcoded_commits = vec![common::hardcoded::predefined_commit()];
+        let (mut append_commits, append_jobs) = common::hardcoded::hardcoded_commits();
+        hardcoded_commits.append(&mut append_commits);
+        commits = Arc::new(Mutex::new(CommitState::new(hardcoded_commits)));
+        queue = Arc::new(Mutex::new(VecDeque::from(append_jobs)));
+    }
     let (queue_tx, queue_rx) = mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);
     let (profiling_tx, profiling_rx) = mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);
     let (cancel_tx, cancel_rx) = mpsc::channel(DEFAULT_TASK_CHANNEL_SIZE);
