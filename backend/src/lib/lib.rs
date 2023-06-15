@@ -481,8 +481,8 @@ async fn runner(
                 }
             }
             // To make adding perf report data to the static website easier, I'll just write them all to files. Just remove them from time to time ;)
-            let json = serde_json::to_string_pretty(&serde_json::json!(results)).unwrap();
-            std::fs::write(format!("../cached/temp_report_{:?}.json", pr_conf.id), json).unwrap();
+            // let json = serde_json::to_string_pretty(&serde_json::json!(results)).unwrap();
+            // std::fs::write(format!("../cached/temp_report_{:?}.json", pr_conf.id), json).unwrap();
             results
         }
         JobConfig::Compile(ref id) => {
