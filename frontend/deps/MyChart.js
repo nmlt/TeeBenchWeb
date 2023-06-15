@@ -41,6 +41,11 @@ export function diff2html_html(diffInput) {
     }, });
 }
 
+export function bs_init_popovers() {
+    const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
+    const popoverList = [...popoverTriggerList].map(popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl));
+}
+
 export function start_intro() {
     var commitsSteps = [
         {

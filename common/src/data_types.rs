@@ -232,6 +232,24 @@ pub enum ServerMessage {
     PartialReport(JobIdType, Report),
 }
 
+pub fn describe_ui_element(element: &str) -> &str {
+    match element {
+        "Algorithm" => indoc::indoc!(
+            "
+                Select multiple algorithms or one of your operators. Predefined are:
+                <ul>
+                    <li><code>RHO</code>: Radix</li>
+                    <li><code>CRKJ</code>: Cracking Join</li>
+                </ul>
+            "
+        ),
+        "ExperimentType" => "a",
+        "Parameter" => "b",
+        "Measurement" => "c",
+        _ => unimplemented!(),
+    }
+}
+
 /// Name of the algorithm for Teebench that is always replaced with the current commit's code.
 pub const REPLACE_ALG: &str = "OperatorJoin";
 

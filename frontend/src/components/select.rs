@@ -23,6 +23,18 @@ impl SelectDataOption {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct InfoPopover {
+    pub title: String,
+    pub body: String,
+}
+
+impl InfoPopover {
+    pub fn new(title: String, body: String) -> Self {
+        Self { title, body }
+    }
+}
+
 #[derive(Clone, Properties, PartialEq)]
 pub struct InputSelectProps {
     pub options: Vec<SelectDataOption>,
@@ -32,6 +44,7 @@ pub struct InputSelectProps {
     /// If None, the first in the options vector will be selected.
     pub selected: Vec<String>,
     pub disabled: bool,
+    pub info_popover: Option<InfoPopover>,
 }
 
 #[function_component]
@@ -43,6 +56,7 @@ pub fn InputSelect(
         onchange,
         selected,
         disabled,
+        info_popover,
     }: &InputSelectProps,
 ) -> Html {
     let options = options
@@ -54,9 +68,26 @@ pub fn InputSelect(
             html! { <option value={o.value.clone()} disabled={!o.enabled}>{o.label.clone()}</option> }
         });
     let id: String = label.chars().filter(|c| c.is_alphanumeric()).collect();
+    let help = if let Some(info_popover) = info_popover {
+        if info_popover.title.is_empty() {
+            html! {
+                <button type="button" class="btn btn-link"  data-bs-toggle="popover" data-bs-content={info_popover.body.clone()} data-bs-html="true">
+                    <span class="bi-info-circle-fill"></span>
+                </button>
+            }
+        } else {
+            html! {
+                <button type="button" class="btn btn-link"  data-bs-toggle="popover" data-bs-title={info_popover.title.clone()} data-bs-content={info_popover.body.clone()} data-bs-html="true">
+                    <span class="bi-info-circle-fill"></span>
+                </button>
+            }
+        }
+    } else {
+        html! {}
+    };
     html! {
         <div>
-            <label class="form-label" for={format!("select-{id}")}>{label.clone()}</label>
+            <label class="form-label" for={format!("select-{id}")}>{label.clone()} {help}</label>
             <select class="form-select" id={format!("select-{id}")} type="select" multiple={*multiple} {onchange} disabled={*disabled} >
                 {for options}
             </select>

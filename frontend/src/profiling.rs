@@ -7,16 +7,17 @@ use yewdux::prelude::*;
 use yewdux_input::{Checkbox, InputDispatch};
 
 use common::data_types::{
-    Algorithm, Dataset, ExperimentType, Job, Measurement, Parameter, Platform,
+    describe_ui_element, Algorithm, Dataset, ExperimentType, Job, Measurement, Parameter, Platform,
     ProfilingConfiguration, VariantNames, EPC_SIZE_KB,
 };
 use std::collections::HashSet;
 use std::str::FromStr;
 
 use crate::components::{
+    bs_popover::BsInitPopovers,
     checkbox::{CheckboxData, InputCheckbox, InputCheckboxes},
     number::InputNumber,
-    select::{InputSelect, SelectDataOption},
+    select::{InfoPopover, InputSelect, SelectDataOption},
 };
 use crate::job_results_view::JobResultsView;
 use crate::modal::Modal;
@@ -25,6 +26,10 @@ use crate::queue::QueueState;
 use common::commit::CommitState;
 
 use wasm_bindgen::JsCast;
+
+fn create_popover(body: &str) -> InfoPopover {
+    InfoPopover::new("".to_owned(), body.to_owned())
+}
 
 // #[derive(Debug, Properties, Clone, PartialEq)]
 // pub struct ProfilingMenuProps {
@@ -58,6 +63,7 @@ pub fn profiling() -> Html {
         };
         algs
     };
+    let alg_popover = create_popover(describe_ui_element("Algorithm"));
     let algs_onchange = {
         let (_store, dispatch) = use_store::<ProfilingConfiguration>();
         let commit_store = commit_store.clone();
@@ -93,6 +99,7 @@ pub fn profiling() -> Html {
         })
     };
     let exps = SelectDataOption::options_vec(&exps);
+    let exps_popover = create_popover(describe_ui_element("ExperimentType"));
     let exps_onchange = {
         let (_store, dispatch) = use_store::<ProfilingConfiguration>();
         dispatch.reduce_mut_callback_with(|store, e: Event| {
@@ -102,6 +109,7 @@ pub fn profiling() -> Html {
         })
     };
     let params = SelectDataOption::options_vec(&params);
+    let params_popover = create_popover(describe_ui_element("Parameter"));
     let params_onchange = {
         let (_store, dispatch) = use_store::<ProfilingConfiguration>();
         dispatch.reduce_mut_callback_with(|store, e: Event| {
@@ -121,6 +129,7 @@ pub fn profiling() -> Html {
         })
     };
     let measurements = SelectDataOption::options_vec(&measurements);
+    let measurements_popover = create_popover(describe_ui_element("Measurement"));
     let measurements_onchange = {
         let (_store, dispatch) = use_store::<ProfilingConfiguration>();
         dispatch.reduce_mut_callback_with(|store, e: Event| {
@@ -282,7 +291,7 @@ pub fn profiling() -> Html {
                                 <div class="col-md">
                                     <div class="row g-3">
                                         <div id="tbw-profiling-form-algs" class="col-md">
-                                            <InputSelect options={algs} onchange={algs_onchange} label={"Algorithm (select multiple)"} multiple={true} selected={store.algorithms.iter().map(|a| a.to_string()).collect::<Vec<_>>()} disabled={false} />
+                                            <InputSelect options={algs} onchange={algs_onchange} label={"Algorithm (select multiple)"} multiple={true} selected={store.algorithms.iter().map(|a| a.to_string()).collect::<Vec<_>>()} disabled={false} info_popover={alg_popover} />
                                         </div>
                                         <div id="tbw-profiling-form-experiment" class="col-md">
                                             <InputSelect options={exps} onchange={exps_onchange} label={"Experiment"} multiple={false} selected={vec![store.experiment_type.to_string()]} disabled={false} />
@@ -322,6 +331,7 @@ pub fn profiling() -> Html {
                 </div>
             </div>
             <Modal />
+            <BsInitPopovers />
         </div>
     }
 }

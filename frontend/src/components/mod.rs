@@ -1,3 +1,4 @@
+pub mod bs_popover;
 pub mod checkbox;
 pub mod collapse;
 pub mod finding;
