@@ -668,11 +668,12 @@ pub fn predefined_commit() -> Commit {
     };
     use std::collections::HashMap;
     #[rustfmt::skip]
+    let id = uuid::Uuid::new_v4();
     let report = Some(Exp(Ok(Report {
         charts: vec![
             ExperimentChart {
                 config: PerfReport(PerfReportConfig {
-                    id: 1,
+                    id,
                     exp_type: Throughput,
                     dataset: CacheFit,
                     baseline: Rho,
@@ -717,7 +718,7 @@ pub fn predefined_commit() -> Commit {
                         TeebenchArgs {
                             app_name: Native,
                             dataset: CacheFit,
-                            algorithm: Algorithm::Commit(1),
+                            algorithm: Algorithm::Commit(id),
                             threads: 2,
                             selectivity: 100,
                             data_skew: "0".to_string(),
@@ -734,7 +735,10 @@ pub fn predefined_commit() -> Commit {
                             csv: true,
                         },
                         Ok(HashMap::from([
-                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
+                            (
+                                "algorithm".to_string(),
+                                "SortMergeJoin_QuickSort".to_string(),
+                            ),
                             ("phase2Cycles".to_string(), "0".to_string()),
                             ("threads".to_string(), "2".to_string()),
                             ("phase2Time".to_string(), "5668".to_string()),
@@ -787,7 +791,7 @@ pub fn predefined_commit() -> Commit {
                         TeebenchArgs {
                             app_name: Sgx,
                             dataset: CacheFit,
-                            algorithm: Algorithm::Commit(1),
+                            algorithm: Algorithm::Commit(id),
                             threads: 2,
                             selectivity: 100,
                             data_skew: "0".to_string(),
@@ -813,7 +817,10 @@ pub fn predefined_commit() -> Commit {
                             ("relR".to_string(), "1310720".to_string()),
                             ("cyclesPerTuple".to_string(), "227".to_string()),
                             ("phase1Time".to_string(), "431463".to_string()),
-                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
+                            (
+                                "algorithm".to_string(),
+                                "SortMergeJoin_QuickSort".to_string(),
+                            ),
                             ("totalTime".to_string(), "437046".to_string()),
                             ("relS".to_string(), "5242880".to_string()),
                         ])),
@@ -823,7 +830,7 @@ pub fn predefined_commit() -> Commit {
             },
             ExperimentChart {
                 config: PerfReport(PerfReportConfig {
-                    id: 1,
+                    id,
                     exp_type: Throughput,
                     dataset: CacheExceed,
                     baseline: Rho,
@@ -868,7 +875,7 @@ pub fn predefined_commit() -> Commit {
                         TeebenchArgs {
                             app_name: Native,
                             dataset: CacheExceed,
-                            algorithm: Algorithm::Commit(1),
+                            algorithm: Algorithm::Commit(id),
                             threads: 2,
                             selectivity: 100,
                             data_skew: "0".to_string(),
@@ -886,7 +893,10 @@ pub fn predefined_commit() -> Commit {
                         },
                         Ok(HashMap::from([
                             ("phase1Cycles".to_string(), "0".to_string()),
-                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
+                            (
+                                "algorithm".to_string(),
+                                "SortMergeJoin_QuickSort".to_string(),
+                            ),
                             ("phase2Cycles".to_string(), "0".to_string()),
                             ("phase1Time".to_string(), "4957181".to_string()),
                             ("totalTime".to_string(), "5012861".to_string()),
@@ -903,7 +913,7 @@ pub fn predefined_commit() -> Commit {
                         TeebenchArgs {
                             app_name: Sgx,
                             dataset: CacheExceed,
-                            algorithm: Algorithm::Commit(1),
+                            algorithm: Algorithm::Commit(id),
                             threads: 2,
                             selectivity: 100,
                             data_skew: "0".to_string(),
@@ -928,7 +938,10 @@ pub fn predefined_commit() -> Commit {
                             ("matches".to_string(), "52428800".to_string()),
                             ("totalTime".to_string(), "5055358".to_string()),
                             ("phase1Cycles".to_string(), "0".to_string()),
-                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
+                            (
+                                "algorithm".to_string(),
+                                "SortMergeJoin_QuickSort".to_string(),
+                            ),
                             ("relR".to_string(), "13107200".to_string()),
                             ("phase1Time".to_string(), "4999898".to_string()),
                             ("threads".to_string(), "2".to_string()),
@@ -974,7 +987,7 @@ pub fn predefined_commit() -> Commit {
             },
             ExperimentChart {
                 config: PerfReport(PerfReportConfig {
-                    id: 1,
+                    id,
                     exp_type: Scalability,
                     dataset: CacheFit,
                     baseline: Rho,
@@ -1019,7 +1032,7 @@ pub fn predefined_commit() -> Commit {
                         TeebenchArgs {
                             app_name: Sgx,
                             dataset: CacheFit,
-                            algorithm: Algorithm::Commit(1),
+                            algorithm: Algorithm::Commit(id),
                             threads: 2,
                             selectivity: 100,
                             data_skew: "0".to_string(),
@@ -1036,7 +1049,10 @@ pub fn predefined_commit() -> Commit {
                             csv: true,
                         },
                         Ok(HashMap::from([
-                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
+                            (
+                                "algorithm".to_string(),
+                                "SortMergeJoin_QuickSort".to_string(),
+                            ),
                             ("threads".to_string(), "2".to_string()),
                             ("throughput".to_string(), "14.9850".to_string()),
                             ("relR".to_string(), "1310720".to_string()),
@@ -1054,7 +1070,7 @@ pub fn predefined_commit() -> Commit {
                         TeebenchArgs {
                             app_name: Sgx,
                             dataset: CacheFit,
-                            algorithm: Algorithm::Commit(1),
+                            algorithm: Algorithm::Commit(id),
                             threads: 3,
                             selectivity: 100,
                             data_skew: "0".to_string(),
@@ -1079,7 +1095,10 @@ pub fn predefined_commit() -> Commit {
                             ("threads".to_string(), "3".to_string()),
                             ("phase2Time".to_string(), "5459".to_string()),
                             ("relR".to_string(), "1310720".to_string()),
-                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
+                            (
+                                "algorithm".to_string(),
+                                "SortMergeJoin_QuickSort".to_string(),
+                            ),
                             ("relS".to_string(), "5242880".to_string()),
                             ("throughput".to_string(), "15.0065".to_string()),
                             ("matches".to_string(), "5242880".to_string()),
@@ -1194,7 +1213,7 @@ pub fn predefined_commit() -> Commit {
                         TeebenchArgs {
                             app_name: Sgx,
                             dataset: CacheFit,
-                            algorithm: Algorithm::Commit(1),
+                            algorithm: Algorithm::Commit(id),
                             threads: 7,
                             selectivity: 100,
                             data_skew: "0".to_string(),
@@ -1212,7 +1231,10 @@ pub fn predefined_commit() -> Commit {
                         },
                         Ok(HashMap::from([
                             ("phase2Time".to_string(), "5495".to_string()),
-                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
+                            (
+                                "algorithm".to_string(),
+                                "SortMergeJoin_QuickSort".to_string(),
+                            ),
                             ("relS".to_string(), "5242880".to_string()),
                             ("phase2Cycles".to_string(), "0".to_string()),
                             ("totalTime".to_string(), "435847".to_string()),
@@ -1229,7 +1251,7 @@ pub fn predefined_commit() -> Commit {
                         TeebenchArgs {
                             app_name: Sgx,
                             dataset: CacheFit,
-                            algorithm: Algorithm::Commit(1),
+                            algorithm: Algorithm::Commit(id),
                             threads: 8,
                             selectivity: 100,
                             data_skew: "0".to_string(),
@@ -1248,7 +1270,10 @@ pub fn predefined_commit() -> Commit {
                         Ok(HashMap::from([
                             ("relS".to_string(), "5242880".to_string()),
                             ("cyclesPerTuple".to_string(), "227".to_string()),
-                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
+                            (
+                                "algorithm".to_string(),
+                                "SortMergeJoin_QuickSort".to_string(),
+                            ),
                             ("matches".to_string(), "5242880".to_string()),
                             ("phase2Cycles".to_string(), "0".to_string()),
                             ("threads".to_string(), "8".to_string()),
@@ -1264,7 +1289,7 @@ pub fn predefined_commit() -> Commit {
                         TeebenchArgs {
                             app_name: Sgx,
                             dataset: CacheFit,
-                            algorithm: Algorithm::Commit(1),
+                            algorithm: Algorithm::Commit(id),
                             threads: 5,
                             selectivity: 100,
                             data_skew: "0".to_string(),
@@ -1285,7 +1310,10 @@ pub fn predefined_commit() -> Commit {
                             ("throughput".to_string(), "14.9472".to_string()),
                             ("relS".to_string(), "5242880".to_string()),
                             ("matches".to_string(), "5242880".to_string()),
-                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
+                            (
+                                "algorithm".to_string(),
+                                "SortMergeJoin_QuickSort".to_string(),
+                            ),
                             ("threads".to_string(), "5".to_string()),
                             ("phase1Time".to_string(), "433048".to_string()),
                             ("cyclesPerTuple".to_string(), "227".to_string()),
@@ -1299,7 +1327,7 @@ pub fn predefined_commit() -> Commit {
                         TeebenchArgs {
                             app_name: Sgx,
                             dataset: CacheFit,
-                            algorithm: Algorithm::Commit(1),
+                            algorithm: Algorithm::Commit(id),
                             threads: 1,
                             selectivity: 100,
                             data_skew: "0".to_string(),
@@ -1324,7 +1352,10 @@ pub fn predefined_commit() -> Commit {
                             ("threads".to_string(), "1".to_string()),
                             ("phase2Cycles".to_string(), "0".to_string()),
                             ("matches".to_string(), "5242880".to_string()),
-                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
+                            (
+                                "algorithm".to_string(),
+                                "SortMergeJoin_QuickSort".to_string(),
+                            ),
                             ("phase1Time".to_string(), "430016".to_string()),
                             ("throughput".to_string(), "15.0492".to_string()),
                             ("phase1Cycles".to_string(), "0".to_string()),
@@ -1334,7 +1365,7 @@ pub fn predefined_commit() -> Commit {
                         TeebenchArgs {
                             app_name: Sgx,
                             dataset: CacheFit,
-                            algorithm: Algorithm::Commit(1),
+                            algorithm: Algorithm::Commit(id),
                             threads: 4,
                             selectivity: 100,
                             data_skew: "0".to_string(),
@@ -1352,7 +1383,10 @@ pub fn predefined_commit() -> Commit {
                         },
                         Ok(HashMap::from([
                             ("cyclesPerTuple".to_string(), "226".to_string()),
-                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
+                            (
+                                "algorithm".to_string(),
+                                "SortMergeJoin_QuickSort".to_string(),
+                            ),
                             ("phase1Time".to_string(), "430985".to_string()),
                             ("phase2Time".to_string(), "5406".to_string()),
                             ("totalTime".to_string(), "436391".to_string()),
@@ -1474,7 +1508,7 @@ pub fn predefined_commit() -> Commit {
                         TeebenchArgs {
                             app_name: Sgx,
                             dataset: CacheFit,
-                            algorithm: Algorithm::Commit(1),
+                            algorithm: Algorithm::Commit(id),
                             threads: 6,
                             selectivity: 100,
                             data_skew: "0".to_string(),
@@ -1494,7 +1528,10 @@ pub fn predefined_commit() -> Commit {
                             ("throughput".to_string(), "14.9652".to_string()),
                             ("phase2Time".to_string(), "5456".to_string()),
                             ("phase1Cycles".to_string(), "0".to_string()),
-                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
+                            (
+                                "algorithm".to_string(),
+                                "SortMergeJoin_QuickSort".to_string(),
+                            ),
                             ("cyclesPerTuple".to_string(), "227".to_string()),
                             ("phase1Time".to_string(), "432467".to_string()),
                             ("relS".to_string(), "5242880".to_string()),
@@ -1545,7 +1582,7 @@ pub fn predefined_commit() -> Commit {
             },
             ExperimentChart {
                 config: PerfReport(PerfReportConfig {
-                    id: 1,
+                    id,
                     exp_type: Scalability,
                     dataset: CacheExceed,
                     baseline: Rho,
@@ -1625,7 +1662,7 @@ pub fn predefined_commit() -> Commit {
                         TeebenchArgs {
                             app_name: Sgx,
                             dataset: CacheExceed,
-                            algorithm: Algorithm::Commit(1),
+                            algorithm: Algorithm::Commit(id),
                             threads: 2,
                             selectivity: 100,
                             data_skew: "0".to_string(),
@@ -1647,7 +1684,10 @@ pub fn predefined_commit() -> Commit {
                             ("matches".to_string(), "52428800".to_string()),
                             ("phase2Cycles".to_string(), "0".to_string()),
                             ("relS".to_string(), "52428800".to_string()),
-                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
+                            (
+                                "algorithm".to_string(),
+                                "SortMergeJoin_QuickSort".to_string(),
+                            ),
                             ("phase1Cycles".to_string(), "0".to_string()),
                             ("cyclesPerTuple".to_string(), "263".to_string()),
                             ("threads".to_string(), "2".to_string()),
@@ -1660,7 +1700,7 @@ pub fn predefined_commit() -> Commit {
                         TeebenchArgs {
                             app_name: Sgx,
                             dataset: CacheExceed,
-                            algorithm: Algorithm::Commit(1),
+                            algorithm: Algorithm::Commit(id),
                             threads: 8,
                             selectivity: 100,
                             data_skew: "0".to_string(),
@@ -1677,7 +1717,10 @@ pub fn predefined_commit() -> Commit {
                             csv: true,
                         },
                         Ok(HashMap::from([
-                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
+                            (
+                                "algorithm".to_string(),
+                                "SortMergeJoin_QuickSort".to_string(),
+                            ),
                             ("phase1Time".to_string(), "5006090".to_string()),
                             ("relR".to_string(), "13107200".to_string()),
                             ("phase2Time".to_string(), "55276".to_string()),
@@ -1695,7 +1738,7 @@ pub fn predefined_commit() -> Commit {
                         TeebenchArgs {
                             app_name: Sgx,
                             dataset: CacheExceed,
-                            algorithm: Algorithm::Commit(1),
+                            algorithm: Algorithm::Commit(id),
                             threads: 1,
                             selectivity: 100,
                             data_skew: "0".to_string(),
@@ -1717,7 +1760,10 @@ pub fn predefined_commit() -> Commit {
                             ("totalTime".to_string(), "5121168".to_string()),
                             ("throughput".to_string(), "12.7971".to_string()),
                             ("relS".to_string(), "52428800".to_string()),
-                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
+                            (
+                                "algorithm".to_string(),
+                                "SortMergeJoin_QuickSort".to_string(),
+                            ),
                             ("relR".to_string(), "13107200".to_string()),
                             ("phase1Time".to_string(), "5065499".to_string()),
                             ("phase2Time".to_string(), "55669".to_string()),
@@ -1730,7 +1776,7 @@ pub fn predefined_commit() -> Commit {
                         TeebenchArgs {
                             app_name: Sgx,
                             dataset: CacheExceed,
-                            algorithm: Algorithm::Commit(1),
+                            algorithm: Algorithm::Commit(id),
                             threads: 4,
                             selectivity: 100,
                             data_skew: "0".to_string(),
@@ -1755,7 +1801,10 @@ pub fn predefined_commit() -> Commit {
                             ("cyclesPerTuple".to_string(), "263".to_string()),
                             ("phase1Time".to_string(), "5005885".to_string()),
                             ("totalTime".to_string(), "5061284".to_string()),
-                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
+                            (
+                                "algorithm".to_string(),
+                                "SortMergeJoin_QuickSort".to_string(),
+                            ),
                             ("threads".to_string(), "4".to_string()),
                             ("phase2Cycles".to_string(), "0".to_string()),
                             ("phase1Cycles".to_string(), "0".to_string()),
@@ -1765,7 +1814,7 @@ pub fn predefined_commit() -> Commit {
                         TeebenchArgs {
                             app_name: Sgx,
                             dataset: CacheExceed,
-                            algorithm: Algorithm::Commit(1),
+                            algorithm: Algorithm::Commit(id),
                             threads: 6,
                             selectivity: 100,
                             data_skew: "0".to_string(),
@@ -1789,7 +1838,10 @@ pub fn predefined_commit() -> Commit {
                             ("phase1Time".to_string(), "5002025".to_string()),
                             ("phase1Cycles".to_string(), "0".to_string()),
                             ("threads".to_string(), "6".to_string()),
-                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
+                            (
+                                "algorithm".to_string(),
+                                "SortMergeJoin_QuickSort".to_string(),
+                            ),
                             ("phase2Time".to_string(), "55275".to_string()),
                             ("relR".to_string(), "13107200".to_string()),
                             ("totalTime".to_string(), "5057300".to_string()),
@@ -1905,7 +1957,7 @@ pub fn predefined_commit() -> Commit {
                         TeebenchArgs {
                             app_name: Sgx,
                             dataset: CacheExceed,
-                            algorithm: Algorithm::Commit(1),
+                            algorithm: Algorithm::Commit(id),
                             threads: 7,
                             selectivity: 100,
                             data_skew: "0".to_string(),
@@ -1932,7 +1984,10 @@ pub fn predefined_commit() -> Commit {
                             ("threads".to_string(), "7".to_string()),
                             ("totalTime".to_string(), "5053795".to_string()),
                             ("throughput".to_string(), "12.9677".to_string()),
-                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
+                            (
+                                "algorithm".to_string(),
+                                "SortMergeJoin_QuickSort".to_string(),
+                            ),
                             ("phase1Cycles".to_string(), "0".to_string()),
                         ])),
                     ),
@@ -1940,7 +1995,7 @@ pub fn predefined_commit() -> Commit {
                         TeebenchArgs {
                             app_name: Sgx,
                             dataset: CacheExceed,
-                            algorithm: Algorithm::Commit(1),
+                            algorithm: Algorithm::Commit(id),
                             threads: 3,
                             selectivity: 100,
                             data_skew: "0".to_string(),
@@ -1961,7 +2016,10 @@ pub fn predefined_commit() -> Commit {
                             ("threads".to_string(), "3".to_string()),
                             ("relR".to_string(), "13107200".to_string()),
                             ("cyclesPerTuple".to_string(), "263".to_string()),
-                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
+                            (
+                                "algorithm".to_string(),
+                                "SortMergeJoin_QuickSort".to_string(),
+                            ),
                             ("phase1Cycles".to_string(), "0".to_string()),
                             ("phase2Cycles".to_string(), "0".to_string()),
                             ("relS".to_string(), "52428800".to_string()),
@@ -2045,7 +2103,7 @@ pub fn predefined_commit() -> Commit {
                         TeebenchArgs {
                             app_name: Sgx,
                             dataset: CacheExceed,
-                            algorithm: Algorithm::Commit(1),
+                            algorithm: Algorithm::Commit(id),
                             threads: 5,
                             selectivity: 100,
                             data_skew: "0".to_string(),
@@ -2065,7 +2123,10 @@ pub fn predefined_commit() -> Commit {
                             ("relS".to_string(), "52428800".to_string()),
                             ("phase1Time".to_string(), "4996703".to_string()),
                             ("phase2Cycles".to_string(), "0".to_string()),
-                            ("algorithm".to_string(), "SortMergeJoin_QuickSort".to_string()),
+                            (
+                                "algorithm".to_string(),
+                                "SortMergeJoin_QuickSort".to_string(),
+                            ),
                             ("relR".to_string(), "13107200".to_string()),
                             ("phase1Cycles".to_string(), "0".to_string()),
                             ("cyclesPerTuple".to_string(), "262".to_string()),
@@ -2124,7 +2185,7 @@ pub fn predefined_commit() -> Commit {
         time::macros::datetime!(2023 - 04 - 25 12:00 +01),
         merge_,
         report,
-        1,
+        id,
         Algorithm::Rho,
     );
     c.perf_report_running = crate::commit::PerfReportStatus::Successful;

@@ -103,10 +103,10 @@ fn main() {
             .into_iter()
             .map(|mut c| {
                 fn commit_version_to_report_json_file(
-                    title: &str,
+                    version: &str,
                     id: CommitIdType,
                 ) -> Option<JobResult> {
-                    let json = match title {
+                    let json = match version {
                         "1" => return None,
                         "2" => include_str!("../../cached/report_hjv2.json"),
                         "3" => include_str!("../../cached/report_hjv3.json"),
@@ -146,7 +146,9 @@ fn main() {
                     let serialized: JobResult = match serde_json::from_str(fixed_json.as_str()) {
                         Ok(s) => s,
                         Err(e) => {
-                            log!(format!("Error serializing json for hashjoins: {e}"));
+                            log!(format!(
+                                "Error serializing json for hashjoins: {e}, hashjoin version{version}"
+                            ));
                             panic!();
                         }
                     };

@@ -293,7 +293,7 @@ impl Algorithm {
         if let Some(_) = Algorithm::VARIANTS.iter().find(|&a| a == &string) {
             return Ok(Algorithm::from_str(string).unwrap());
         } else if string == REPLACE_ALG {
-            return Ok(Algorithm::Commit(1)); // TODO This is not ideal.
+            return Ok(Algorithm::Commit(uuid::Uuid::nil())); // TODO This is not ideal.
         } else {
             return Err("Could not find this Operator/Algorithm!");
         }

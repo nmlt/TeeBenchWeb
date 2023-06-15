@@ -61,10 +61,20 @@ build_frontend() (
     fi
 )
 
+serve_static() (
+    pushd frontend
+    trunk serve --port 3000 --address 0.0.0.0 --public-url "/" --features static
+    popd
+)
+
 pushd frontend
 build_frontend $BUILD_STATIC
 popd
 
-pushd backend
-run_backend
-popd
+if [ $BUILD_STATIC == 1 ]; then
+    serve_static
+else
+    pushd backend
+    run_backend
+    popd
+fi

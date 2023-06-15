@@ -35,7 +35,7 @@ pub enum PerfReportStatus {
     Failed,
 }
 
-pub type CommitIdType = i64;
+pub type CommitIdType = uuid::Uuid;
 
 /// A commit represents an algorithm/operator and its performance report.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -203,17 +203,7 @@ impl UploadCommitFormState {
     /// Only call after you verified that the form has been filled in correctly. Otherwise this panics
     pub fn to_commit(&self) -> Commit {
         let c;
-        // let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).expect("Failed to get current time").as_secs();
-        let now = OffsetDateTime::now_utc();
-        let timestamp = format!(
-            "{:02}{:02}{:02}{:06}",
-            now.hour(),
-            now.minute(),
-            now.second(),
-            now.microsecond()
-        )
-        .parse::<CommitIdType>()
-        .unwrap();
+        let id = uuid::Uuid::new_v4();
         c = Commit::new(
             self.title.clone().unwrap(),
             self.version.clone().unwrap(),
@@ -221,7 +211,7 @@ impl UploadCommitFormState {
             OffsetDateTime::now_utc(),
             self.code.clone().unwrap(),
             None,
-            timestamp,
+            id,
             self.baseline.clone().unwrap(),
         );
         c
