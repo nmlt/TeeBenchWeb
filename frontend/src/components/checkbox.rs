@@ -1,5 +1,7 @@
 use yew::prelude::*;
 
+use super::InfoPopover;
+
 #[derive(Clone, Properties, PartialEq)]
 pub struct InputCheckboxProps {
     pub label: String,
@@ -7,6 +9,7 @@ pub struct InputCheckboxProps {
     pub value: String,
     pub selected: bool,
     pub disabled: bool,
+    pub info_popover: Option<InfoPopover>,
 }
 
 #[function_component]
@@ -17,12 +20,14 @@ pub fn InputCheckbox(
         value,
         selected,
         disabled,
+        info_popover,
     }: &InputCheckboxProps,
 ) -> Html {
+    let help = InfoPopover::to_html(info_popover);
     html! {
         <div class="form-check">
             <input class="form-check-input" type="checkbox" {onchange} value={value.clone()} disabled={*disabled} checked={*selected} />
-            <label class="form-check-label">{label.clone()}</label>
+            <label class="form-check-label">{label.clone()} {help}</label>
         </div>
     }
 }
@@ -50,6 +55,7 @@ pub struct InputCheckboxesProps {
     pub onchange: Callback<Event>,
     pub selected: Vec<String>,
     pub disabled: bool,
+    pub info_popover: Option<InfoPopover>,
 }
 
 #[function_component]
@@ -60,6 +66,7 @@ pub fn InputCheckboxes(
         onchange,
         selected,
         disabled: whole_disabled,
+        info_popover,
     }: &InputCheckboxesProps,
 ) -> Html {
     let options = data.iter().map(|CheckboxData { label, value, disabled }| {
@@ -69,9 +76,10 @@ pub fn InputCheckboxes(
             <InputCheckbox label={label.clone()} onchange={onchange} disabled={disabled} value={value.clone()} selected={selected} />
         }
     });
+    let help = InfoPopover::to_html(info_popover);
     html! {
         <fieldset class="row mb-3 col-md">
-            <legend class="form-label">{title}</legend>
+            <legend class="form-label">{title} {help}</legend>
             <div class="col-sm-10">
                 {for options}
             </div>

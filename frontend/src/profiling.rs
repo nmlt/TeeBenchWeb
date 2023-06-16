@@ -17,7 +17,8 @@ use crate::components::{
     bs_popover::BsInitPopovers,
     checkbox::{CheckboxData, InputCheckbox, InputCheckboxes},
     number::InputNumber,
-    select::{InfoPopover, InputSelect, SelectDataOption},
+    select::{InputSelect, SelectDataOption},
+    InfoPopover,
 };
 use crate::job_results_view::JobResultsView;
 use crate::modal::Modal;
@@ -138,6 +139,7 @@ pub fn profiling() -> Html {
             store.measurement = Measurement::from_str(&value).unwrap();
         })
     };
+    let min_popover = create_popover(describe_ui_element("Min"));
     let min_onchange = {
         let (_store, dispatch) = use_store::<ProfilingConfiguration>();
         dispatch.reduce_mut_callback_with(|store, e: Event| {
@@ -158,6 +160,7 @@ pub fn profiling() -> Html {
             store.min = value;
         })
     };
+    let max_popover = create_popover(describe_ui_element("Max"));
     let max_onchange = {
         let (_store, dispatch) = use_store::<ProfilingConfiguration>();
         dispatch.reduce_mut_callback_with(|store, e: Event| {
@@ -178,6 +181,7 @@ pub fn profiling() -> Html {
             store.max = value;
         })
     };
+    let step_popover = create_popover(describe_ui_element("Step"));
     let step_onchange = {
         let (_store, dispatch) = use_store::<ProfilingConfiguration>();
         dispatch.reduce_mut_callback_with(|store, e: Event| {
@@ -209,6 +213,7 @@ pub fn profiling() -> Html {
             }
         })
         .collect();
+    let datasets_popover = create_popover(describe_ui_element("Datasets"));
     let datasets_onchange = {
         let (_store, dispatch) = use_store::<ProfilingConfiguration>();
         dispatch.reduce_mut_callback_with(|s, e: Event| {
@@ -227,6 +232,7 @@ pub fn profiling() -> Html {
         .iter()
         .map(|p| CheckboxData::new(&p, &p, false))
         .collect();
+    let platforms_popover = create_popover(describe_ui_element("Platforms"));
     let platforms_onchange = {
         let (_store, dispatch) = use_store::<ProfilingConfiguration>();
         dispatch.reduce_mut_callback_with(|s, e: Event| {
@@ -241,6 +247,7 @@ pub fn profiling() -> Html {
             }
         })
     };
+    let sort_popover = create_popover(describe_ui_element("Pre-Sort Data"));
     let sort_onchange = {
         let (_store, dispatch) = use_store::<ProfilingConfiguration>();
         dispatch.input_mut(|s, value: Checkbox| {
@@ -294,31 +301,31 @@ pub fn profiling() -> Html {
                                             <InputSelect options={algs} onchange={algs_onchange} label={"Algorithm (select multiple)"} multiple={true} selected={store.algorithms.iter().map(|a| a.to_string()).collect::<Vec<_>>()} disabled={false} info_popover={alg_popover} />
                                         </div>
                                         <div id="tbw-profiling-form-experiment" class="col-md">
-                                            <InputSelect options={exps} onchange={exps_onchange} label={"Experiment"} multiple={false} selected={vec![store.experiment_type.to_string()]} disabled={false} />
+                                            <InputSelect options={exps} onchange={exps_onchange} label={"Experiment"} multiple={false} selected={vec![store.experiment_type.to_string()]} disabled={false} info_popover={exps_popover} />
                                         </div>
                                     </div>
                                     <div class="row g-3">
                                         <div id="tbw-profiling-form-measurement" class="col-md">
-                                            <InputSelect options={measurements} onchange={measurements_onchange} label={"Measurement (Y-axis)"} multiple={false} selected={vec![store.measurement.to_string()]} disabled={disable_controls} />
-                                            <InputSelect options={params} onchange={params_onchange} label={"Parameter (X-axis)"} multiple={false} selected={vec![store.parameter.to_string()]} disabled={disable_controls} />
+                                            <InputSelect options={measurements} onchange={measurements_onchange} label={"Measurement (Y-axis)"} multiple={false} selected={vec![store.measurement.to_string()]} disabled={disable_controls} info_popover={measurements_popover} />
+                                            <InputSelect options={params} onchange={params_onchange} label={"Parameter (X-axis)"} multiple={false} selected={vec![store.parameter.to_string()]} disabled={disable_controls} info_popover={params_popover} />
                                         </div>
                                         <div id="tbw-profiling-form-values" class="col-md tbw-profiling-form-values">
-                                            <InputNumber label={"min"} onchange={min_onchange} selected={store.min.to_string()} disabled={disable_controls} />
-                                            <InputNumber label={"max"} onchange={max_onchange} selected={store.max.to_string()} disabled={disable_controls} />
-                                            <InputNumber label={"step"} onchange={step_onchange} selected={store.step.to_string()} disabled={disable_controls} />
+                                            <InputNumber label={"min"} onchange={min_onchange} selected={store.min.to_string()} disabled={disable_controls} info_popover={min_popover} />
+                                            <InputNumber label={"max"} onchange={max_onchange} selected={store.max.to_string()} disabled={disable_controls} info_popover={max_popover} />
+                                            <InputNumber label={"step"} onchange={step_onchange} selected={store.step.to_string()} disabled={disable_controls} info_popover={step_popover} />
                                         </div>
                                     </div>
                                     <div class="row g-3">
                                         <div id="tbw-profiling-form-dataset" class="col-md">
-                                            <InputCheckboxes title={"Dataset"} data={datasets} onchange={datasets_onchange} selected={store.datasets.iter().map(|ds| ds.to_string()).collect::<Vec<_>>()} disabled={disable_controls} />
+                                            <InputCheckboxes title={"Dataset"} data={datasets} onchange={datasets_onchange} selected={store.datasets.iter().map(|ds| ds.to_string()).collect::<Vec<_>>()} disabled={disable_controls} info_popover={datasets_popover} />
                                         </div>
                                         <div id="tbw-profiling-form-platform" class="col-md">
-                                            <InputCheckboxes title={"Platform"} data={platforms} onchange={platforms_onchange} selected={store.platforms.iter().map(|pl| pl.to_string()).collect::<Vec<_>>()} disabled={disable_controls} />
+                                            <InputCheckboxes title={"Platform"} data={platforms} onchange={platforms_onchange} selected={store.platforms.iter().map(|pl| pl.to_string()).collect::<Vec<_>>()} disabled={disable_controls} info_popover={platforms_popover} />
                                         </div>
                                         <div class="col-md">
                                             <fieldset class="row mb-3 col-md">
                                                 <legend class="form-label invisible">{"Pre-sort data"}</legend>
-                                                <InputCheckbox label={"Pre-sort data"} onchange={sort_onchange} value={"sort_data".to_string()} selected={store.sort_data} disabled={disable_controls} />
+                                                <InputCheckbox label={"Pre-sort data"} onchange={sort_onchange} value={"sort_data".to_string()} selected={store.sort_data} disabled={disable_controls} info_popover={sort_popover} />
                                             </fieldset>
                                         </div>
                                     </div>

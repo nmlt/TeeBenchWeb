@@ -236,16 +236,95 @@ pub fn describe_ui_element(element: &str) -> &str {
     match element {
         "Algorithm" => indoc::indoc!(
             "
-                Select multiple algorithms or one of your operators. Predefined are:
+                Select multiple algorithms or one of your operators. Predefined are these JOIN algorithms:
                 <ul>
-                    <li><code>RHO</code>: Radix</li>
+                    <li><code>RHO</code>: Radix Hash Optimized</li>
+                    <li><code>PHT</code>: Parallel Hash Table</li>
+                    <li><code>PSM</code>: Parallel Sort-Merge</li>
+                    <li><code>MWAY</code>: Multi-Way Sort-Merge</li>
+                    <li><code>RHT</code>: Radix Hash Table</li>
+                    <li><code>CHT</code>: Concise Hash Table</li>
+                    <li><code>RSM</code>: Radix Sort-Merge</li>
+                    <li><code>INL</code>: Index Nested Loop</li>
                     <li><code>CRKJ</code>: Cracking Join</li>
                 </ul>
+                For more information on these algorithms see the TeeBench paper.
+                (To multi select, hold the appropriate key (shift/control) while clicking the algorithms)
             "
         ),
-        "ExperimentType" => "a",
-        "Parameter" => "b",
-        "Measurement" => "c",
+        "ExperimentType" => indoc::indoc!(
+            r#"
+                Select a predefined experiment or "Custom" to create your own experiment configuration Predefined experiments:
+                <ul>
+                    <li>EPC Paging: Plots throughput and EPC page misses on the y-axis against rising dataset size on the x-axis</li>
+                    <li>Throughput: Compares the throughput of the selected algorithms/operators</li>
+                    <li>Scalability: Plots the throughput of the algorithm/operator, running with 1-8 threads</li>
+                </ul>
+            "#
+        ),
+        "Parameter" => indoc::indoc!(
+            r#"
+                Select the value to plot on the x-axis.
+                <ul>
+                    <li>threads: How many threads the algorithm may run on. Only integer values!</li>
+                    <li>data_skew: The zipf factor. A float between zero and one.</li>
+                    <li>selectivity: Join selectivity. Integer between one and 100.</li>
+                    <li>algorithm: Plots the algorithms on the x-axis. Makes the "Min", "Max", and "Step" selection irrelevant.</li>
+                    <li>s_size: The size of the outer table. Only integer values!</li>
+                </ul>
+            "#
+        ),
+        "Measurement" => indoc::indoc!(
+            r#"
+                Select the value to plot on the y-axis.
+            "#
+                // <ul>
+                //     <li>Throughput: </li>
+                //     <li>Total Epc Paging: </li>
+                //     <li>Throughput And Total EPC Paging: </li>
+                //     <li>Throughput And Context Switches: </li>
+                //     <li>Phase 1 Cycles: </li>
+                //     <li>Phase 2 Cycles: </li>
+                //     <li>Total Cycles: </li>
+                //     <li>Two Phases Cycles: </li>
+                //     <li>Total L2 Hit Ratio: </li>
+                //     <li>Total L3 Hit Ratio: </li>
+                //     <li>Total L2 Cache Misses: </li>
+                //     <li>Total L3 Cache Misses: </li>
+                //     <li>IPC: </li>
+                //     <li>IR: </li>
+                //     <li>Total Voluntary CS: </li>
+                //     <li>Total Involuntary CS: </li>
+                //     <li>Context Switches: </li>
+                //     <li>Total User Cpu Time: </li>
+                //     <li>Total System Cpu Time: </li>
+                // </ul>
+        ),
+        "Min" => {
+            r#"The minimal value of the selected parameter. Irrelevant if the parameter is "algorithm". Make sure to only use floats if the parameter is "data_skew"."#
+        }
+        "Max" => {
+            r#"The maximal value of the selected parameter. Irrelevant if the parameter is "algorithm". Make sure to only use floats if the parameter is "data_skew"."#
+        }
+        "Step" => {
+            r#"The step between computed values of the selected parameters. See <code>param_value_iter</code> function for behavior. Irrelevant if the parameter is "algorithm". Make sure to only use floats if the parameter is "data_skew"."#
+        }
+        "Datasets" => indoc::indoc!(
+            r#"
+                The size of the dataset generated for the experiment.
+                <ul>
+                    <li>Cache Fit: Fits into the SGX memory. 50MB/li>
+                    <li>Cache Exceed: Does not fit into the SGX memory. 500MB</li>
+                    <li>Custom Size: Select "s_size" in the Parameter selection to use a custom size (not selectable here).</li>
+                </ul>
+            "#
+        ),
+        "Platforms" => indoc::indoc!(
+            r#"
+                The platforms to run the experiment on.
+            "#
+        ),
+        "Pre-Sort Data" => "Sort the dataset so the algorithm/operator doesn't have to do it.",
         _ => unimplemented!(),
     }
 }

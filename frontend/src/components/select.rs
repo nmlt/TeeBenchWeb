@@ -1,3 +1,4 @@
+use crate::components::InfoPopover;
 use yew::prelude::*;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -20,18 +21,6 @@ impl SelectDataOption {
             .iter()
             .map(|o| SelectDataOption::new(o.to_string(), o.to_string(), true))
             .collect()
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct InfoPopover {
-    pub title: String,
-    pub body: String,
-}
-
-impl InfoPopover {
-    pub fn new(title: String, body: String) -> Self {
-        Self { title, body }
     }
 }
 
@@ -68,23 +57,7 @@ pub fn InputSelect(
             html! { <option value={o.value.clone()} disabled={!o.enabled}>{o.label.clone()}</option> }
         });
     let id: String = label.chars().filter(|c| c.is_alphanumeric()).collect();
-    let help = if let Some(info_popover) = info_popover {
-        if info_popover.title.is_empty() {
-            html! {
-                <button type="button" class="btn btn-link"  data-bs-toggle="popover" data-bs-content={info_popover.body.clone()} data-bs-html="true" data-bs-trigger="hover">
-                    <span class="bi-info-circle"></span>
-                </button>
-            }
-        } else {
-            html! {
-                <button type="button" class="btn btn-link"  data-bs-toggle="popover" data-bs-title={info_popover.title.clone()} data-bs-content={info_popover.body.clone()} data-bs-html="true" data-bs-trigger="hover">
-                    <span class="bi-info-circle"></span>
-                </button>
-            }
-        }
-    } else {
-        html! {}
-    };
+    let help = InfoPopover::to_html(info_popover);
     html! {
         <div>
             <label class="form-label" for={format!("select-{id}")}>{label.clone()} {help}</label>
