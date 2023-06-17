@@ -6,9 +6,15 @@ set -o pipefail  # don't hide errors within pipes
 set -a # automatically export all variables
 source .env
 set +a
+set -x
 
 if [ "$1" == "static" ]; then
     BUILD_STATIC=1
+elif [ "$1" == "deploy" ]; then
+    cd frontend
+    trunk build --release --public-url "/" --features static
+    cd ..
+    exit 0
 else
     BUILD_STATIC=0
 fi
